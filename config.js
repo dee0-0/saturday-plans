@@ -1,7 +1,10 @@
 // Personalize this file. Everything here is safe to edit — none of it is secret except the topic below.
 const CONFIG = {
-  // Her name, used in the opening line. Leave blank to just say "Hey you".
+  // Her name, used in the notification and default greeting.
   herName: "Anastasia",
+
+  // The custom greeting shown on the first screen.
+  greeting: "Lazy Ass Anastasia",
 
   // The day you're asking about, exactly as it should read on screen.
   dateLabel: "Saturday, October 3rd",

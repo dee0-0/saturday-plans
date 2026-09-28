@@ -23,7 +23,7 @@
   }
 
   function setGreeting() {
-    document.getElementById("greeting-name").textContent = CONFIG.herName ? ` ${CONFIG.herName}` : " you";
+    document.getElementById("greeting-name").textContent = CONFIG.greeting || `Hey ${CONFIG.herName || "you"}`;
     document.getElementById("availability-heading").textContent =
       `Are you free ${CONFIG.dateLabel || "this Saturday"}?`;
   }

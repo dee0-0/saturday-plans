@@ -255,6 +255,8 @@ h1, h2 {
 
 h1 { font-size: clamp(36px, 7vw, 46px); letter-spacing: -0.035em; }
 h2 { max-width: 440px; font-size: clamp(27px, 5.5vw, 34px); letter-spacing: -0.025em; }
+.step h1[tabindex="-1"]:focus,
+.step h2[tabindex="-1"]:focus { outline: none; }
 
 .eyebrow {
   margin: 0 0 11px;
@@ -408,7 +410,7 @@ textarea {
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.76);
   color: var(--ink);
-  font-size: 14px;
+  font-size: 16px;
   outline: none;
   transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
@@ -553,18 +555,29 @@ input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--ros
 @keyframes loading { 0% { opacity: .25; } 60% { opacity: 1; } 100% { opacity: .25; } }
 
 @media (max-width: 520px) {
-  .app { justify-content: flex-start; gap: 14px; padding: max(22px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom)); }
+  .app { width: 100%; justify-content: flex-start; gap: 14px; padding: max(22px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
   .brand, .progress, .page-note { width: min(100%, 460px); }
   .brand { gap: 8px; font-size: 8px; letter-spacing: .14em; }
   .brand-mark { width: 29px; height: 29px; }
   .brand-caption { font-size: 13px; }
   .card { min-height: 408px; border-radius: 23px; }
-  .step { padding: 29px 23px 25px; }
+  .step { width: 100%; min-width: 0; padding: 29px 23px 25px; }
+  h1 { overflow-wrap: anywhere; }
   .choice { min-height: 56px; gap: 8px; padding: 10px 11px; font-size: 12px; }
   .choice .choice-icon { width: 18px; height: 18px; }
   .time-controls { gap: 5px; }
   .period-toggle button { min-width: 35px; }
   .page-note { margin-top: auto; padding-bottom: 1px; }
+}
+
+@media (max-width: 360px) {
+  .app { padding-right: max(11px, env(safe-area-inset-right)); padding-left: max(11px, env(safe-area-inset-left)); }
+  .step { padding-right: 18px; padding-left: 18px; }
+  .countdown { padding-right: 10px; padding-left: 10px; }
+  .countdown-values { gap: 6px; }
+  .choice { gap: 7px; padding-right: 9px; padding-left: 9px; font-size: 11px; }
+  .nav { gap: 6px; }
+  .btn { padding-right: 15px; padding-left: 15px; }
 }
 
 @media (max-height: 690px) and (min-width: 521px) {
