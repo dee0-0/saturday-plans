@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#D6335A">
+<meta name="description" content="A little question about Saturday.">
+<title>Saturday?</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="floaties" aria-hidden="true">
+  <svg class="fh sm"  style="--x:6%;  --d:0s;   --dur:16s" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+  <svg class="fh lg"  style="--x:18%; --d:3s;   --dur:20s" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+  <svg class="fh"     style="--x:32%; --d:7s;   --dur:15s" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+  <svg class="fh sm"  style="--x:48%; --d:2s;   --dur:18s" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+  <svg class="fh lg"  style="--x:63%; --d:9s;   --dur:22s" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+  <svg class="fh"     style="--x:77%; --d:4s;   --dur:17s" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+  <svg class="fh sm"  style="--x:88%; --d:11s;  --dur:19s" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+  <svg class="fh"     style="--x:97%; --d:6s;   --dur:21s" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+</div>
+
+<div class="app">
+  <div class="progress" id="progress" role="progressbar" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
+    <span class="dot" data-dot="0"></span>
+    <span class="dot" data-dot="1"></span>
+    <span class="dot" data-dot="2"></span>
+    <span class="dot" data-dot="3"></span>
+    <span class="dot" data-dot="4"></span>
+  </div>
+
+  <main class="card">
+
+    <section class="step is-active" data-step="intro">
+      <div class="step-icon">💌</div>
+      <h1>Hey<span id="greeting-name"></span></h1>
+      <p class="lede">I've got a question for you.</p>
+      <button class="btn btn-primary" data-action="next" type="button">Okay, let's see it</button>
+    </section>
+
+    <section class="step" data-step="availability">
+      <p class="eyebrow">Question 1 of 5</p>
+      <h2 id="availability-heading">Are you free this Saturday?</h2>
+      <div class="choices" data-field="free">
+        <button class="choice" data-value="yes" type="button">Yes, I'm free! 🎉</button>
+        <button class="choice" data-value="other" type="button">Not Saturday, but…</button>
+      </div>
+      <div class="reveal" data-reveal-for="other">
+        <label for="altTime">When would work instead?</label>
+        <input type="text" id="altTime" placeholder="Sunday afternoon, next week…">
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="back" type="button">Back</button>
+        <button class="btn btn-primary" data-action="next" type="button" disabled>Next</button>
+      </div>
+    </section>
+
+    <section class="step" data-step="time">
+      <p class="eyebrow">Question 2 of 5</p>
+      <h2>What time works best?</h2>
+      <div class="choices" data-field="time">
+        <button class="choice" data-value="Morning" type="button">Morning</button>
+        <button class="choice" data-value="Afternoon" type="button">Afternoon</button>
+        <button class="choice" data-value="Evening" type="button">Evening</button>
+        <button class="choice" data-value="Night" type="button">Night</button>
+      </div>
+      <div class="or-divider"><span>or pick an exact time</span></div>
+      <input type="time" id="exactTime" class="exact-input" aria-label="Exact time">
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="back" type="button">Back</button>
+        <button class="btn btn-primary" data-action="next" type="button" disabled>Next</button>
+      </div>
+    </section>
+
+    <section class="step" data-step="activity">
+      <p class="eyebrow">Question 3 of 5</p>
+      <h2>What do you want to do?</h2>
+      <div class="choices" data-field="activity">
+        <button class="choice" data-value="Dinner" type="button">Dinner 🍝</button>
+        <button class="choice" data-value="Movie night" type="button">Movie night 🎬</button>
+        <button class="choice" data-value="Coffee & a walk" type="button">Coffee & a walk ☕</button>
+        <button class="choice" data-value="Surprise me" type="button">Surprise me 🎡</button>
+        <button class="choice" data-value="Stay in & relax" type="button">Stay in & relax 🏠</button>
+        <button class="choice" data-value="other" type="button">Something else…</button>
+      </div>
+      <div class="reveal" data-reveal-for="other">
+        <label for="customActivity">What are you thinking?</label>
+        <input type="text" id="customActivity" placeholder="Your idea…">
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="back" type="button">Back</button>
+        <button class="btn btn-primary" data-action="next" type="button" disabled>Next</button>
+      </div>
+    </section>
+
+    <section class="step" data-step="place">
+      <p class="eyebrow">Question 4 of 5</p>
+      <h2>Where should we go?</h2>
+      <div class="choices" data-field="place">
+        <button class="choice" data-value="You pick" type="button">You pick 😏</button>
+        <button class="choice" data-value="My place" type="button">My place</button>
+        <button class="choice" data-value="Your place" type="button">Your place</button>
+        <button class="choice" data-value="Somewhere new" type="button">Somewhere new</button>
+        <button class="choice" data-value="other" type="button">Something else…</button>
+      </div>
+      <div class="reveal" data-reveal-for="other">
+        <label for="customPlace">Where?</label>
+        <input type="text" id="customPlace" placeholder="Name the place…">
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="back" type="button">Back</button>
+        <button class="btn btn-primary" data-action="next" type="button" disabled>Next</button>
+      </div>
+    </section>
+
+    <section class="step" data-step="note">
+      <p class="eyebrow">Question 5 of 5 · optional</p>
+      <h2>Anything else to add?</h2>
+      <textarea id="note" rows="3" placeholder="Requests, allergies, or just say hi…"></textarea>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="back" type="button">Back</button>
+        <button class="btn btn-primary" data-action="next" type="button">Next</button>
+      </div>
+    </section>
+
+    <section class="step" data-step="review">
+      <p class="eyebrow">Last look</p>
+      <h2>Here's what I'll send</h2>
+      <dl class="summary" id="summary"></dl>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="back" type="button">Back</button>
+        <button class="btn btn-primary btn-send" data-action="send" type="button">Send 💌</button>
+      </div>
+      <p class="error" id="sendError" hidden>Couldn't send that — check your connection and try again.</p>
+    </section>
+
+    <section class="step" data-step="sent">
+      <div class="step-icon">💕</div>
+      <h2>Sent!</h2>
+      <p class="lede">It's on its way.</p>
+      <p class="hint">You can close this now.</p>
+    </section>
+
+  </main>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
