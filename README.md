@@ -32,12 +32,16 @@ Open `index.html` locally (or the live link once it's deployed), click through a
 
 ## 4. Send her the link
 
-Once it's deployed (see below), just send her the URL.
+**https://dee0-0.github.io/saturday-plans/**
+
+That's the live page — it's already deployed via GitHub Pages. Just send her that URL once you've personalized `config.js` and tested it yourself (step 3).
 
 ## How it's built
 
 Plain HTML/CSS/JS, no build step, no dependencies, no backend or database — answers go straight from her browser to your phone via ntfy. Nothing is stored anywhere.
 
-## Deploying
+Note: this repo is **public** (required for free GitHub Pages), but nothing sensitive lives in the code — the only thing worth keeping private is the ntfy topic string above.
 
-This repo is set up to deploy for free with GitHub Pages. Once pushed, enable it under **Settings → Pages** (source: branch `main`, folder `/`), or it may already be live — check the repo's "About" section for the link.
+## Deploying changes
+
+Any edit you push to `master` (e.g. after personalizing `config.js`) redeploys automatically within a minute or two — no extra step needed.
