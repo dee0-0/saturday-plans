@@ -593,9 +593,9 @@ input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--ros
 @media (max-width: 720px), (max-height: 520px) and (max-width: 900px) {
   .video-backdrop video { display: none; }
   .mobile-background { display: block; }
-  .video-backdrop::after { opacity: 0.05; }
+  .video-backdrop::after { opacity: 0.08; }
   .video-wash {
-    background: linear-gradient(180deg, rgba(29, 13, 27, .2), rgba(29, 13, 27, .035) 44%, rgba(29, 13, 27, .2));
+    background: linear-gradient(180deg, rgba(29, 13, 27, .32), rgba(29, 13, 27, .075) 44%, rgba(29, 13, 27, .32));
   }
 }
 
