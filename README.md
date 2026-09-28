@@ -24,7 +24,7 @@ This page notifies you through [ntfy](https://ntfy.sh), a free push-notification
 
 3. That's it. When she taps Send, you'll get a push notification with everything she picked.
 
-**Keep that topic name private.** Anyone who has the exact string above could subscribe to it too, since ntfy topics aren't secured by an account, only by being hard to guess. Don't post it publicly or screenshot it anywhere.
+**Heads up on privacy:** ntfy topics aren't secured by an account, only by being hard to guess — and this repo is public, so the topic string above is technically visible to anyone who finds this GitHub repo (not just people you send the page link to). The practical risk is low (nobody stumbles onto a random personal repo by accident), but it's not truly private. Don't additionally post the topic anywhere yourself. If you want it properly private, the clean fix is moving the topic into a GitHub Actions secret instead of this file — ask Claude to set that up if you want it.
 
 ## 3. Try it yourself first
 
