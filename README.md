@@ -8,7 +8,7 @@ Open [`config.js`](config.js) and edit:
 
 - `herName` — used in the notification and default greeting.
 - `greeting` — the custom first-screen greeting.
-- `dateLabel` — currently set to `"Saturday, October 3rd"`. Change this if you're reusing the page for a different date.
+- `dateLabel` — currently set to `"Saturday, October 10th"`. Change this if you're reusing the page for a different date.
 - `dateISO` — the matching `YYYY-MM-DD` date used by the live countdown. Keep it in sync with `dateLabel`.
 - `closingNote` — the personal note on the final screen. Use `{name}` wherever you want her name to appear.
 

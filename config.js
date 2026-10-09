@@ -7,10 +7,10 @@ const CONFIG = {
   greeting: "Lazy Ass ℬ𝓁ℴ𝓃𝒹𝒾ℯ🥐",
 
   // The day you're asking about, exactly as it should read on screen.
-  dateLabel: "Saturday, October 3rd",
+  dateLabel: "Saturday, October 10th",
 
   // ISO date used by the live countdown (local time on the visitor's device).
-  dateISO: "2026-10-03",
+  dateISO: "2026-10-10",
 
   // Use {name} to personalize this note for her.
   closingNote: "I can't wait to annoy you in real life, and you need to buy me McDonald's.",
