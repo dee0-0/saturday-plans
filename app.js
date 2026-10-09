@@ -82,14 +82,14 @@
     }
 
     const [year, month, day] = parts;
-    // The countdown targets 2:30 p.m. in the visitor's local time zone.
-    const target = new Date(year, month - 1, day, 14, 30);
-    if (target.getFullYear() !== year || target.getMonth() !== month - 1 || target.getDate() !== day) {
+    const calendarDate = new Date(Date.UTC(year, month - 1, day));
+    if (calendarDate.getUTCFullYear() !== year || calendarDate.getUTCMonth() !== month - 1 || calendarDate.getUTCDate() !== day) {
       countdown.hidden = true;
       return;
     }
 
-    const endOfDate = new Date(year, month - 1, day + 1);
+    const target = dateInTimeZone(year, month, day, 14, 30, "Europe/Zurich");
+    const endOfDate = dateInTimeZone(year, month, day + 1, 0, 0, "Europe/Zurich");
     document.getElementById("countdown-date").textContent = CONFIG.dateLabel || "Saturday";
     const valueEls = {
       days: document.getElementById("countdown-days"),
@@ -122,6 +122,21 @@
 
     update();
     timer = window.setInterval(update, 1000);
+  }
+
+  function dateInTimeZone(year, month, day, hour, minute, timeZone) {
+    const desired = Date.UTC(year, month - 1, day, hour, minute);
+    let timestamp = desired;
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone, year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23"
+    });
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const parts = Object.fromEntries(formatter.formatToParts(new Date(timestamp)).map(({ type, value }) => [type, value]));
+      const represented = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second));
+      timestamp += desired - represented;
+    }
+    return new Date(timestamp);
   }
 
   function goNext() {
@@ -174,6 +189,13 @@
       });
 
       validateStep(step);
+
+      if (field === "activity") {
+        const message = document.getElementById("activity-message");
+        message.textContent = button.dataset.message || "A custom plan. The plot thickens.";
+        message.classList.add("is-revealed");
+      }
+      if (field === "place") updatePlaceMapPreview(button);
     });
   });
 
@@ -262,13 +284,25 @@
     if (state.place === "other" && value("customPlace")) {
       return { query: value("customPlace"), label: "Open in Maps", sentLabel: "Open our spot in Maps" };
     }
-    if (state.place === "Somewhere new") {
-      return { query: "restaurants and date spots near me", label: "Find a spot nearby", sentLabel: "Find a spot nearby" };
-    }
-    if (state.place === "You pick") {
-      return { query: "date night ideas near me", label: "Browse nearby ideas", sentLabel: "Browse nearby ideas" };
+    const selectedPlace = document.querySelector('.choices[data-field="place"] .choice.selected');
+    if (selectedPlace?.dataset.mapQuery) {
+      return { query: selectedPlace.dataset.mapQuery, label: "See this spot in Maps", sentLabel: "Open our spot in Maps" };
     }
     return null;
+  }
+
+  function mapUrl(target) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.query)}`;
+  }
+
+  function updatePlaceMapPreview(button) {
+    const link = document.getElementById("place-map-link");
+    if (button.dataset.mapQuery) {
+      link.href = mapUrl({ query: button.dataset.mapQuery });
+      link.hidden = false;
+    } else {
+      link.hidden = true;
+    }
   }
 
   function updateMapLinks() {
@@ -282,7 +316,7 @@
       return;
     }
 
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(target.query)}`;
+    const url = mapUrl(target);
     summaryWrap.hidden = false;
     summaryLink.href = url;
     summaryLink.querySelector("span").textContent = target.label;
@@ -295,6 +329,18 @@
     const name = CONFIG.herName || "you";
     const note = CONFIG.closingNote || "Can't wait to spend Saturday with you, {name}.";
     document.getElementById("closing-note").textContent = note.replace(/\{name\}/g, name);
+    const date = state.free === "yes" ? (CONFIG.dateLabel || "Saturday") : (value("altTime") || "Alternate date to arrange");
+    const time = pickedTime() || "2:30 PM";
+    document.getElementById("sent-lede").textContent = `${date} · ${time} · Bern`;
+    const rows = [
+      ["Date", date],
+      ["Time", `${time} · Bern time`],
+      ["Plan", pickedActivity() || "Walk around Bern, go shopping, and get chicken nuggets at McDonald's"],
+      ["Meeting spot", pickedPlace() || "Bern Old Town"]
+    ];
+    document.getElementById("sent-summary").innerHTML = rows
+      .map(([key, result]) => `<div class="row"><dt>${escapeHtml(key)}</dt><dd>${escapeHtml(result)}</dd></div>`)
+      .join("");
     updateMapLinks();
   }
 
@@ -358,6 +404,14 @@
   }
 
   document.addEventListener("click", (event) => {
+    const flower = event.target.closest("#flower-note");
+    if (flower) {
+      const message = document.getElementById("flower-message");
+      const expanded = flower.getAttribute("aria-expanded") === "true";
+      flower.setAttribute("aria-expanded", String(!expanded));
+      message.hidden = expanded;
+      return;
+    }
     const button = event.target.closest("[data-action]");
     if (!button) return;
     if (button.dataset.action === "next") goNext();
