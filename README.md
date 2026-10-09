@@ -9,7 +9,7 @@ Open [`config.js`](config.js) and edit:
 - `herName` — used in the notification and default greeting.
 - `greeting` — the custom first-screen greeting.
 - `dateLabel` — currently set to `"Saturday, October 10th"`. Change this if you're reusing the page for a different date.
-- `dateISO` — the matching `YYYY-MM-DD` date used by the live countdown. Keep it in sync with `dateLabel`.
+- `dateISO` — the matching `YYYY-MM-DD` date used by the live countdown. It counts down to 2:30 p.m. in the visitor's local time. Keep it in sync with `dateLabel`.
 - `closingNote` — the personal note on the final screen. Use `{name}` wherever you want her name to appear.
 
 Leave `ntfyTopic` alone — it's already set up (see below).

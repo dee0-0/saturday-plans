@@ -82,7 +82,8 @@
     }
 
     const [year, month, day] = parts;
-    const target = new Date(year, month - 1, day);
+    // The countdown targets 2:30 p.m. in the visitor's local time zone.
+    const target = new Date(year, month - 1, day, 14, 30);
     if (target.getFullYear() !== year || target.getMonth() !== month - 1 || target.getDate() !== day) {
       countdown.hidden = true;
       return;
