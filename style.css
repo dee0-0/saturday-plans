@@ -582,6 +582,8 @@ input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--ros
 .sent-summary .row { padding: 8px 0; }
 .sent-summary dt { font-size: 11px; }
 .sent-summary dd { max-width: 68%; font-size: 12px; }
+.sent-itinerary { max-width: 350px; margin: 10px 0 5px; padding: 12px 15px; border: 1px solid rgba(171, 69, 109, .14); border-radius: 14px; background: rgba(249, 239, 243, .78); color: var(--ink); font-size: 12px; line-height: 1.55; }
+.sent-answers-label { margin: 9px 0 0; }
 .closing-note { max-width: 340px; margin: 0 auto; color: var(--rose-deep); font-family: "Fraunces", Georgia, serif; font-size: 18px; font-style: italic; line-height: 1.5; }
 .nugget-note { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
 .place-helper { margin: 1px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }

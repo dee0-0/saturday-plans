@@ -9,7 +9,7 @@ const CONFIG = {
   // The day you're asking about, exactly as it should read on screen.
   dateLabel: "Saturday, October 10th",
 
-  // ISO date used by the live countdown; it targets 2:30 p.m. local time on the visitor's device.
+  // ISO date used by the live countdown; it targets 2:30 p.m. Europe/Zurich time.
   dateISO: "2026-10-10",
 
   // Use {name} to personalize this note for her.

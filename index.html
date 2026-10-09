@@ -69,9 +69,9 @@
       <p class="eyebrow">A LITTLE NOTE FOR YOU</p>
       <div class="step-icon"><svg class="icon"><use href="#icon-mail"></use></svg></div>
       <h1 id="greeting-name">Lazy Ass ℬ𝓁ℴ𝓃𝒹𝒾ℯ🥐</h1>
-      <p class="lede">Saturday in Bern: a little walk, a little shopping, then chicken nuggets at McDonald’s. The very important details are below.</p>
+      <p class="lede">I'm thinking we should hang out together this Weekend.</p>
       <button class="flower-note" id="flower-note" type="button" aria-expanded="false" aria-controls="flower-message"><svg class="icon"><use href="#icon-flower"></use></svg><span>Tap the flower for a secret</span></button>
-      <p class="flower-message" id="flower-message" hidden>If we get lost while shopping, we’ll call it exploring. Nugget strategy remains unchanged.</p>
+      <p class="flower-message" id="flower-message" hidden>Secret unlocked: you have excellent taste in invitations.</p>
       <div class="countdown" id="countdown" aria-label="Countdown to Saturday at 2:30 p.m. Bern time">
         <div class="countdown-heading"><span>COUNTING DOWN</span><span id="countdown-date">Saturday</span></div>
         <div class="countdown-values" id="countdown-values" aria-hidden="true">
@@ -110,9 +110,10 @@
       <p class="eyebrow">Question 2 of 5</p>
       <h2>What time works best?</h2>
       <div class="choices time-choices" data-field="time">
-        <button class="choice" data-value="2:30 PM" type="button"><svg class="icon choice-icon"><use href="#icon-clock"></use></svg><span>2:30 p.m. in Bern</span></button>
-        <button class="choice" data-value="A little earlier" type="button"><svg class="icon choice-icon"><use href="#icon-sun"></use></svg><span>A little earlier</span></button>
-        <button class="choice" data-value="A little later" type="button"><svg class="icon choice-icon"><use href="#icon-sunset"></use></svg><span>A little later</span></button>
+        <button class="choice" data-value="Morning" type="button"><svg class="icon choice-icon"><use href="#icon-sun"></use></svg><span>Morning</span></button>
+        <button class="choice" data-value="Afternoon" type="button"><svg class="icon choice-icon"><use href="#icon-cloud-sun"></use></svg><span>Afternoon</span></button>
+        <button class="choice" data-value="Evening" type="button"><svg class="icon choice-icon"><use href="#icon-sunset"></use></svg><span>Evening</span></button>
+        <button class="choice" data-value="Night" type="button"><svg class="icon choice-icon"><use href="#icon-moon"></use></svg><span>Night</span></button>
       </div>
       <div class="or-divider"><span>or choose an exact time</span></div>
       <div class="exact-time-picker">
@@ -135,11 +136,13 @@
 
     <section class="step" data-step="activity">
       <p class="eyebrow">Question 3 of 5</p>
-      <h2>Pick our Saturday vibe</h2>
+      <h2>What do you want to do?</h2>
       <div class="choices idea-choices" data-field="activity" aria-describedby="activity-message">
-        <button class="choice idea-card" data-value="Walk around Bern, go shopping, and get chicken nuggets at McDonald's" data-message="The full itinerary. Extremely strong nugget-to-shopping balance." type="button"><span class="idea-art"><svg class="icon"><use href="#icon-walk"></use></svg></span><span class="idea-copy"><strong>The full Bern adventure</strong><small>Stroll, shops, then McDonald’s nuggets</small></span></button>
-        <button class="choice idea-card" data-value="Walk around Bern and browse the shops" data-message="A leisurely stroll. We’ll pretend the shopping bags are cardio." type="button"><span class="idea-art"><svg class="icon"><use href="#icon-shopping-bag"></use></svg></span><span class="idea-copy"><strong>Wander &amp; window-shop</strong><small>Explore Bern at our own pace</small></span></button>
-        <button class="choice idea-card" data-value="Get chicken nuggets at McDonald's in Bern" data-message="A highly respectable culinary destination." type="button"><span class="idea-art"><svg class="icon"><use href="#icon-nuggets"></use></svg></span><span class="idea-copy"><strong>Nugget intermission</strong><small>McDonald’s chicken nuggets, obviously</small></span></button>
+        <button class="choice idea-card" data-value="Dinner" data-message="A classic choice. The menu negotiations begin." type="button"><span class="idea-art"><svg class="icon"><use href="#icon-utensils"></use></svg></span><span class="idea-copy"><strong>Dinner</strong><small>Pick somewhere delicious</small></span></button>
+        <button class="choice idea-card" data-value="Movie night" data-message="You pick the film; I reserve the right to critique the snacks." type="button"><span class="idea-art"><svg class="icon"><use href="#icon-film"></use></svg></span><span class="idea-copy"><strong>Movie night</strong><small>A film and a cozy evening</small></span></button>
+        <button class="choice idea-card" data-value="Coffee &amp; a walk" data-message="Coffee, a stroll, and absolutely no step-count competition." type="button"><span class="idea-art"><svg class="icon"><use href="#icon-coffee"></use></svg></span><span class="idea-copy"><strong>Coffee &amp; a walk</strong><small>A little caffeine and fresh air</small></span></button>
+        <button class="choice idea-card" data-value="Surprise me" data-message="Bold. I accept this responsibility with only moderate panic." type="button"><span class="idea-art"><svg class="icon"><use href="#icon-sparkles"></use></svg></span><span class="idea-copy"><strong>Surprise me</strong><small>Hand over the planning reins</small></span></button>
+        <button class="choice idea-card" data-value="Stay in &amp; relax" data-message="A peaceful plan. Pants with elastic waistbands encouraged." type="button"><span class="idea-art"><svg class="icon"><use href="#icon-house"></use></svg></span><span class="idea-copy"><strong>Stay in &amp; relax</strong><small>Comfy clothes very welcome</small></span></button>
         <button class="choice" data-value="other" type="button"><svg class="icon choice-icon"><use href="#icon-compass"></use></svg><span>Something else</span></button>
       </div>
       <p class="choice-message" id="activity-message" aria-live="polite">Pick a card to reveal the official commentary.</p>
@@ -155,11 +158,12 @@
 
     <section class="step" data-step="place">
       <p class="eyebrow">Question 4 of 5</p>
-      <h2>Where in Bern should we meet?</h2>
+      <h2>Where should we go?</h2>
       <div class="choices" data-field="place">
-        <button class="choice" data-value="Bern Old Town" data-map-query="Bern Old Town, Bern, Switzerland" type="button"><svg class="icon choice-icon"><use href="#icon-walk"></use></svg><span>Bern Old Town</span></button>
-        <button class="choice" data-value="Marktgasse, Bern" data-map-query="Marktgasse, Bern, Switzerland" type="button"><svg class="icon choice-icon"><use href="#icon-shopping-bag"></use></svg><span>Marktgasse shops</span></button>
-        <button class="choice" data-value="McDonald's Bern Bahnhof" data-map-query="McDonald's Bern Bahnhof, Switzerland" type="button"><svg class="icon choice-icon"><use href="#icon-nuggets"></use></svg><span>McDonald’s by the station</span></button>
+        <button class="choice" data-value="You pick" type="button"><svg class="icon choice-icon"><use href="#icon-sparkles"></use></svg><span>You pick</span></button>
+        <button class="choice" data-value="My place" type="button"><svg class="icon choice-icon"><use href="#icon-house"></use></svg><span>My place</span></button>
+        <button class="choice" data-value="Your place" type="button"><svg class="icon choice-icon"><use href="#icon-house"></use></svg><span>Your place</span></button>
+        <button class="choice" data-value="Somewhere new" data-map-query="date spots in Bern, Switzerland" type="button"><svg class="icon choice-icon"><use href="#icon-map-pin"></use></svg><span>Somewhere new</span></button>
         <button class="choice" data-value="other" type="button"><svg class="icon choice-icon"><use href="#icon-compass"></use></svg><span>Something else</span></button>
       </div>
       <a class="map-link place-map-preview" id="place-map-link" href="#" target="_blank" rel="noopener noreferrer" hidden><svg class="icon"><use href="#icon-map-pin"></use></svg><span>See this spot in Maps</span><svg class="icon map-link-arrow"><use href="#icon-arrow-right"></use></svg></a>
@@ -202,10 +206,12 @@
     </section>
 
     <section class="step" data-step="sent">
-      <p class="eyebrow">PLAN SENT</p>
+      <p class="eyebrow">THE PLAN</p>
       <div class="step-icon success-icon"><svg class="icon"><use href="#icon-check-heart"></use></svg></div>
-      <h2>Our plan is set!</h2>
+      <h2>The plan is set!</h2>
       <p class="lede" id="sent-lede"></p>
+      <p class="sent-itinerary">We’ll walk around Bern, browse the shops, then get chicken nuggets at McDonald’s.</p>
+      <p class="eyebrow sent-answers-label">YOUR ANSWERS</p>
       <dl class="summary sent-summary" id="sent-summary"></dl>
       <a class="map-link sent-map-link" id="sent-map-link" href="#" target="_blank" rel="noopener noreferrer" hidden>
         <svg class="icon"><use href="#icon-map-pin"></use></svg><span>Open our spot in Maps</span>

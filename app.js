@@ -331,7 +331,7 @@
     document.getElementById("closing-note").textContent = note.replace(/\{name\}/g, name);
     const date = state.free === "yes" ? (CONFIG.dateLabel || "Saturday") : (value("altTime") || "Alternate date to arrange");
     const time = pickedTime() || "2:30 PM";
-    document.getElementById("sent-lede").textContent = `${date} · ${time} · Bern`;
+    document.getElementById("sent-lede").textContent = `${CONFIG.dateLabel || "Saturday"} · 2:30 p.m. · Bern`;
     const rows = [
       ["Date", date],
       ["Time", `${time} · Bern time`],
