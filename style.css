@@ -336,6 +336,13 @@ h2 { max-width: 440px; font-size: clamp(27px, 5.5vw, 34px); letter-spacing: -0.0
 .step[data-step="intro"] .lede { margin-bottom: 25px; }
 .step[data-step="intro"] .btn-primary { margin: 0 auto; }
 .step[data-step="intro"] .countdown { width: min(100%, 340px); }
+.saturday-plan { width: min(100%, 360px); margin: -8px auto 17px; padding: 12px 15px; border: 1px solid rgba(171, 69, 109, .16); border-radius: 15px; background: rgba(249, 239, 243, .82); text-align: left; }
+.saturday-plan-heading { display: flex; align-items: center; gap: 7px; margin: 0 0 6px; color: var(--rose); font-size: 9px; font-weight: 600; letter-spacing: .13em; }
+.saturday-plan-heading .icon { width: 15px; height: 15px; }
+.saturday-plan-date { margin: 0; color: var(--ink); font-size: 12px; font-weight: 600; }
+.saturday-plan-activity { display: flex; align-items: flex-start; gap: 8px; margin-top: 7px; color: var(--muted); }
+.saturday-plan-activity .icon { width: 17px; height: 17px; margin-top: 1px; color: var(--rose); }
+.saturday-plan-activity p { margin: 0; font-size: 11px; line-height: 1.45; }
 .step[data-step="sent"] .step-icon { margin-top: 19px; }
 .step[data-step="sent"] .lede { margin: 0; }
 

@@ -26,6 +26,7 @@
     document.getElementById("greeting-name").textContent = CONFIG.greeting || `Hey ${CONFIG.herName || "you"}`;
     document.getElementById("availability-heading").textContent =
       `Are you free ${CONFIG.dateLabel || "this Saturday"}?`;
+    document.getElementById("plan-date").textContent = `${CONFIG.dateLabel || "Saturday"} · 2:30 p.m. · Bern`;
   }
 
   function currentStepName() {
