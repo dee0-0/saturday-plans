@@ -1,0 +1,12 @@
+name = "saturday-plans-sync"
+main = "src/index.js"
+compatibility_date = "2026-10-10"
+
+[[durable_objects.bindings]]
+name = "PLAN_STORE"
+class_name = "PlanStore"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["PlanStore"]
+
