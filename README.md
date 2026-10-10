@@ -1,10 +1,10 @@
 # The little date letter
 
-A mobile-friendly, one-question-at-a-time date invitation. It opens as a sealed letter, lets her choose a future date and time, activity, place, and optional note, then shows the confirmed plan whenever the site is opened again.
+A mobile-friendly, one-question-at-a-time date invitation in a soft rose envelope theme. It opens as a sealed letter, lets her choose a future date and time, activity, place, and optional note, then shows the confirmed plan whenever the site is opened again.
 
 ## What it does
 
-- Uses a botanical evergreen and parchment theme with a small envelope-opening animation.
+- Keeps flowers softly in the background behind an envelope and paper letter on every screen.
 - Accepts any future date and time in Bern time.
 - Adds the confirmed two-hour plan to a calendar from an `.ics` file.
 - Opens walking directions to the selected meeting place in Google Maps.
