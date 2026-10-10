@@ -909,6 +909,7 @@ h1, h2 { color: var(--ink); }
 .service-note { margin: 6px auto 0; color: #9b4e61; font-size: 11px; line-height: 1.45; }
 .envelope-seal .seal-icon-flower { display: none; }
 .envelope-letter-peek { display: none; }
+.envelope-illustration { display: none; }
 
 .date-input, .time-input {
   width: 100%;
@@ -1118,65 +1119,52 @@ h1, h2 { color: var(--ink); }
     width: 100%;
     height: clamp(175px, 25svh, 235px);
     perspective: 1100px;
-    filter: drop-shadow(0 20px 25px rgba(114, 52, 70, .2));
+    filter: drop-shadow(0 14px 20px rgba(114, 52, 70, .17));
     animation: envelope-hover 4.8s ease-in-out infinite;
   }
-  body.is-envelope-landing .envelope-art::before {
-    inset: 0;
-    border: 1px solid rgba(190, 101, 127, .24);
-    border-radius: 8px;
-    background: linear-gradient(145deg, #f5bbca, #e990a9 72%);
-    clip-path: polygon(0 0, 50% 55%, 100% 0, 100% 100%, 0 100%);
-  }
-  body.is-envelope-landing .envelope-letter {
-    top: 8px;
-    left: 14px;
-    width: calc(100% - 28px);
-    height: 78%;
-    padding-top: 27px;
-    border: 1px solid rgba(197, 143, 151, .36);
-    border-radius: 6px;
-    background: linear-gradient(160deg, #fffdfa, #f8eee9);
-    color: #a5656d;
-    font-size: 18px;
-  }
-  body.is-envelope-landing .envelope-flap {
-    top: 0;
+  body.is-envelope-landing .envelope-art::before,
+  body.is-envelope-landing .envelope-art > span.envelope-letter,
+  body.is-envelope-landing .envelope-art > span.envelope-flap,
+  body.is-envelope-landing .envelope-art > span.envelope-seal { display: none; }
+  body.is-envelope-landing .envelope-illustration {
+    display: block;
     width: 100%;
-    height: 58%;
-    background: linear-gradient(145deg, #f3b4c3, #dc7e98);
-    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    height: 100%;
+    overflow: visible;
   }
-  body.is-envelope-landing .envelope-letter-peek {
-    position: absolute;
-    z-index: 4;
-    top: 26%;
-    right: 7%;
-    display: grid;
-    width: 19%;
-    height: 30%;
-    place-items: center;
-    border-left: 1px solid rgba(190, 143, 139, .32);
-    background: linear-gradient(145deg, #fffaf3, #f2ded9);
-    color: #b36c75;
-    clip-path: polygon(0 0, 100% 8%, 100% 100%, 0 83%);
-    filter: drop-shadow(0 2px 3px rgba(102, 54, 61, .12));
-    transform: rotate(2deg);
+  body.is-envelope-landing .envelope-illustration .envelope-flap {
+    position: static;
+    width: auto;
+    height: auto;
+    top: auto;
+    left: auto;
+    background: none;
+    clip-path: none;
+    transform-box: fill-box;
+    transform-origin: 50% 0%;
+    transition: transform 420ms cubic-bezier(.2,.7,.2,1);
   }
-  body.is-envelope-landing .envelope-letter-peek .icon { width: 24px; height: 24px; stroke-width: 1.4; }
-  body.is-envelope-landing .envelope-seal {
-    top: 43%;
-    left: 50%;
-    width: 56px;
-    height: 56px;
-    border-color: rgba(255, 241, 242, .82);
-    background: radial-gradient(circle at 35% 28%, #d9758d, #a73f5d 78%);
-    box-shadow: 0 5px 12px rgba(102, 39, 56, .24), inset 0 1px rgba(255,255,255,.3);
-    transform: translateX(-50%);
+  body.is-envelope-landing .envelope-illustration .envelope-seal {
+    position: static;
+    display: initial;
+    width: auto;
+    height: auto;
+    top: auto;
+    left: auto;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    transform: none;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: opacity 180ms ease, transform 250ms ease;
   }
-  body.is-envelope-landing .envelope-seal .icon { width: 25px; height: 25px; stroke-width: 1.45; }
-  body.is-envelope-landing .envelope-seal .seal-icon-mail { display: none; }
-  body.is-envelope-landing .envelope-seal .seal-icon-flower { display: inline-block; }
+  body.is-envelope-landing .envelope-illustration .letter-sheet {
+    transform-box: fill-box;
+    transform-origin: center bottom;
+    transition: transform 450ms cubic-bezier(.2,.7,.2,1);
+  }
   body.is-envelope-landing .envelope-caption {
     color: #a34d63;
     font-family: "Fraunces", Georgia, serif;
@@ -1185,9 +1173,9 @@ h1, h2 { color: var(--ink); }
     letter-spacing: .015em;
   }
   body.is-envelope-landing .envelope-open.is-opening .envelope-art { animation: none; }
-  body.is-envelope-landing .envelope-open.is-opening .envelope-letter { transform: translateY(-34%); }
-  body.is-envelope-landing .envelope-open.is-opening .envelope-flap { opacity: .95; transform: rotateX(180deg); }
-  body.is-envelope-landing .envelope-open.is-opening .envelope-seal { opacity: 0; transform: translateX(-50%) scale(.65); }
+  body.is-envelope-landing .envelope-open.is-opening .envelope-illustration .letter-sheet { transform: translateY(-24px); }
+  body.is-envelope-landing .envelope-open.is-opening .envelope-illustration .envelope-flap { transform: rotateX(180deg); }
+  body.is-envelope-landing .envelope-open.is-opening .envelope-illustration .envelope-seal { opacity: 0; transform: scale(.7); }
   body.is-envelope-landing .service-note {
     position: absolute;
     right: 10%;
