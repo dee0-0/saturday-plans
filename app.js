@@ -12,6 +12,10 @@
   let isRescheduling = false;
   let countdownTimer = null;
 
+  function refreshIcons() {
+    if (window.lucide?.createIcons) window.lucide.createIcons();
+  }
+
   function currentStepName() {
     return steps.find((name) => stepEls[name].classList.contains("is-active"));
   }
@@ -300,7 +304,7 @@
       const envelope = document.querySelector(".envelope-open");
       envelope.disabled = false;
       envelope.classList.remove("is-opening");
-      document.getElementById("envelope-caption").textContent = "Tap to open your letter";
+      document.getElementById("envelope-caption").textContent = "Tap to open your invitation";
     }
     const previous = steps[steps.indexOf(currentStepName()) - 1];
     if (previous) showStep(previous);
@@ -542,7 +546,7 @@
       showStep(activePlan ? "planned" : "intro");
       if (!activePlan) {
         openButton.disabled = false;
-        caption.textContent = "Tap to open your letter";
+        caption.textContent = "Tap to open your invitation";
         serviceNote.hidden = true;
       }
       window.setInterval(refreshPlanIfVisible, 20000);
@@ -587,7 +591,8 @@
         error.textContent = saveError.message || "Couldn’t save the plan. Please try again.";
         error.hidden = false;
         button.disabled = false;
-        button.innerHTML = `${isRescheduling ? "Save changes" : "Set this date"} <svg class="icon"><use href="#icon-check-heart"></use></svg>`;
+        button.innerHTML = `${isRescheduling ? "Save changes" : "Set this date"} <i class="icon" data-lucide="heart" aria-hidden="true"></i>`;
+        refreshIcons();
       }
     }
   }
@@ -620,7 +625,8 @@
     updatePlaceMap();
     document.getElementById("review-heading").textContent = "Review your changes";
     const sendButton = document.querySelector('[data-action="send"]');
-    sendButton.innerHTML = 'Save changes <svg class="icon"><use href="#icon-check-heart"></use></svg>';
+    sendButton.innerHTML = 'Save changes <i class="icon" data-lucide="heart" aria-hidden="true"></i>';
+    refreshIcons();
     showStep("date");
     validateStep(stepEls.date);
   }
@@ -669,6 +675,7 @@
     document.getElementById("background-video")?.pause();
   }
 
+  refreshIcons();
   setGreeting();
   showStep("intro");
   loadPlan();
