@@ -908,6 +908,7 @@ h1, h2 { color: var(--ink); }
 .envelope-secret { margin: 2px auto 5px; }
 .service-note { margin: 6px auto 0; color: #9b4e61; font-size: 11px; line-height: 1.45; }
 .envelope-seal .seal-icon-flower { display: none; }
+.envelope-letter-peek { display: none; }
 
 .date-input, .time-input {
   width: 100%;
@@ -1146,6 +1147,23 @@ h1, h2 { color: var(--ink); }
     background: linear-gradient(145deg, #f3b4c3, #dc7e98);
     clip-path: polygon(0 0, 100% 0, 50% 100%);
   }
+  body.is-envelope-landing .envelope-letter-peek {
+    position: absolute;
+    z-index: 4;
+    top: 26%;
+    right: 7%;
+    display: grid;
+    width: 19%;
+    height: 30%;
+    place-items: center;
+    border-left: 1px solid rgba(190, 143, 139, .32);
+    background: linear-gradient(145deg, #fffaf3, #f2ded9);
+    color: #b36c75;
+    clip-path: polygon(0 0, 100% 8%, 100% 100%, 0 83%);
+    filter: drop-shadow(0 2px 3px rgba(102, 54, 61, .12));
+    transform: rotate(2deg);
+  }
+  body.is-envelope-landing .envelope-letter-peek .icon { width: 24px; height: 24px; stroke-width: 1.4; }
   body.is-envelope-landing .envelope-seal {
     top: 43%;
     left: 50%;
