@@ -17,6 +17,10 @@
     return icon ? icon.cloneNode(true).outerHTML : "";
   }
 
+  function refreshIcons() {
+    if (window.lucide?.createIcons) window.lucide.createIcons();
+  }
+
   function currentStepName() {
     return steps.find((name) => stepEls[name].classList.contains("is-active"));
   }
@@ -674,6 +678,7 @@
     document.getElementById("background-video")?.pause();
   }
 
+  refreshIcons();
   setGreeting();
   showStep("intro");
   loadPlan();
