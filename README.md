@@ -1,50 +1,37 @@
-# Saturday?
+# The little date letter
 
-A small, pink, one-question-at-a-time page that asks her whether she's free Saturday, what time, what she wants to do, and where — then sends you the answers the moment she hits **Send**.
+A mobile-friendly, one-question-at-a-time date invitation. It opens as a sealed letter, lets her choose a future date and time, activity, place, and optional note, then shows the confirmed plan whenever the site is opened again.
 
-## 1. Personalize it
+## What it does
 
-Open [`config.js`](config.js) and edit:
+- Uses a botanical evergreen and parchment theme with a small envelope-opening animation.
+- Accepts any future date and time in Bern time.
+- Adds the confirmed two-hour plan to a calendar from an `.ics` file.
+- Opens walking directions to the selected meeting place in Google Maps.
+- Lets either person share a 5, 10, 15, or 30 minute late update, then mark that they have arrived. Updates appear on the other device and send a notification to the configured ntfy topic.
+- Shows a countdown and the saved date details.
+- Stores one shared plan. Once submitted, the invitation becomes a plan viewer with cancel and reschedule controls; it will not create a second plan.
+- Refreshes the shared plan while the page is open so changes made on another phone appear automatically.
 
-- `herName` — used in the notification and default greeting.
-- `greeting` — the custom first-screen greeting.
-- `dateLabel` — currently set to `"Saturday, October 10th"`. Change this if you're reusing the page for a different date.
-- `dateISO` — the matching `YYYY-MM-DD` date used by the live countdown. It counts down to 2:30 p.m. Bern time. Keep it in sync with `dateLabel`.
-- `closingNote` — the personal note on the final screen. Use `{name}` wherever you want her name to appear.
+## Connect cross-device storage
 
-Leave `ntfyTopic` alone — it's already set up (see below).
+The static GitHub Pages site stores the shared plan and late updates in a Cloudflare Worker using SQLite-backed Durable Object storage. The Worker is deployed at `https://saturday-plans-sync.wittwerdee.workers.dev` and its origin is set in `config.js`.
 
-## 2. Get the notification on your phone
+1. In the GitHub repository, open **Settings → Secrets and variables → Actions** and add these repository secrets if you are setting up a new copy:
+   - `CLOUDFLARE_ACCOUNT_ID`
+   - `CLOUDFLARE_API_TOKEN` (create a scoped token with Cloudflare's **Edit Cloudflare Workers** permission)
+2. Push changes to `worker/` on `master`. The `Deploy shared plan API` workflow deploys it and prints its URL in the job log.
+3. If the Worker URL changes, update `planApiUrl` in `config.js` with only the origin; do not add `/plan`.
+4. Push the change to `master` so GitHub Pages republishes the connected site.
 
-This page notifies you through [ntfy](https://ntfy.sh), a free push-notification service — no account needed on either end.
+Keep the Cloudflare API token in GitHub Secrets; do not put it in `config.js` or commit it. The storage service uses a single SQLite-backed Durable Object, so creation of the first plan is atomic and subsequent submissions cannot create another record.
 
-1. Install the ntfy app: [Android](https://play.google.com/store/apps/details?id=io.heckel.ntfy) / [iOS](https://apps.apple.com/us/app/ntfy/id1625396347) (or just use [ntfy.sh/app](https://ntfy.sh/app) in a browser tab you leave open).
-2. In the app, subscribe to this exact topic:
+## Personalize
 
-   ```
-   saturday-ask-4c3d6ccdd98624e0f2f529ad
-   ```
+Edit `config.js` to change the greeting, name, closing note, and optional push-notification topic. The date, time, activity, and place are chosen in the page itself.
 
-3. That's it. When she taps Send, you'll get a push notification with everything she picked.
+The repository and GitHub Pages site are public. Anyone who has the site URL can read or change the shared plan, so use it for this invitation rather than private information. The existing ntfy topic is also in the public client config; rotate it if you want to stop unsolicited notifications.
 
-**Heads up on privacy:** ntfy topics aren't secured by an account, only by being hard to guess — and this repo is public, so the topic string above is technically visible to anyone who finds this GitHub repo (not just people you send the page link to). The practical risk is low (nobody stumbles onto a random personal repo by accident), but it's not truly private. Don't additionally post the topic anywhere yourself. If you want it properly private, the clean fix is moving the topic into a GitHub Actions secret instead of this file — ask Claude to set that up if you want it.
+## Deploy
 
-## 3. Try it yourself first
-
-Open `index.html` locally (or the live link once it's deployed), click through all five questions, and hit Send. Confirm the notification shows up on your phone before you send her the real link.
-
-## 4. Send her the link
-
-**https://dee0-0.github.io/saturday-plans/**
-
-That's the live page — it's already deployed via GitHub Pages. Just send her that URL once you've personalized `config.js` and tested it yourself (step 3).
-
-## How it's built
-
-Plain HTML/CSS/JS, no build step, no dependencies, no backend or database — answers go straight from her browser to your phone via ntfy. Nothing is stored anywhere.
-
-Note: this repo is **public** (required for free GitHub Pages), but nothing sensitive lives in the code — the only thing worth keeping private is the ntfy topic string above.
-
-## Deploying changes
-
-Any edit you push to `master` (e.g. after personalizing `config.js`) redeploys automatically within a minute or two — no extra step needed.
+The site is plain HTML, CSS, and JavaScript. Google Maps directions use cross-platform Maps URLs and do not need an API key. GitHub Pages publishes changes pushed to `master`. The Cloudflare Worker is deployed separately by `.github/workflows/deploy-plan-api.yml`.
