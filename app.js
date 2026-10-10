@@ -12,8 +12,9 @@
   let isRescheduling = false;
   let countdownTimer = null;
 
-  function refreshIcons() {
-    if (window.lucide?.createIcons) window.lucide.createIcons();
+  function iconMarkup(name) {
+    const icon = document.querySelector(`svg.lucide-${name}`);
+    return icon ? icon.cloneNode(true).outerHTML : "";
   }
 
   function currentStepName() {
@@ -591,8 +592,7 @@
         error.textContent = saveError.message || "Couldn’t save the plan. Please try again.";
         error.hidden = false;
         button.disabled = false;
-        button.innerHTML = `${isRescheduling ? "Save changes" : "Set this date"} <i class="icon" data-lucide="heart" aria-hidden="true"></i>`;
-        refreshIcons();
+        button.innerHTML = `${isRescheduling ? "Save changes" : "Set this date"} ${iconMarkup("heart")}`;
       }
     }
   }
@@ -625,8 +625,7 @@
     updatePlaceMap();
     document.getElementById("review-heading").textContent = "Review your changes";
     const sendButton = document.querySelector('[data-action="send"]');
-    sendButton.innerHTML = 'Save changes <i class="icon" data-lucide="heart" aria-hidden="true"></i>';
-    refreshIcons();
+    sendButton.innerHTML = `Save changes ${iconMarkup("heart")}`;
     showStep("date");
     validateStep(stepEls.date);
   }
@@ -675,7 +674,6 @@
     document.getElementById("background-video")?.pause();
   }
 
-  refreshIcons();
   setGreeting();
   showStep("intro");
   loadPlan();
