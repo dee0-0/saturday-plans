@@ -28,4 +28,4 @@ jobs:
           command: deploy
       - name: Show Worker URL
         if: steps.deploy.outputs.deployment-url != ''
-        run: echo "Shared plan API: ${{ steps.deploy.outputs.deployment-url }}"
+        run: 'echo "Shared plan API: ${{ steps.deploy.outputs.deployment-url }}"'
