@@ -13,7 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="is-envelope-landing">
 
 <div class="video-backdrop" aria-hidden="true">
   <video autoplay muted loop playsinline preload="metadata" id="background-video">
@@ -78,11 +78,12 @@
     </section>
 
     <section class="step is-active" data-step="intro">
-      <p class="eyebrow">A LITTLE NOTE FOR YOU</p>
+      <p class="eyebrow">A LETTER FOR YOU</p>
+      <div class="intro-flourish" aria-hidden="true"><span></span><svg class="icon"><use href="#icon-flower"></use></svg><span></span></div>
       <h1 id="greeting-name">Lazy Ass ℬ𝓁ℴ𝓃𝒹𝒾ℯ🥐</h1>
       <p class="lede">I'm thinking we should hang out together this Weekend.</p>
       <button class="envelope-open" data-action="open-envelope" type="button" aria-label="Open your letter" disabled>
-        <span class="envelope-art" aria-hidden="true"><span class="envelope-letter"><span>For you</span></span><span class="envelope-flap"></span><span class="envelope-seal"><svg class="icon"><use href="#icon-mail"></use></svg></span></span>
+        <span class="envelope-art" aria-hidden="true"><span class="envelope-letter"><span>For you</span></span><span class="envelope-flap"></span><span class="envelope-seal"><svg class="icon seal-icon-mail"><use href="#icon-mail"></use></svg><svg class="icon seal-icon-flower"><use href="#icon-flower"></use></svg></span></span>
         <span class="envelope-caption" id="envelope-caption">Checking the shared plan…</span>
       </button>
       <p class="flower-message envelope-secret">You owe me a döner now.</p>

@@ -4,7 +4,7 @@ A mobile-friendly, one-question-at-a-time date invitation in a soft rose envelop
 
 ## What it does
 
-- Keeps flowers softly in the background behind an envelope and paper letter on every screen.
+- On phones, opens as a large pink envelope over the softly visible lily background; larger screens keep the rose stationery layout.
 - Accepts any future date and time in Bern time.
 - Adds the confirmed two-hour plan to a calendar from an `.ics` file.
 - Opens walking directions to the selected meeting place in Google Maps.

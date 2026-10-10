@@ -19,6 +19,7 @@
   function showStep(name) {
     const previous = currentStepName();
     const forward = steps.indexOf(name) >= steps.indexOf(previous);
+    document.body.classList.toggle("is-envelope-landing", name === "intro");
     steps.forEach((step) => {
       const element = stepEls[step];
       element.classList.toggle("is-active", step === name);
