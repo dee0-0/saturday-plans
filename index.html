@@ -11,9 +11,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <link rel="preload" as="image" href="assets/letter-bg-mobile.jpg" media="(max-aspect-ratio: 1/1)">
 <link rel="preload" as="image" href="assets/letter-bg-desktop.jpg" media="(min-aspect-ratio: 1/1)">
-<link rel="stylesheet" href="style.css?v=letter-1">
+<link rel="stylesheet" href="style.css?v=letter-2">
 <script>document.documentElement.classList.add("intro-pending");setTimeout(function(){document.documentElement.classList.remove("intro-pending");},3000);</script>
 </head>
 <body class="is-envelope-landing">
@@ -151,7 +152,6 @@
       <p class="question-hint">Pick any date that works for you.</p>
       <label class="field-label" for="planDate">Date</label>
       <div class="input-frame"><i class="icon" data-lucide="calendar-days" aria-hidden="true"></i><input class="date-input" id="planDate" type="date" required></div>
-      <p class="date-timezone">Dates and times use Bern time.</p>
       <div class="nav">
         <button class="btn btn-ghost" data-action="back" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Back</button>
         <button class="btn btn-primary" data-action="next" type="button" disabled>Next <i class="icon" data-lucide="arrow-right" aria-hidden="true"></i></button>
@@ -161,10 +161,17 @@
     <section class="step" data-step="time">
       <p class="eyebrow">Question 2 of 5</p>
       <h2>What time works best?</h2>
-      <p class="question-hint">Choose the time in Bern.</p>
-      <label class="field-label" for="planTime">Time</label>
+      <p class="question-hint">Pick a time of day for a quick suggestion, then adjust the exact time if you like.</p>
+      <p class="field-label time-of-day-label" id="time-of-day-label">Quick time suggestions</p>
+      <div class="time-periods" role="group" aria-labelledby="time-of-day-label">
+        <button class="time-period" data-period="morning" type="button" aria-pressed="false"><i class="icon" data-lucide="sunrise" aria-hidden="true"></i><span class="time-period-copy"><strong>Morning</strong><small>09:00</small></span></button>
+        <button class="time-period" data-period="afternoon" type="button" aria-pressed="false"><i class="icon" data-lucide="sun" aria-hidden="true"></i><span class="time-period-copy"><strong>Afternoon</strong><small>14:00</small></span></button>
+        <button class="time-period" data-period="evening" type="button" aria-pressed="false"><i class="icon" data-lucide="sunset" aria-hidden="true"></i><span class="time-period-copy"><strong>Evening</strong><small>18:00</small></span></button>
+        <button class="time-period" data-period="night" type="button" aria-pressed="false"><i class="icon" data-lucide="moon" aria-hidden="true"></i><span class="time-period-copy"><strong>Night</strong><small>21:00</small></span></button>
+      </div>
+      <label class="field-label" for="planTime">Choose the exact time</label>
       <div class="input-frame"><i class="icon" data-lucide="clock-3" aria-hidden="true"></i><input class="time-input" id="planTime" type="time" required></div>
-      <p class="date-timezone">You can change this later if plans shift.</p>
+      <p class="field-hint" id="time-picker-hint">Choose any time, or tap one of the suggestions above.</p>
       <div class="nav">
         <button class="btn btn-ghost" data-action="back" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Back</button>
         <button class="btn btn-primary" data-action="next" type="button" disabled>Next <i class="icon" data-lucide="arrow-right" aria-hidden="true"></i></button>
@@ -175,9 +182,9 @@
       <p class="eyebrow">Question 3 of 5</p>
       <h2>What do you want to do?</h2>
       <div class="choices idea-choices" data-field="activity" aria-describedby="activity-message">
-        <button class="choice idea-card" data-value="Dinner" data-message="A classic choice. The menu negotiations begin." type="button"><span class="idea-art"><i class="icon" data-lucide="utensils" aria-hidden="true"></i></span><span class="idea-copy"><strong>Dinner</strong><small>Pick somewhere delicious</small></span></button>
+        <button class="choice idea-card" data-value="Cooking dinner together" data-message="We cook, we eat, and I provide extremely important taste-testing." type="button"><span class="idea-art"><i class="icon" data-lucide="utensils" aria-hidden="true"></i></span><span class="idea-copy"><strong>Cook dinner together</strong><small>Make something, then eat together</small></span></button>
         <button class="choice idea-card" data-value="Movie night" data-message="You pick the film; I reserve the right to critique the snacks." type="button"><span class="idea-art"><i class="icon" data-lucide="clapperboard" aria-hidden="true"></i></span><span class="idea-copy"><strong>Movie night</strong><small>A film and a cozy evening</small></span></button>
-        <button class="choice idea-card" data-value="Coffee &amp; a walk" data-message="Coffee, a stroll, and absolutely no step-count competition." type="button"><span class="idea-art"><i class="icon" data-lucide="coffee" aria-hidden="true"></i></span><span class="idea-copy"><strong>Coffee &amp; a walk</strong><small>A little caffeine and fresh air</small></span></button>
+        <button class="choice idea-card" data-value="Building LEGO together" data-message="We build something cute, then argue about who misplaced the tiny brick." type="button"><span class="idea-art"><i class="icon" data-lucide="blocks" aria-hidden="true"></i></span><span class="idea-copy"><strong>Build LEGO together</strong><small>Teamwork, tiny bricks, mild chaos</small></span></button>
         <button class="choice idea-card" data-value="Surprise me" data-message="Bold. I accept this responsibility with only moderate panic." type="button"><span class="idea-art"><i class="icon" data-lucide="sparkles" aria-hidden="true"></i></span><span class="idea-copy"><strong>Surprise me</strong><small>Hand over the planning reins</small></span></button>
         <button class="choice idea-card" data-value="Stay in &amp; relax" data-message="A peaceful plan. Pants with elastic waistbands encouraged." type="button"><span class="idea-art"><i class="icon" data-lucide="house" aria-hidden="true"></i></span><span class="idea-copy"><strong>Stay in &amp; relax</strong><small>Comfy clothes very welcome</small></span></button>
         <button class="choice" data-value="other" type="button"><i class="icon choice-icon" data-lucide="compass" aria-hidden="true"></i><span>Something else</span></button>
@@ -298,7 +305,8 @@
 <script src="https://unpkg.com/lucide@1.55.0/dist/umd/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Observer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script src="effects.js?v=letter-1"></script>
-<script src="app.js?v=letter-1"></script>
+<script src="app.js?v=letter-2"></script>
 </body>
 </html>

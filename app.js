@@ -6,8 +6,18 @@
   const stepEls = Object.fromEntries(steps.map((name) => [name, document.querySelector(`[data-step="${name}"]`)]));
   const dateInput = document.getElementById("planDate");
   const timeInput = document.getElementById("planTime");
+  const timePickerHint = document.getElementById("time-picker-hint");
   const serviceNote = document.getElementById("service-note");
   const apiRoot = String(CONFIG.planApiUrl || "").replace(/\/+$/, "").replace(/\/plan$/, "");
+  const dayparts = {
+    morning: { label: "Morning", time: "09:00" },
+    afternoon: { label: "Afternoon", time: "14:00" },
+    evening: { label: "Evening", time: "18:00" },
+    night: { label: "Night", time: "21:00" }
+  };
+  let datePicker = null;
+  let timePicker = null;
+  let selectedDaypart = "";
   let activePlan = null;
   let isRescheduling = false;
   let countdownTimer = null;
@@ -125,6 +135,91 @@
   function setGreeting() {
     document.getElementById("greeting-name").textContent = CONFIG.greeting || `Hey ${CONFIG.herName || "you"}`;
     dateInput.min = bernTodayISO();
+  }
+
+  function connectPickerLabel(instance, input, label) {
+    if (!instance?.altInput) return;
+    instance.altInput.id = `${input.id}-display`;
+    instance.altInput.setAttribute("aria-label", label.textContent.trim());
+    label.htmlFor = instance.altInput.id;
+  }
+
+  function initializePickers() {
+    if (typeof window.flatpickr !== "function") return;
+
+    const dateLabel = document.querySelector('label[for="planDate"]');
+    datePicker = window.flatpickr(dateInput, {
+      altInput: true,
+      altFormat: "l, F j, Y",
+      dateFormat: "Y-m-d",
+      minDate: dateInput.min,
+      disableMobile: true,
+      allowInput: false,
+      locale: { firstDayOfWeek: 1 },
+      onReady(_dates, _dateString, instance) { connectPickerLabel(instance, dateInput, dateLabel); },
+      onChange() { validateStep(stepEls.date); }
+    });
+
+    const timeLabel = document.querySelector('label[for="planTime"]');
+    timePicker = window.flatpickr(timeInput, {
+      altInput: true,
+      altFormat: "H:i",
+      dateFormat: "H:i",
+      enableTime: true,
+      noCalendar: true,
+      time_24hr: true,
+      minuteIncrement: 5,
+      disableMobile: true,
+      clickOpens: true,
+      allowInput: false,
+      onReady(_dates, _timeString, instance) { connectPickerLabel(instance, timeInput, timeLabel); },
+      onChange(_dates, timeString) {
+        updateSelectedDaypart(timeString);
+        validateStep(stepEls.time);
+      }
+    });
+  }
+
+  function daypartForTime(time) {
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time || "")) return "";
+    const [hour, minute] = time.split(":").map(Number);
+    const totalMinutes = hour * 60 + minute;
+    if (totalMinutes < 6 * 60) return "night";
+    if (totalMinutes < 12 * 60) return "morning";
+    if (totalMinutes < 17 * 60) return "afternoon";
+    if (totalMinutes < 21 * 60) return "evening";
+    return "night";
+  }
+
+  function updateSelectedDaypart(time) {
+    selectedDaypart = daypartForTime(time);
+    document.querySelectorAll(".time-period").forEach((button) => {
+      const selected = button.dataset.period === selectedDaypart;
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+  }
+
+  function chooseDaypart(period, { preserveTime = false, open = false } = {}) {
+    const suggestion = dayparts[period];
+    if (!suggestion) return;
+    timePickerHint.textContent = `${suggestion.label} suggestion: ${formatTime(suggestion.time)}. You can choose any exact time.`;
+    if (!preserveTime) {
+      if (timePicker) timePicker.setDate(suggestion.time, true, "H:i");
+      else {
+        timeInput.value = suggestion.time;
+        timeInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    }
+    updateSelectedDaypart(timeInput.value || suggestion.time);
+    if (open) {
+      if (timePicker) timePicker.open();
+      else {
+        timeInput.focus();
+        try { timeInput.showPicker?.(); } catch { /* Focus the native time field if its picker cannot open. */ }
+      }
+    }
+    validateStep(stepEls.time);
   }
 
   function value(id) {
@@ -282,15 +377,21 @@
     });
   });
 
+  document.querySelectorAll(".time-period").forEach((button) => {
+    button.addEventListener("click", () => chooseDaypart(button.dataset.period, { open: true }));
+  });
+
   [dateInput, timeInput, ...document.querySelectorAll('input[type="text"], textarea')].forEach((input) => {
     input.addEventListener("input", () => {
       const step = input.closest(".step");
       if (step) validateStep(step);
+      if (input === timeInput) updateSelectedDaypart(input.value);
       if (input.id === "customPlace") updatePlaceMap();
     });
     input.addEventListener("change", () => {
       const step = input.closest(".step");
       if (step) validateStep(step);
+      if (input === timeInput) updateSelectedDaypart(input.value);
       if (input.id === "customPlace") updatePlaceMap();
     });
   });
@@ -623,8 +724,11 @@
   function restorePlanForEditing() {
     if (!activePlan) return;
     isRescheduling = true;
-    dateInput.value = activePlan.date;
+    if (datePicker) datePicker.setDate(activePlan.date, false, "Y-m-d");
+    else dateInput.value = activePlan.date;
     timeInput.value = activePlan.time;
+    if (timePicker) timePicker.setDate(activePlan.time, false, "H:i");
+    chooseDaypart(daypartForTime(activePlan.time), { preserveTime: true });
     document.getElementById("note").value = activePlan.note || "";
     setChoice("activity", activePlan.activity);
     setChoice("place", activePlan.place);
@@ -693,6 +797,7 @@
 
   refreshIcons();
   setGreeting();
+  initializePickers();
   showStep("intro");
   loadPlan();
 })();
