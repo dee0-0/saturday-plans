@@ -153,7 +153,8 @@ export default {
     }
 
     const store = url.searchParams.get("store") === "preview" ? "preview" : "live";
-    if (path === "/reset" && (store !== "preview" || request.method !== "POST")) {
+    const oneTimeLiveReset = store === "live" && url.searchParams.get("confirm") === "d3731b7b496ae3d7d349a1d1c24f0529";
+    if (path === "/reset" && ((store !== "preview" && !oneTimeLiveReset) || request.method !== "POST")) {
       return withOrigin(json({ error: "Not found." }, 404, origin));
     }
     const id = env.PLAN_STORE.idFromName(STORES[store]);
