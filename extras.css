@@ -105,6 +105,9 @@ body.petals-in-front .petal-canvas { z-index: 2; opacity: 1; }
   border: 1px dashed #e6b7c7;
   border-radius: 16px;
   background: repeating-linear-gradient(-45deg, #fff8fa 0 10px, #fff3f7 10px 20px);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 .scratch-secret {
   margin: 0;
