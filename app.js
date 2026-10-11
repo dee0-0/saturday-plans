@@ -468,7 +468,7 @@
     mapLink.hidden = isCancelled || !canShowDirections(activePlan.place);
     document.getElementById("calendar-link").hidden = isCancelled;
     renderLateStatus(activePlan, isCancelled);
-    const note = CONFIG.closingNote || "You owe me a döner now.";
+    const note = CONFIG.closingNote || "";
     document.getElementById("closing-note").textContent = note.replace(/\{name\}/g, CONFIG.herName || "you");
     document.getElementById("planError").hidden = true;
     updatePlanCountdown(isCancelled ? null : activePlan);

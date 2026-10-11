@@ -21,12 +21,12 @@ const CONFIG = {
   closingNote: "I can't wait to annoy you in real life, and you need to buy me McDonald's.",
 
   // Hidden under the silver scratch card on the plan screen.
-  scratchSecret: "Plot twist: dessert is on me. Any dessert. Choose wisely. 🍰",
+  scratchSecret: "Plot twist: you get one wish. Ask me for anything you want ✨",
 
   // Revealed when she taps the little wax seal next to your signature 5 times.
   secretMessage: "You found the secret! 🤫 I smiled the whole time I was making this for you.",
 
-  // Love coupons she can redeem. You get a notification each time.
+  // Coupons she can redeem. You get a notification each time.
   // Keep each id short, lowercase, with dashes only, and never reuse one.
   coupons: [
     { id: "mcdonalds", icon: "🍟", title: "McDonald's on me", detail: "One McDonald's run, my treat. Large fries included." },

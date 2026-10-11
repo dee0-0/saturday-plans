@@ -292,7 +292,7 @@
   const signedName = (CONFIG.yourName || "").trim() || "Your date";
   if (signature) {
     signatureText.textContent = signedName;
-    $("#signature-label").textContent = `Love, ${signedName}`;
+    $("#signature-label").textContent = `See you soon, ${signedName}`;
   }
 
   function easeInOut(t) {
