@@ -252,10 +252,10 @@ h2 { max-width: 460px; font-size: clamp(27px, 5vw, 33px); }
   user-select: none;
 }
 .sound-toggle {
-  position: absolute;
-  z-index: 8;
-  top: 2px;
-  right: 0;
+  position: fixed;
+  z-index: 20;
+  top: max(16px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
   display: inline-flex;
   min-height: 40px;
   align-items: center;
@@ -279,6 +279,8 @@ h2 { max-width: 460px; font-size: clamp(27px, 5vw, 33px); }
 .sound-toggle .icon, .sound-toggle .lucide { width: 16px; height: 16px; }
 .sound-icon-off { display: none; }
 .sound-toggle[aria-pressed="false"] .sound-icon-on { display: none; }
+body:not(.is-envelope-landing) .sound-toggle { width: 40px; justify-content: center; padding: 0; }
+body:not(.is-envelope-landing) .sound-toggle-label { display: none; }
 .sound-toggle[aria-pressed="false"] .sound-icon-off { display: inline-flex; }
 .intro-head { display: flex; flex-direction: column; align-items: center; gap: clamp(10px, 1.8svh, 18px); }
 .letter-title {
@@ -825,7 +827,7 @@ body.is-envelope-landing .card {
 body.is-envelope-landing .step[data-step="intro"].is-active { min-height: calc(100svh - 32px); }
 body.is-envelope-landing .service-note { color: #8f5464; }
 @media (max-height: 520px) and (orientation: landscape) {
-  .sound-toggle { top: 0; right: 0; min-height: 36px; }
+  .sound-toggle { top: max(8px, env(safe-area-inset-top)); min-height: 36px; }
   .step[data-step="intro"] { gap: 14px; }
   .envelope-open { gap: 14px; }
   .letter-title { font-size: clamp(34px, 9svh, 52px); }

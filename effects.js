@@ -13,14 +13,17 @@
   const coarse = window.matchMedia("(pointer: coarse)").matches;
   const gsap = window.gsap;
   const ObserverPlugin = window.Observer;
-  const hasGsap = Boolean(gsap) && !reduced;
+  const gsapLoaded = Boolean(gsap);
+  const hasGsap = gsapLoaded && !reduced;
   const root = document.documentElement;
 
   const $ = (selector, scope = document) => scope.querySelector(selector);
   const rand = (min, max) => min + Math.random() * (max - min);
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-  if (hasGsap) {
+  // GSAP drives the envelope whenever it loaded, even with reduced motion
+  // (which gets a calmer opening below), so the CSS fallback stays out of the way.
+  if (gsapLoaded) {
     root.classList.add("has-gsap");
     if (ObserverPlugin) gsap.registerPlugin(ObserverPlugin);
   }
@@ -93,6 +96,7 @@
     updateSoundToggle();
     try { window.localStorage.setItem("date-letter-sound", soundEnabled ? "on" : "off"); } catch { /* Ignore unavailable storage. */ }
     if (soundEnabled) playChime([{ frequency: 659.25, delay: 0, duration: .2, volume: .018 }]);
+    window.LetterMusic?.setEnabled(soundEnabled);
   });
   const canScrubAtAll = hasGsap && Boolean(ObserverPlugin);
   if (tapSub) {
@@ -328,6 +332,18 @@
     };
   }
 
+  // Petals burst out of an element and briefly fly in front of the card.
+  let frontTimer = null;
+  function burstFrom(element, count = 26) {
+    const rect = element?.getBoundingClientRect();
+    if (!rect) return;
+    document.body.classList.add("petals-in-front");
+    window.clearTimeout(frontTimer);
+    frontTimer = window.setTimeout(() => document.body.classList.remove("petals-in-front"), 2300);
+    petals.burst(rect.left + rect.width / 2, rect.top + rect.height / 2, count);
+    petals.gust(50);
+  }
+
   /* ------------------------------------------------------------------ */
   /* No GSAP / reduced motion: expose a minimal API and stop here       */
   /* ------------------------------------------------------------------ */
@@ -345,18 +361,50 @@
       window.clearTimeout(burstTimer);
       burstTimer = window.setTimeout(() => document.body.classList.remove("petals-in-front"), 2300);
     }
+
+    // Reduced motion: the opening is user-triggered and is the whole point of the
+    // page, so it still plays, but short and flat (no parallax, zoom or petals).
+    function createCalmOpen() {
+      const flap = $(".env-flap");
+      gsap.set(flap, { transformPerspective: 1100, transformOrigin: "50% 0%", rotationX: 0 });
+      const tl = gsap.timeline({ paused: true, defaults: { ease: "power2.inOut" } })
+        .to([".tap-cue", ".wax-seal", ".env-peek"], { opacity: 0, duration: .25 }, 0)
+        .to(flap, { rotationX: 180, duration: .6 }, .15)
+        .set(flap, { zIndex: 2 }, .45)
+        .set(".env-flap-face", { backgroundImage: "linear-gradient(0deg, #e6a0b0 0%, #eeb0be 70%, #f2bbc6 100%)" }, .45)
+        .to(".env-letter", { yPercent: -40, duration: .6, ease: "power2.out" }, .55)
+        .to([".intro-head", ".envelope-parallax"], { opacity: 0, duration: .35 }, 1.2);
+      return {
+        play: () => new Promise((resolve) => {
+          tl.eventCallback("onComplete", () => {
+            tl.eventCallback("onComplete", null);
+            resolve();
+          });
+          tl.restart();
+        }),
+        reset: () => {
+          tl.eventCallback("onComplete", null);
+          tl.pause(0);
+        }
+      };
+    }
+
+    const calm = gsapLoaded && button ? createCalmOpen() : null;
     window.LetterFX = {
       open() {
         chimeOpen();
+        if (calm) return calm.play();
         fallbackBurst();
         return new Promise((resolve) => window.setTimeout(resolve, reduced ? 0 : 820));
       },
-      reset() {},
-      enterStep() {},
+      reset() { calm?.reset(); },
+      enterStep(stepEl, name, previous) { if (name === "intro" && previous) calm?.reset(); },
       celebrate() {
         chimeSuccess();
         fallbackBurst();
       },
+      chime: chimeSuccess,
+      burstFrom,
       burst(x, y, count = 24) { petals.burst(x, y, count); }
     };
     return;
@@ -484,6 +532,7 @@
   let committing = false;
   let scrubTarget = 0;
   let didDrag = false;
+  let dragDistance = 0;
 
   function burstFromEnvelope(count = 22) {
     const rect = parallaxEl.getBoundingClientRect();
@@ -571,9 +620,13 @@
     type: "wheel,touch,pointer",
     dragMinimum: 6,
     tolerance: 4,
-    onPress() { didDrag = false; },
+    onPress() { didDrag = false; dragDistance = 0; },
     onDrag(self) {
       if (!canScrub()) return;
+      // A finger tap usually wobbles a few pixels; only a real swipe should scrub
+      // (and then swallow the click), otherwise taps on phones get eaten.
+      dragDistance += Math.abs(self.deltaY);
+      if (dragDistance < 18) return;
       didDrag = true;
       nudge(-self.deltaY / 280);
     },
@@ -625,6 +678,8 @@
     reset,
     enterStep,
     celebrate,
+    chime: chimeSuccess,
+    burstFrom,
     burst: (x, y, n) => petals.burst(x, y, n)
   };
 })();

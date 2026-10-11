@@ -1,0 +1,327 @@
+/* Styles for ask.js, extras.js, coupons.js and journal.js. Builds on style.css tokens. */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+body.petals-in-front .petal-canvas { z-index: 2; opacity: 1; }
+
+/* ---------- Will you go out with me? ---------- */
+.step[data-step="ask"] { text-align: center; }
+.step[data-step="ask"] h2 { margin-inline: auto; }
+.ask-lede { margin-inline: auto; margin-bottom: 8px; }
+.ask-arena {
+  position: relative;
+  display: flex;
+  min-height: 210px;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 6px 0 0;
+}
+.ask-arena .btn-primary { margin-left: 0; }
+.ask-yes, .ask-no { min-width: 112px; transition: transform 260ms cubic-bezier(.2,.8,.25,1.3), left 280ms cubic-bezier(.2,.7,.2,1), top 280ms cubic-bezier(.2,.7,.2,1), background 170ms ease; }
+.ask-yes { z-index: 2; min-height: 52px; font-size: 15px; }
+.ask-no { z-index: 1; white-space: nowrap; touch-action: none; }
+.ask-no.is-loose { position: absolute; margin: 0; }
+.ask-taunt { min-height: 20px; margin: 0; color: var(--rose-deep); font-size: 12px; font-weight: 700; }
+
+/* ---------- Weather ---------- */
+.weather-card {
+  display: flex;
+  width: min(100%, 360px);
+  align-items: center;
+  gap: 12px;
+  margin: 0 auto 10px;
+  padding: 10px 14px;
+  border: 1px solid #f1dbe3;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #fff9fb, #fff1f6);
+  animation: reveal-in 260ms ease both;
+}
+.weather-icon { display: grid; width: 38px; height: 38px; flex: 0 0 auto; place-items: center; border-radius: 12px; background: #fff; color: var(--rose-deep); box-shadow: 0 2px 8px rgba(160,70,100,.1); }
+.weather-icon .icon, .weather-icon .lucide { width: 21px; height: 21px; }
+.weather-copy { display: grid; gap: 2px; text-align: left; }
+.weather-copy strong { color: var(--ink); font-size: 12px; font-weight: 800; line-height: 1.35; }
+.weather-copy small { color: var(--muted); font-size: 11px; line-height: 1.4; }
+
+.journal-prompt {
+  display: flex;
+  width: min(100%, 360px);
+  align-items: center;
+  gap: 12px;
+  margin: 0 auto 12px;
+  padding: 11px 14px;
+  border: 1px solid #e9b2c5;
+  border-radius: 15px;
+  background: #fff0f5;
+  color: var(--rose-deep);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 170ms ease, background 170ms ease;
+}
+.journal-prompt:hover { background: #ffe6ef; transform: translateY(-1px); }
+.journal-prompt > span { display: grid; flex: 1; gap: 2px; }
+.journal-prompt strong { font-size: 13px; font-weight: 800; }
+.journal-prompt small { color: #8b5367; font-size: 11px; }
+
+/* ---------- Little extras ---------- */
+.extras, .scratch { width: min(100%, 380px); margin: 14px auto 4px; }
+.extras-label { margin: 0 0 8px; color: var(--rose-deep); font-size: 9px; font-weight: 800; letter-spacing: .13em; text-align: center; text-transform: uppercase; }
+.extras-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.extra-tile {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 6px 11px;
+  border: 1px solid #f0dde5;
+  border-radius: 15px;
+  background: #fff;
+  color: var(--ink);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 170ms ease, transform 170ms ease, box-shadow 170ms ease;
+}
+.extra-tile:hover { border-color: #e5a8bd; box-shadow: 0 7px 18px rgba(73,37,52,.07); transform: translateY(-2px); }
+.extra-tile:focus-visible, .journal-prompt:focus-visible, .seal-stamp:focus-visible, .scratch-skip:focus-visible { outline: 3px solid rgba(220,79,131,.34); outline-offset: 3px; }
+.extra-icon { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 12px; background: #fff0f5; color: var(--rose-deep); }
+.extra-icon .icon, .extra-icon .lucide { width: 19px; height: 19px; }
+.extra-tile strong { font-size: 11px; font-weight: 800; line-height: 1.2; }
+.extra-tile small { color: var(--muted); font-size: 9px; font-weight: 600; }
+
+/* ---------- Scratch card ---------- */
+.scratch-card {
+  position: relative;
+  display: grid;
+  min-height: 92px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px dashed #e6b7c7;
+  border-radius: 16px;
+  background: repeating-linear-gradient(-45deg, #fff8fa 0 10px, #fff3f7 10px 20px);
+}
+.scratch-secret {
+  margin: 0;
+  padding: 16px 20px;
+  color: var(--rose-deep);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 19px;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+}
+.scratch-foil { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: none; transition: opacity 600ms ease; }
+.scratch-card.is-revealed .scratch-foil { opacity: 0; pointer-events: none; }
+.scratch-card.is-revealed .scratch-secret { animation: secret-pop 600ms cubic-bezier(.2,.8,.25,1.2) both; }
+@keyframes secret-pop { from { transform: scale(.94); } to { transform: scale(1); } }
+.scratch-skip { display: block; margin: 7px auto 0; padding: 4px 8px; border: 0; background: none; color: var(--muted); font-size: 11px; cursor: pointer; }
+.scratch-skip:hover { color: var(--rose-deep); text-decoration: underline; }
+
+/* ---------- Signature + wax seal ---------- */
+.sign-off { display: flex; flex-direction: column; align-items: center; margin: 0 auto 2px; }
+.sign-off-love { color: var(--muted); font-family: "Cormorant Garamond", Georgia, serif; font-size: 17px; font-style: italic; }
+.signature { display: block; width: min(100%, 300px); height: auto; overflow: visible; }
+.signature text { fill: #a8445c; font-family: "Great Vibes", "Snell Roundhand", cursive; font-size: 48px; }
+#signature-swash { fill: none; stroke: #c57088; stroke-linecap: round; stroke-width: 1.6; }
+.seal-stamp {
+  display: block;
+  width: 58px;
+  height: 58px;
+  margin: -4px auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  filter: drop-shadow(0 3px 3px rgba(110, 30, 45, .3));
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.seal-stamp svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.seal-stamp.is-tapped { animation: seal-wiggle 420ms cubic-bezier(.3,.7,.3,1.4); }
+@keyframes seal-wiggle { 0% { transform: scale(1) rotate(0); } 30% { transform: scale(.88) rotate(-10deg); } 65% { transform: scale(1.08) rotate(6deg); } 100% { transform: scale(1) rotate(0); } }
+.seal-hint { min-height: 16px; margin: 4px 0 0; color: var(--rose-deep); font-size: 11px; font-weight: 700; text-align: center; }
+.secret-card {
+  display: flex;
+  width: min(100%, 360px);
+  align-items: flex-start;
+  gap: 10px;
+  margin: 4px auto 10px;
+  padding: 13px 15px;
+  border: 1px solid #e9b2c5;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #fff3f7, #ffe8f0);
+  color: var(--rose-deep);
+  animation: reveal-in 320ms ease both;
+}
+.secret-card .icon, .secret-card .lucide { margin-top: 1px; }
+.secret-card p { margin: 0; font-size: 13px; font-weight: 700; line-height: 1.5; }
+
+/* ---------- Add to home screen ---------- */
+.install-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 14px 0 0;
+  padding: 10px 10px 10px 11px;
+  border: 1px solid #f0dde5;
+  border-radius: 16px;
+  background: #fffafc;
+}
+.install-icon { flex: 0 0 auto; border-radius: 10px; box-shadow: 0 2px 6px rgba(120,40,70,.15); }
+.install-copy { display: grid; flex: 1; gap: 2px; min-width: 0; }
+.install-copy strong { font-size: 12px; font-weight: 800; }
+.install-copy small { color: var(--muted); font-size: 11px; line-height: 1.4; }
+.install-button { min-height: 38px; padding: 8px 14px; font-size: 12px; }
+.install-dismiss { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; padding: 0; border: 0; border-radius: 10px; background: none; color: var(--muted); cursor: pointer; }
+.install-dismiss:hover { background: #fff0f5; color: var(--rose-deep); }
+.install-dismiss .icon, .install-dismiss .lucide { width: 16px; height: 16px; }
+
+/* ---------- Love coupons ---------- */
+.coupon-list { display: grid; gap: 10px; margin: 2px 0 0; }
+.coupon {
+  position: relative;
+  display: flex;
+  min-height: 74px;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px 11px 16px;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 0 50%, transparent 9px, #fff1f6 9.5px) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 9px, #fff1f6 9.5px) right / 51% 100% no-repeat;
+  filter: drop-shadow(0 3px 7px rgba(120, 40, 70, .1)) drop-shadow(0 0 1px rgba(173, 49, 95, .25));
+  animation: choice-arrive 360ms cubic-bezier(.2,.7,.2,1) both;
+}
+.coupon::after {
+  position: absolute;
+  top: 12px;
+  right: 104px;
+  bottom: 12px;
+  border-left: 2px dashed #f2d3de;
+  content: "";
+}
+.coupon-art { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; border-radius: 14px; background: #fff; font-size: 23px; }
+.coupon-copy { display: grid; flex: 1; gap: 3px; min-width: 0; padding-right: 8px; }
+.coupon-copy strong { font-size: 13px; font-weight: 800; line-height: 1.25; }
+.coupon-copy small { color: var(--muted); font-size: 11px; line-height: 1.35; }
+.coupon-action { display: grid; width: 84px; flex: 0 0 auto; place-items: center; }
+.coupon-redeem, .coupon-lock {
+  width: 100%;
+  min-height: 38px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--rose);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+.coupon-redeem:hover:not(:disabled) { background: var(--rose-deep); transform: translateY(-1px); }
+.coupon-redeem.is-armed { background: #8f2650; animation: armed-pulse 900ms ease-in-out infinite; }
+@keyframes armed-pulse { 50% { transform: scale(1.05); } }
+.coupon-redeem:disabled { opacity: .6; cursor: wait; }
+.coupon-lock { border: 1px solid #f0d5df; background: #fff; color: var(--rose-deep); line-height: 1.2; }
+.coupon-lock:hover { background: #fff5f8; }
+.coupon-stamp {
+  display: grid;
+  padding: 5px 8px;
+  border: 2px solid #c2416a;
+  border-radius: 8px;
+  color: #c2416a;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(-9deg);
+  opacity: .85;
+}
+.coupon-stamp small { font-size: 9px; letter-spacing: .04em; text-transform: none; }
+.coupon.is-redeemed .coupon-art, .coupon.is-redeemed .coupon-copy { opacity: .5; }
+.coupon.is-locked .coupon-art { background: #f6f1f3; }
+.coupon.just-redeemed .coupon-stamp { animation: stamp-in 420ms cubic-bezier(.2,.8,.25,1.4) both; }
+@keyframes stamp-in { from { opacity: 0; transform: rotate(-9deg) scale(1.8); } to { opacity: .85; transform: rotate(-9deg) scale(1); } }
+
+/* ---------- Fry game ---------- */
+.game-hud { display: flex; justify-content: space-between; gap: 8px; margin: 0 0 8px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.game-hud strong { margin-left: 3px; color: var(--ink); font-size: 15px; font-variant-numeric: tabular-nums; }
+.game-stage {
+  position: relative;
+  height: clamp(280px, 46svh, 380px);
+  overflow: hidden;
+  border: 1px solid #f0d5df;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff8fa 0%, #ffe9f1 100%);
+}
+.game-canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: ew-resize; }
+.game-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  background: rgba(255, 248, 251, .78);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  text-align: center;
+}
+.game-overlay .btn-primary { margin-left: 0; }
+.game-result { max-width: 260px; margin: 0; color: var(--ink); font-size: 14px; font-weight: 800; line-height: 1.45; }
+
+/* ---------- Journal ---------- */
+.journal-form { display: grid; margin: 0 0 6px; }
+.journal-for { margin: -2px 0 14px; padding: 9px 12px; border-radius: 12px; background: #fff5f8; color: var(--rose-deep); font-size: 12px; font-weight: 800; }
+.segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 14px; padding: 4px; border: 1px solid var(--rose-border); border-radius: 14px; background: #fff; }
+.segmented button { min-height: 40px; padding: 6px 8px; border: 0; border-radius: 10px; background: none; color: var(--muted); font-size: 12px; font-weight: 800; cursor: pointer; overflow-wrap: anywhere; transition: background 160ms ease, color 160ms ease; }
+.segmented button[aria-pressed="true"] { background: var(--rose); color: #fff; }
+.heart-rating { display: flex; gap: 6px; margin: 0 0 14px; }
+.heart-rating button { display: grid; width: 42px; height: 42px; place-items: center; padding: 0; border: 1px solid #f0dce4; border-radius: 12px; background: #fff; cursor: pointer; transition: transform 160ms ease, border-color 160ms ease; }
+.heart-rating button:hover { transform: translateY(-1px) scale(1.04); }
+.heart-rating svg { width: 22px; height: 22px; fill: #f1d9e2; transition: fill 160ms ease, transform 200ms cubic-bezier(.2,.8,.25,1.4); }
+.heart-rating button.is-on { border-color: #ecb3c6; }
+.heart-rating button.is-on svg { fill: var(--rose); transform: scale(1.08); }
+.heart-rating button:focus-visible, .segmented button:focus-visible, .photo-pick:focus-within { outline: 3px solid rgba(220,79,131,.34); outline-offset: 2px; }
+.journal-photo { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0 14px; }
+.photo-pick { display: inline-flex; min-height: 42px; align-items: center; gap: 8px; margin: 0; padding: 8px 13px; border: 1px dashed #e2a4ba; border-radius: 12px; background: #fff8fb; color: var(--rose-deep); font-size: 12px; font-weight: 800; cursor: pointer; }
+.journal-photo-preview { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; box-shadow: 0 3px 10px rgba(80,30,50,.15); }
+.journal-photo-remove { min-height: 34px; padding: 6px 8px; font-size: 11px; }
+.journal-save { margin-left: 0; }
+.journal-waiting { margin: 0 0 14px; padding: 12px 14px; border: 1px solid #f1dbe3; border-radius: 14px; background: #fff7fa; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.journal-list { display: grid; gap: 12px; margin-top: 14px; }
+.journal-empty { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; text-align: center; }
+.journal-entry { padding: 13px 14px; border: 1px solid #f0dde5; border-radius: 16px; background: #fff; animation: choice-arrive 360ms cubic-bezier(.2,.7,.2,1) both; }
+.journal-entry header { display: grid; gap: 2px; margin-bottom: 10px; }
+.journal-entry header strong { font-size: 14px; font-weight: 800; }
+.journal-entry header small { color: var(--muted); font-size: 11px; }
+.journal-reviews { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.journal-review { min-width: 0; padding: 10px; border-radius: 12px; background: #fff7fa; }
+.journal-review.is-pending { background: #fbf8f9; }
+.journal-review-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; margin: 0 0 5px; color: var(--ink); font-size: 11px; font-weight: 800; overflow-wrap: anywhere; }
+.journal-hearts { display: inline-flex; gap: 1px; }
+.journal-hearts svg { width: 11px; height: 11px; fill: #efd7e0; }
+.journal-hearts .is-on svg { fill: var(--rose); }
+.journal-note { margin: 0 0 6px; color: #5c4c55; font-family: "Cormorant Garamond", Georgia, serif; font-size: 15px; font-style: italic; line-height: 1.3; overflow-wrap: anywhere; }
+.journal-img { display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: 10px; background: #f5e9ee; object-fit: cover; }
+.journal-pending { margin: 0; color: #a59aa1; font-size: 11px; font-style: italic; }
+
+@media (max-width: 520px) {
+  .ask-arena { min-height: 230px; }
+  .coupon::after { right: 96px; }
+  .coupon-action { width: 76px; }
+  .coupon-copy strong { font-size: 12px; }
+  .journal-reviews { grid-template-columns: 1fr; }
+  .heart-rating button { width: 40px; height: 40px; }
+}

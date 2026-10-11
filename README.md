@@ -12,6 +12,12 @@ A mobile-friendly, one-question-at-a-time date invitation in a soft rose envelop
 - Shows a countdown and the saved date details.
 - Stores one shared plan. Once submitted, the invitation becomes a plan viewer with cancel and reschedule controls; it will not create a second plan.
 - Refreshes the shared plan while the page is open so changes made on another phone appear automatically.
+- Asks "Will you go out with me?" right after the envelope opens. The No button runs away from her finger or cursor, and you get a notification saying how many times she tried.
+- Shows the weather forecast for the date's hour and place on the plan screen (Open-Meteo, no key needed), with a tip like "bring an umbrella". Towns and areas near Bern (Thun, Gurten, Murten…) get their own forecast; venue names and the generic choices use Bern. It appears about 16 days ahead.
+- Has a silver scratch card hiding `scratchSecret`, your name written as an animated signature, and a wax seal that reveals `secretMessage` after 5 taps.
+- Love coupons she can redeem once each (you get a notification), plus a 20-second "Catch the fries" game that unlocks a prize coupon.
+- A date journal: after the date has started, each of you can rate it with hearts, write a note and add a photo. Past dates stay as a shared history.
+- Can be added to the home screen like an app, with its own icon. Sending the link in WhatsApp or iMessage shows a pink envelope preview card.
 
 ## Connect cross-device storage
 
@@ -28,9 +34,20 @@ Keep the Cloudflare API token in GitHub Secrets; do not put it in `config.js` or
 
 ## Personalize
 
-Edit `config.js` to change the greeting, name, closing note, and optional push-notification topic. The date, time, activity, and place are chosen in the page itself.
+Edit `config.js` to change the greeting, her name, your name (`yourName`, used for the signature and the journal), the closing note, the scratch-card and secret messages, the coupons, the fry-game target, and the optional push-notification topic. The date, time, activity, and place are chosen in the page itself.
 
-The repository and GitHub Pages site are public. Anyone who has the site URL can read or change the shared plan, so use it for this invitation rather than private information. The existing ntfy topic is also in the public client config; rotate it if you want to stop unsolicited notifications.
+Coupon redemptions are saved by `id`, so give every coupon its own short id and don't reuse an old one for a different coupon.
+
+The link-preview image (`assets/og-preview.jpg`) and app icons (`assets/icon-*.png`, `assets/apple-touch-icon.png`) are plain image files; replace them with same-sized images if you want a different look.
+
+Background music: leave `musicUrl` empty for the built-in music-box melody, or drop an `.mp3` into `assets/` and set e.g. `"assets/our-song.mp3"` to loop your own song. It starts on her first tap (browsers block sound before that), and the speaker button in the top-right corner turns it off.
+
+The repository and GitHub Pages site are public. Anyone who has the site URL can read or change the shared plan, the coupons and the journal, including journal photos, so only add photos you'd be fine with someone else seeing. The existing ntfy topic is also in the public client config; rotate it if you want to stop unsolicited notifications.
+
+## Run it locally
+
+1. In `worker/`, run `npx wrangler dev --port 8787 --var DEV_ORIGIN:http://localhost:5185`. This runs the Worker with its own local test data, separate from the real plan.
+2. Serve the site folder on port 5185, for example with `npx serve . -l 5185`, and open `http://localhost:5185`. On localhost, `config.js` talks to the local Worker automatically.
 
 ## Deploy
 

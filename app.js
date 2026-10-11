@@ -1,6 +1,7 @@
 (function () {
   const TIME_ZONE = "Europe/Zurich";
-  const steps = ["loading", "intro", "date", "time", "activity", "place", "note", "review", "planned"];
+  const steps = ["loading", "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game", "journal"];
+  const extraSteps = ["planned", "coupons", "game", "journal"];
   const questionSteps = ["date", "time", "activity", "place", "note"];
   const state = { date: "", time: "", activity: null, place: null };
   const stepEls = Object.fromEntries(steps.map((name) => [name, document.querySelector(`[data-step="${name}"]`)]));
@@ -50,6 +51,7 @@
     if (name === "review") renderSummary();
     if (name === "planned") renderPlan();
     window.LetterFX?.enterStep(stepEls[name], name, previous);
+    document.dispatchEvent(new CustomEvent("date:step", { detail: { name, previous } }));
 
     const heading = stepEls[name].querySelector("h1, h2");
     if (heading) {
@@ -412,7 +414,7 @@
       showStep("planned");
       return;
     }
-    if (!isRescheduling && currentStepName() === "date") {
+    if (!isRescheduling && currentStepName() === "ask") {
       const envelope = document.querySelector(".envelope-open");
       envelope.disabled = false;
       envelope.classList.remove("is-opening");
@@ -466,6 +468,7 @@
     document.getElementById("closing-note").textContent = note.replace(/\{name\}/g, CONFIG.herName || "you");
     document.getElementById("planError").hidden = true;
     updatePlanCountdown(isCancelled ? null : activePlan);
+    document.dispatchEvent(new CustomEvent("date:plan", { detail: { plan: activePlan } }));
   }
 
   function renderLateStatus(plan, isCancelled) {
@@ -607,23 +610,25 @@
     }
   }
 
-  async function notifyOwner(action, plan) {
+  async function sendNotification(title, message, tags = []) {
     if (!CONFIG.ntfyTopic) return false;
     try {
       const response = await fetch("https://ntfy.sh/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topic: CONFIG.ntfyTopic,
-          title: `${CONFIG.herName || "Date plan"}: ${action}`,
-          message: `${action.toUpperCase()}\n${formatDate(plan.date)} · ${formatTime(plan.time)} · Bern\n${plan.activity}\nMeet at: ${plan.place}${plan.note ? `\nNote: ${plan.note}` : ""}`,
-          priority: 4
-        })
+        body: JSON.stringify({ topic: CONFIG.ntfyTopic, title, message, tags, priority: 4 })
       });
       return response.ok;
     } catch {
       return false;
     }
+  }
+
+  function notifyOwner(action, plan) {
+    return sendNotification(
+      `${CONFIG.herName || "Date plan"}: ${action}`,
+      `${action.toUpperCase()}\n${formatDate(plan.date)} · ${formatTime(plan.time)} · Bern\n${plan.activity}\nMeet at: ${plan.place}${plan.note ? `\nNote: ${plan.note}` : ""}`
+    );
   }
 
   function displayPlanError(message) {
@@ -759,11 +764,11 @@
     const animation = window.LetterFX?.open?.();
     if (animation) {
       try { await animation; } catch { /* Show the questions even if the animation fails. */ }
-      showStep("date");
+      showStep("ask");
       return;
     }
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.setTimeout(() => showStep("date"), reduced ? 0 : 650);
+    window.setTimeout(() => showStep("ask"), reduced ? 0 : 650);
   }
 
   // Scrolling or swiping on the landing scrubs the envelope open (effects.js).
@@ -787,6 +792,7 @@
       case "hide-late-options": document.getElementById("late-options").hidden = true; break;
       case "set-late": setRunningLate(Number(button.dataset.minutes)); break;
       case "clear-late": clearRunningLate(); break;
+      case "goto": if (extraSteps.includes(button.dataset.target)) showStep(button.dataset.target); break;
     }
   });
 
@@ -799,6 +805,38 @@
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     document.getElementById("background-video")?.pause();
   }
+
+  async function apiRequest(path, method = "GET", body = undefined) {
+    if (!apiRoot) throw new Error("Shared sync is not connected yet.");
+    const response = await fetch(`${apiRoot}${path}`, {
+      method,
+      headers: body !== undefined ? { "Content-Type": "application/json" } : {},
+      body: body !== undefined ? JSON.stringify(body) : undefined
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(data.error || "That couldn’t be saved. Please try again.");
+      error.status = response.status;
+      error.data = data;
+      throw error;
+    }
+    return data;
+  }
+
+  // Shared helpers for the feature scripts (ask.js, extras.js, coupons.js, journal.js).
+  window.DateApp = {
+    get plan() { return activePlan; },
+    get step() { return currentStepName(); },
+    showStep,
+    apiRequest,
+    notify: sendNotification,
+    formatDate,
+    formatTime,
+    escapeHtml,
+    refreshIcons,
+    dateInTimeZone,
+    todayISO: bernTodayISO
+  };
 
   refreshIcons();
   setGreeting();
