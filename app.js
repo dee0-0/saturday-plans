@@ -139,6 +139,9 @@
 
   function connectPickerLabel(instance, input, label) {
     if (!instance?.altInput) return;
+    input.classList.forEach((className) => instance.altInput.classList.add(className));
+    instance.altInput.classList.add("picker-display-input");
+    instance.altInput.style.paddingLeft = "54px";
     instance.altInput.id = `${input.id}-display`;
     instance.altInput.setAttribute("aria-label", label.textContent.trim());
     label.htmlFor = instance.altInput.id;
