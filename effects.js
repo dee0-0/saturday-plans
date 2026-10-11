@@ -28,6 +28,72 @@
   const button = $(".envelope-open");
   const title = $(".letter-title");
   const tapSub = $("#tap-sub");
+  const soundToggle = $("#sound-toggle");
+  let soundEnabled = true;
+  let audioContext = null;
+  try {
+    const savedSound = window.localStorage.getItem("date-letter-sound");
+    if (savedSound !== null) soundEnabled = savedSound === "on";
+  } catch { /* Storage may be unavailable in private browsing. */ }
+
+  function updateSoundToggle() {
+    if (!soundToggle) return;
+    soundToggle.setAttribute("aria-pressed", String(soundEnabled));
+    soundToggle.setAttribute("aria-label", soundEnabled ? "Turn sound off" : "Turn sound on");
+    const label = $(".sound-toggle-label", soundToggle);
+    if (label) label.textContent = soundEnabled ? "Sound on" : "Sound off";
+  }
+
+  function playChime(notes) {
+    if (!soundEnabled) return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    try {
+      if (!audioContext) audioContext = new AudioContext();
+      const schedule = () => {
+        const startAt = audioContext.currentTime;
+        notes.forEach(({ frequency, delay, duration = .28, volume = .025 }) => {
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          const start = startAt + delay;
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(frequency, start);
+          gain.gain.setValueAtTime(.0001, start);
+          gain.gain.exponentialRampToValueAtTime(volume, start + .025);
+          gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
+          oscillator.connect(gain);
+          gain.connect(audioContext.destination);
+          oscillator.start(start);
+          oscillator.stop(start + duration + .03);
+        });
+      };
+      if (audioContext.state === "suspended") audioContext.resume().then(schedule).catch(() => {});
+      else schedule();
+    } catch { /* Audio is optional; the invitation still works without it. */ }
+  }
+
+  function chimeOpen() {
+    playChime([
+      { frequency: 523.25, delay: 0, duration: .26 },
+      { frequency: 659.25, delay: .12, duration: .34 },
+      { frequency: 783.99, delay: .25, duration: .48 }
+    ]);
+  }
+
+  function chimeSuccess() {
+    playChime([
+      { frequency: 659.25, delay: 0, duration: .25 },
+      { frequency: 783.99, delay: .13, duration: .42 }
+    ]);
+  }
+
+  updateSoundToggle();
+  soundToggle?.addEventListener("click", () => {
+    soundEnabled = !soundEnabled;
+    updateSoundToggle();
+    try { window.localStorage.setItem("date-letter-sound", soundEnabled ? "on" : "off"); } catch { /* Ignore unavailable storage. */ }
+    if (soundEnabled) playChime([{ frequency: 659.25, delay: 0, duration: .2, volume: .018 }]);
+  });
   const canScrubAtAll = hasGsap && Boolean(ObserverPlugin);
   if (tapSub) {
     tapSub.textContent = coarse ? "or swipe up" : "or scroll down";
@@ -267,12 +333,31 @@
   /* ------------------------------------------------------------------ */
   if (!hasGsap || !button) {
     root.classList.remove("intro-pending");
+    let burstTimer = null;
+    function fallbackBurst() {
+      if (reduced) return;
+      const envelope = $(".envelope-parallax");
+      const rect = envelope?.getBoundingClientRect();
+      if (!rect) return;
+      document.body.classList.add("petals-in-front");
+      petals.burst(rect.left + rect.width / 2, rect.top + rect.height * .24, 30, 1.05);
+      petals.gust(72);
+      window.clearTimeout(burstTimer);
+      burstTimer = window.setTimeout(() => document.body.classList.remove("petals-in-front"), 2300);
+    }
     window.LetterFX = {
-      open: () => null,
+      open() {
+        chimeOpen();
+        fallbackBurst();
+        return new Promise((resolve) => window.setTimeout(resolve, reduced ? 0 : 820));
+      },
       reset() {},
       enterStep() {},
-      celebrate() {},
-      burst() {}
+      celebrate() {
+        chimeSuccess();
+        fallbackBurst();
+      },
+      burst(x, y, count = 24) { petals.burst(x, y, count); }
     };
     return;
   }
@@ -408,6 +493,9 @@
 
   function open() {
     committing = true;
+    chimeOpen();
+    document.body.classList.add("petals-in-front");
+    window.setTimeout(() => document.body.classList.remove("petals-in-front"), 2300);
     observer?.disable();
     gsap.killTweensOf(openTl);
     floatTl.pause();
@@ -527,6 +615,7 @@
   }
 
   function celebrate() {
+    chimeSuccess();
     petals.burst(window.innerWidth / 2, window.innerHeight * .38, 46, 1.2);
     petals.gust(90);
   }

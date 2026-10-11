@@ -150,6 +150,7 @@
     const dateLabel = document.querySelector('label[for="planDate"]');
     datePicker = window.flatpickr(dateInput, {
       altInput: true,
+      altInputClass: "date-input",
       altFormat: "l, F j, Y",
       dateFormat: "Y-m-d",
       minDate: dateInput.min,
@@ -163,6 +164,7 @@
     const timeLabel = document.querySelector('label[for="planTime"]');
     timePicker = window.flatpickr(timeInput, {
       altInput: true,
+      altInputClass: "time-input",
       altFormat: "H:i",
       dateFormat: "H:i",
       enableTime: true,

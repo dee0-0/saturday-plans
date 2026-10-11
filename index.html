@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <link rel="preload" as="image" href="assets/letter-bg-mobile.jpg" media="(max-aspect-ratio: 1/1)">
 <link rel="preload" as="image" href="assets/letter-bg-desktop.jpg" media="(min-aspect-ratio: 1/1)">
-<link rel="stylesheet" href="style.css?v=letter-2">
+<link rel="stylesheet" href="style.css?v=letter-3">
 <script>document.documentElement.classList.add("intro-pending");setTimeout(function(){document.documentElement.classList.remove("intro-pending");},3000);</script>
 </head>
 <body class="is-envelope-landing">
@@ -63,6 +63,11 @@
     </section>
 
     <section class="step is-active" data-step="intro">
+      <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true" aria-label="Turn sound off">
+        <span class="sound-icon-on"><i class="icon" data-lucide="volume-2" aria-hidden="true"></i></span>
+        <span class="sound-icon-off"><i class="icon" data-lucide="volume-x" aria-hidden="true"></i></span>
+        <span class="sound-toggle-label">Sound on</span>
+      </button>
       <div class="intro-head">
         <h1 class="letter-title" aria-label="A letter for you">A letter for you</h1>
         <div class="ornament" aria-hidden="true">
@@ -306,7 +311,7 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Observer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-<script src="effects.js?v=letter-1"></script>
-<script src="app.js?v=letter-2"></script>
+<script src="effects.js?v=letter-3"></script>
+<script src="app.js?v=letter-3"></script>
 </body>
 </html>
