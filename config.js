@@ -2,7 +2,9 @@
 const CONFIG = {
   // Set this to the deployed Cloudflare Worker origin (without /plan).
   // The site needs this endpoint to share one plan across devices.
-  planApiUrl: "https://saturday-plans-sync.wittwerdee.workers.dev",
+  planApiUrl: (typeof location !== "undefined" && (location.hostname === "localhost" || location.hostname === "127.0.0.1"))
+    ? location.origin
+    : "https://saturday-plans-sync.wittwerdee.workers.dev",
 
   // Her name, used in the notification and default greeting.
   herName: "ℬ𝓁ℴ𝓃𝒹𝒾ℯ🥐",

@@ -39,6 +39,7 @@
     if (["date", "time", "activity", "place"].includes(name)) validateStep(stepEls[name]);
     if (name === "review") renderSummary();
     if (name === "planned") renderPlan();
+    window.LetterFX?.enterStep(stepEls[name], name, previous);
 
     const heading = stepEls[name].querySelector("h1, h2");
     if (heading) {
@@ -309,7 +310,7 @@
       const envelope = document.querySelector(".envelope-open");
       envelope.disabled = false;
       envelope.classList.remove("is-opening");
-      document.getElementById("envelope-caption").textContent = "Tap to open your invitation";
+      document.getElementById("envelope-caption").textContent = "Tap to open";
     }
     const previous = steps[steps.indexOf(currentStepName()) - 1];
     if (previous) showStep(previous);
@@ -551,7 +552,7 @@
       showStep(activePlan ? "planned" : "intro");
       if (!activePlan) {
         openButton.disabled = false;
-        caption.textContent = "Tap to open your invitation";
+        caption.textContent = "Tap to open";
         serviceNote.hidden = true;
       }
       window.setInterval(refreshPlanIfVisible, 20000);
@@ -584,6 +585,7 @@
       const action = isRescheduling ? "rescheduled" : "date plan set";
       isRescheduling = false;
       showStep("planned");
+      window.LetterFX?.celebrate();
       const delivered = await notifyOwner(action, activePlan);
       if (!delivered) displayPlanError("The plan is saved across devices, but the notification didn’t go through.");
     } catch (saveError) {
@@ -645,9 +647,20 @@
     if (button.disabled) return;
     button.disabled = true;
     button.classList.add("is-opening");
+    const animation = window.LetterFX?.open?.();
+    if (animation) {
+      try { await animation; } catch { /* Show the questions even if the animation fails. */ }
+      showStep("date");
+      return;
+    }
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.setTimeout(() => showStep("date"), reduced ? 0 : 650);
   }
+
+  // Scrolling or swiping on the landing scrubs the envelope open (effects.js).
+  document.addEventListener("letter:open-request", () => {
+    openEnvelope(document.querySelector(".envelope-open"));
+  });
 
   document.addEventListener("click", (event) => {
     const button = event.target.closest("[data-action]");
