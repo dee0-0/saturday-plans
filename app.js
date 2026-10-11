@@ -10,6 +10,10 @@
   const timePickerHint = document.getElementById("time-picker-hint");
   const serviceNote = document.getElementById("service-note");
   const apiRoot = String(CONFIG.planApiUrl || "").replace(/\/+$/, "").replace(/\/plan$/, "");
+  // Opening the link with ?preview uses a separate sandbox store, so everything
+  // can be tried out without touching her real letter.
+  const previewMode = new URLSearchParams(window.location.search).has("preview");
+  const apiUrl = (path) => previewMode ? `${apiRoot}${path}${path.includes("?") ? "&" : "?"}store=preview` : `${apiRoot}${path}`;
   const dayparts = {
     morning: { label: "Morning", time: "09:00" },
     afternoon: { label: "Afternoon", time: "14:00" },
@@ -529,7 +533,7 @@
 
   async function requestPlan(method = "GET", plan = null) {
     if (!apiRoot) throw new Error("Shared plan sync is not connected yet.");
-    const response = await fetch(`${apiRoot}/plan`, {
+    const response = await fetch(apiUrl("/plan"), {
       method,
       headers: plan ? { "Content-Type": "application/json" } : {},
       body: plan ? JSON.stringify(plan) : undefined
@@ -546,7 +550,7 @@
 
   async function requestLateStatus(method, minutes) {
     if (!apiRoot) throw new Error("Shared plan sync is not connected yet.");
-    const response = await fetch(`${apiRoot}/plan/late`, {
+    const response = await fetch(apiUrl("/plan/late"), {
       method,
       headers: method === "POST" ? { "Content-Type": "application/json" } : {},
       body: method === "POST" ? JSON.stringify({ minutes }) : undefined
@@ -616,7 +620,7 @@
       const response = await fetch("https://ntfy.sh/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: CONFIG.ntfyTopic, title, message, tags, priority: 4 })
+        body: JSON.stringify({ topic: CONFIG.ntfyTopic, title: previewMode ? `🧪 Preview · ${title}` : title, message, tags, priority: 4 })
       });
       return response.ok;
     } catch {
@@ -808,7 +812,7 @@
 
   async function apiRequest(path, method = "GET", body = undefined) {
     if (!apiRoot) throw new Error("Shared sync is not connected yet.");
-    const response = await fetch(`${apiRoot}${path}`, {
+    const response = await fetch(apiUrl(path), {
       method,
       headers: body !== undefined ? { "Content-Type": "application/json" } : {},
       body: body !== undefined ? JSON.stringify(body) : undefined
@@ -823,8 +827,26 @@
     return data;
   }
 
+  function showPreviewBar() {
+    const bar = document.createElement("div");
+    bar.className = "preview-bar";
+    bar.innerHTML = "<span><strong>Preview mode</strong> · her letter isn’t touched</span><button type=\"button\">Reset</button>";
+    bar.querySelector("button").addEventListener("click", async (event) => {
+      event.currentTarget.disabled = true;
+      try { await apiRequest("/reset", "POST"); } catch { /* Reload either way. */ }
+      try {
+        Object.keys(window.localStorage)
+          .filter((key) => key.startsWith("date-letter-") && !["date-letter-sound", "date-letter-author"].includes(key))
+          .forEach((key) => window.localStorage.removeItem(key));
+      } catch { /* Private browsing. */ }
+      window.location.reload();
+    });
+    document.body.append(bar);
+  }
+
   // Shared helpers for the feature scripts (ask.js, extras.js, coupons.js, journal.js).
   window.DateApp = {
+    preview: previewMode,
     get plan() { return activePlan; },
     get step() { return currentStepName(); },
     showStep,
@@ -841,6 +863,7 @@
   refreshIcons();
   setGreeting();
   initializePickers();
+  if (previewMode) showPreviewBar();
   showStep("intro");
   loadPlan();
 })();

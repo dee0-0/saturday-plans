@@ -44,6 +44,10 @@ Background music: leave `musicUrl` empty for the built-in music-box melody, or d
 
 The repository and GitHub Pages site are public. Anyone who has the site URL can read or change the shared plan, the coupons and the journal, including journal photos, so only add photos you'd be fine with someone else seeing. The existing ntfy topic is also in the public client config; rotate it if you want to stop unsolicited notifications.
 
+## Try it without touching her letter
+
+Open **https://dee0-0.github.io/saturday-plans/?preview** to test everything (saying yes, setting a plan, redeeming coupons, the game, the journal) against a separate sandbox. Notifications still arrive, labelled "🧪 Preview". The dark bar at the bottom has a Reset button that wipes the sandbox so you can start over. Her normal link never sees any of it.
+
 ## Run it locally
 
 1. In `worker/`, run `npx wrangler dev --port 8787 --var DEV_ORIGIN:http://localhost:5185`. This runs the Worker with its own local test data, separate from the real plan.

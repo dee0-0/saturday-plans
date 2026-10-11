@@ -9,7 +9,10 @@ const MAX_PHOTO_LENGTH = 700_000;
 const COUPON_ID = /^[a-z0-9-]{1,40}$/;
 const ENTRY_KEY = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 const AUTHORS = ["her", "sender"];
-const ROUTES = ["/plan", "/plan/late", "/coupons", "/journal", "/journal/photo"];
+const ROUTES = ["/plan", "/plan/late", "/coupons", "/journal", "/journal/photo", "/reset"];
+// ?store=preview uses a separate sandbox so the letter can be tested end to end
+// without touching her real plan, coupons or journal. Only the sandbox can be reset.
+const STORES = { live: "one-plan-for-this-invitation", preview: "preview-sandbox" };
 
 // Local `wrangler dev` passes --var DEV_ORIGIN:http://localhost:5185 so the
 // static site can be tested locally. Production only accepts GitHub Pages.
@@ -149,7 +152,11 @@ export default {
       return withOrigin(json({ error: "Method not allowed." }, 405, origin));
     }
 
-    const id = env.PLAN_STORE.idFromName("one-plan-for-this-invitation");
+    const store = url.searchParams.get("store") === "preview" ? "preview" : "live";
+    if (path === "/reset" && (store !== "preview" || request.method !== "POST")) {
+      return withOrigin(json({ error: "Not found." }, 404, origin));
+    }
+    const id = env.PLAN_STORE.idFromName(STORES[store]);
     return withOrigin(await env.PLAN_STORE.get(id).fetch(new Request(`https://plan-store${path}${url.search}`, request)));
   }
 };
@@ -163,6 +170,11 @@ export class PlanStore {
     const origin = request.headers.get("Origin") || "";
     const url = new URL(request.url);
     const path = url.pathname;
+
+    if (path === "/reset" && request.method === "POST") {
+      await this.ctx.storage.deleteAll();
+      return json({ reset: true }, 200, origin);
+    }
 
     if (path === "/coupons" && request.method === "GET") {
       return json({ coupons: normalizeCoupons(await this.ctx.storage.get(COUPONS_KEY)) }, 200, origin);

@@ -317,6 +317,30 @@ body.petals-in-front .petal-canvas { z-index: 2; opacity: 1; }
 .journal-img { display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: 10px; background: #f5e9ee; object-fit: cover; }
 .journal-pending { margin: 0; color: #a59aa1; font-size: 11px; font-style: italic; }
 
+/* ---------- Preview mode (?preview) ---------- */
+.preview-bar {
+  position: fixed;
+  z-index: 25;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 50%;
+  display: flex;
+  max-width: calc(100% - 24px);
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+  background: rgba(41, 37, 47, .88);
+  color: #fff;
+  font-size: 11px;
+  box-shadow: 0 8px 24px rgba(30, 10, 20, .25);
+  transform: translateX(-50%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.preview-bar span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preview-bar button { flex: 0 0 auto; min-height: 30px; padding: 4px 12px; border: 0; border-radius: 999px; background: #fff; color: var(--rose-deep); font-size: 11px; font-weight: 800; cursor: pointer; }
+.preview-bar button:disabled { opacity: .6; cursor: wait; }
+
 @media (max-width: 520px) {
   .ask-arena { min-height: 230px; }
   .coupon::after { right: 96px; }
