@@ -12,7 +12,7 @@ const CONFIG = {
 
   // Your name. It "writes itself" as the signature at the end of the letter
   // and labels your side of the date journal.
-  yourName: "",
+  yourName: "Dee",
 
   // The custom greeting shown on the first screen.
   greeting: "Lazy Ass ℬ𝓁ℴ𝓃𝒹𝒾ℯ🥐",
