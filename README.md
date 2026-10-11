@@ -17,7 +17,7 @@ A mobile-friendly, one-question-at-a-time date invitation in a soft rose envelop
 - Has a silver scratch card hiding `scratchSecret`, your name written as an animated signature, and a wax seal that reveals `secretMessage` after 5 taps.
 - Love coupons she can redeem once each (you get a notification), plus a 20-second "Catch the fries" game that unlocks a prize coupon.
 - A date journal: after the date has started, each of you can rate it with hearts, write a note and add a photo. Past dates stay as a shared history.
-- Can be added to the home screen like an app, with its own icon. Sending the link in WhatsApp or iMessage shows a pink envelope preview card.
+- Can be added to the home screen like an app, with its own icon. Sending the link in Snapchat, WhatsApp or iMessage shows a pink envelope preview card.
 
 ## Connect cross-device storage
 
