@@ -344,6 +344,15 @@
     petals.gust(50);
   }
 
+  // Petals thrown across the whole screen, in front of the card (the shake secret).
+  function scatter(count = 42) {
+    document.body.classList.add("petals-in-front");
+    window.clearTimeout(frontTimer);
+    frontTimer = window.setTimeout(() => document.body.classList.remove("petals-in-front"), 2300);
+    [0.2, 0.5, 0.8].forEach((x) => petals.burst(window.innerWidth * x, window.innerHeight * 0.5, Math.round(count / 3), 1.1));
+    petals.gust(80);
+  }
+
   /* ------------------------------------------------------------------ */
   /* No GSAP / reduced motion: expose a minimal API and stop here       */
   /* ------------------------------------------------------------------ */
@@ -405,6 +414,7 @@
       },
       chime: chimeSuccess,
       burstFrom,
+      scatter,
       burst(x, y, count = 24) { petals.burst(x, y, count); }
     };
     return;
@@ -680,6 +690,7 @@
     celebrate,
     chime: chimeSuccess,
     burstFrom,
+    scatter,
     burst: (x, y, n) => petals.burst(x, y, n)
   };
 })();

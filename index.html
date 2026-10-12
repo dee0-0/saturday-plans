@@ -30,8 +30,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <link rel="preload" as="image" href="assets/letter-bg-mobile.jpg" media="(max-aspect-ratio: 1/1)">
 <link rel="preload" as="image" href="assets/letter-bg-desktop.jpg" media="(min-aspect-ratio: 1/1)">
-<link rel="stylesheet" href="style.css?v=letter-10">
-<link rel="stylesheet" href="extras.css?v=letter-10">
+<link rel="stylesheet" href="style.css?v=letter-11">
+<link rel="stylesheet" href="extras.css?v=letter-11">
 <script>document.documentElement.classList.add("intro-pending");setTimeout(function(){document.documentElement.classList.remove("intro-pending");},3000);</script>
 </head>
 <body class="is-envelope-landing">
@@ -386,6 +386,19 @@
         <i class="icon" data-lucide="lock-keyhole-open" aria-hidden="true"></i>
         <p id="secret-text"></p>
       </div>
+      <details class="secret-tracker" id="secret-tracker" hidden>
+        <summary><span class="secret-tracker-row">
+          <span class="secret-tracker-key" aria-hidden="true">🗝️</span>
+          <span class="secret-tracker-label">Secrets found <strong id="secret-count">0/5</strong></span>
+          <span class="secret-dots" id="secret-dots" aria-hidden="true"></span>
+          <span class="secret-tracker-chevron" aria-hidden="true">›</span>
+        </span></summary>
+        <ul class="secret-list" id="secret-list"></ul>
+        <div class="secret-final" id="secret-final" hidden>
+          <p id="secret-final-text"></p>
+          <button class="btn btn-secondary" id="secret-final-prize" data-action="goto" data-target="coupons" type="button"><i class="icon" data-lucide="ticket" aria-hidden="true"></i> See your prize</button>
+        </div>
+      </details>
       <p class="cancelled-message" id="cancelled-message" hidden>This plan is cancelled. You can still reschedule this same plan here.</p>
       <div class="manage-plan-actions">
         <button class="btn btn-secondary" data-action="reschedule" type="button"><i class="icon" data-lucide="calendar-days" aria-hidden="true"></i><span id="reschedule-label">Reschedule</span></button>
@@ -425,6 +438,7 @@
         <canvas class="game-canvas" id="game-canvas" role="img" aria-label="Fry catching game. Move the bag with your finger, mouse, or the arrow keys."></canvas>
         <div class="game-overlay" id="game-overlay">
           <p class="game-result" id="game-result">Move the bag with your finger to catch what falls.</p>
+          <p class="game-secret" id="game-secret" hidden></p>
           <button class="btn btn-primary" id="game-start" type="button">Start <i class="icon" data-lucide="play" aria-hidden="true"></i></button>
           <button class="btn btn-secondary" id="game-prize" data-action="goto" data-target="coupons" type="button" hidden>See your prize</button>
         </div>
@@ -446,6 +460,7 @@
         </div>
         <p class="field-label" id="rating-label">How was it?</p>
         <div class="heart-rating" id="heart-rating" role="radiogroup" aria-labelledby="rating-label"></div>
+        <p class="heart-hint" id="heart-hint" aria-live="polite"></p>
         <label for="journal-note">A few words</label>
         <textarea id="journal-note" maxlength="400" rows="3" placeholder="Best part, funniest moment, who stole whose fries…"></textarea>
         <div class="journal-photo">
@@ -468,17 +483,18 @@
   <footer class="page-note"><span>MADE WITH INTENTION</span><span class="page-note-dot"></span><span>FOR ℬ𝓁ℴ𝓃𝒹𝒾ℯ🥐</span></footer>
 </div>
 
-<script src="config.js?v=letter-10"></script>
+<script src="config.js?v=letter-11"></script>
 <script src="https://unpkg.com/lucide@1.55.0/dist/umd/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Observer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-<script src="music.js?v=letter-10"></script>
-<script src="effects.js?v=letter-10"></script>
-<script src="ask.js?v=letter-10"></script>
-<script src="extras.js?v=letter-10"></script>
-<script src="coupons.js?v=letter-10"></script>
-<script src="journal.js?v=letter-10"></script>
-<script src="app.js?v=letter-10"></script>
+<script src="music.js?v=letter-11"></script>
+<script src="effects.js?v=letter-11"></script>
+<script src="ask.js?v=letter-11"></script>
+<script src="secrets.js?v=letter-11"></script>
+<script src="extras.js?v=letter-11"></script>
+<script src="coupons.js?v=letter-11"></script>
+<script src="journal.js?v=letter-11"></script>
+<script src="app.js?v=letter-11"></script>
 </body>
 </html>

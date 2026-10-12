@@ -43,6 +43,35 @@ const CONFIG = {
   // Points needed in 20 seconds to win the fry game.
   gameTarget: 15,
 
+  // ---- Secret hunt ----
+  // A small "Secrets found 2/5" tracker shows up on the plan page once she finds
+  // her first secret: the wax seal, shaking her phone, opening the letter late at
+  // night, the secret fry-game score, or tapping the journal hearts past 5.
+
+  // A secret high score in the fry game (higher than gameTarget) shows this message.
+  gameSecretScore: 30,
+  gameSecretMessage: "Okay, you're officially better at this than me. Next McDonald's run, you get my fries too 🍟",
+
+  // Shown when she opens the letter between midnight and 4 a.m.
+  lateNightMessage: "Shouldn't you be asleep? …thinking about me? 😏",
+
+  // Shaking her phone on the plan page throws petals and shows one of these.
+  compliments: [
+    "You're annoyingly easy to like.",
+    "You're the reason I keep smiling at my phone.",
+    "You're cuter than a fresh croissant 🥐",
+    "Talking to you is my favorite part of the day.",
+    "I'd share my fries with you. That's how serious this is 🍟",
+    "Even your lazy days are cute.",
+    "10/10, no notes.",
+    "Stop shaking your phone and text me instead 😏",
+    "Shaking your phone won't make me stop thinking about you."
+  ],
+
+  // Unlocked when she finds every secret. Keep the id unused, like the coupons above.
+  secretsCoupon: { id: "secret-hunter", icon: "🗝️", title: "Secret hunter prize", detail: "For finding every secret: a whole date planned by me, every detail a surprise." },
+  allSecretsMessage: "You found every single secret. I knew you would, you little detective 🕵️‍♀️",
+
   // Background music. Leave empty for the built-in music-box melody, or put an
   // .mp3 in the assets folder and set e.g. "assets/our-song.mp3" to loop that instead.
   musicUrl: "",

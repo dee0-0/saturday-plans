@@ -384,6 +384,7 @@
     window.LetterFX?.chime?.();
     secretCard.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "nearest" });
     window.DateApp?.notify(`${herName()} found the secret message 🤫`, "She tapped the wax seal 5 times and unlocked it.", ["lock", "sparkles"]);
+    window.LetterSecrets?.found("seal");
   });
 
   /* ------------------------- Home-screen install ------------------------- */

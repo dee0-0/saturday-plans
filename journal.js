@@ -13,6 +13,7 @@
   const forEl = $("#journal-for");
   const authorButtons = [...form.querySelectorAll("[data-author]")];
   const ratingEl = $("#heart-rating");
+  const heartHint = $("#heart-hint");
   const noteEl = $("#journal-note");
   const photoInput = $("#journal-photo-input");
   const photoPreview = $("#journal-photo-preview");
@@ -35,6 +36,11 @@
   try { author = window.localStorage.getItem(AUTHOR_KEY); } catch { /* Private browsing. */ }
   if (!names[author]) author = null;
   let stars = 0;
+  let overflow = false; // the easter egg: tapped past 5 hearts, so it's ∞ / 5
+  let heartTaps = 0;
+  let heartTimer = null;
+  const OVERFLOW_TAPS = 10;
+  const OVERFLOW_HINTS = ["More than 5? 👀", "Keep going…", "They're filling up…", "Almost overflowing…"];
   let photo; // undefined: keep the saved one · null: remove it · string: new photo
   let entries = [];
   let loaded = false;
@@ -53,7 +59,8 @@
   authorButtons.forEach((button) => { button.textContent = names[button.dataset.author]; });
   ratingEl.innerHTML = [1, 2, 3, 4, 5].map((value) =>
     `<button type="button" role="radio" aria-checked="false" aria-label="${value} heart${value === 1 ? "" : "s"}" data-stars="${value}">${HEART}</button>`
-  ).join("");
+  ).join("") + '<span class="heart-infinity" hidden>∞ / 5</span>';
+  const infinityEl = ratingEl.querySelector(".heart-infinity");
 
   function showError(message) {
     errorEl.textContent = message;
@@ -67,13 +74,48 @@
     prefill();
   }
 
-  function setStars(value) {
+  function setStars(value, infinite = false) {
     stars = value;
+    overflow = value === 5 && infinite;
     ratingEl.querySelectorAll("[data-stars]").forEach((button) => {
       const on = Number(button.dataset.stars) <= value;
       button.classList.toggle("is-on", on);
       button.setAttribute("aria-checked", String(Number(button.dataset.stars) === value));
     });
+    ratingEl.classList.toggle("is-overflowing", overflow);
+    infinityEl.hidden = !overflow;
+  }
+
+  function resetHeartTaps() {
+    heartTaps = 0;
+    window.clearTimeout(heartTimer);
+    heartHint.textContent = "";
+    ratingEl.style.removeProperty("--fill");
+  }
+
+  // Easter egg: keep tapping the fifth heart (10 taps) and the rating overflows into ∞.
+  function countHeartTap(value) {
+    if (value !== 5 || overflow) {
+      resetHeartTaps();
+      return;
+    }
+    heartTaps += 1;
+    window.clearTimeout(heartTimer);
+    heartTimer = window.setTimeout(resetHeartTaps, 2200);
+    const extra = heartTaps - 5;
+    if (heartTaps < OVERFLOW_TAPS) {
+      if (extra > 0) {
+        heartHint.textContent = OVERFLOW_HINTS[extra - 1];
+        ratingEl.style.setProperty("--fill", String(extra / 5));
+      }
+      return;
+    }
+    resetHeartTaps();
+    setStars(5, true);
+    window.LetterSecrets?.rain(["💗", "💖", "💕", "❤️", "💞"], 36);
+    window.LetterFX?.burstFrom(ratingEl, 24);
+    window.LetterFX?.chime?.();
+    window.LetterSecrets?.found("hearts", { icon: "💞", title: "Off the scale!", text: "∞ / 5. I'm taking that as a compliment 💕" });
   }
 
   function setPreview(src) {
@@ -88,7 +130,8 @@
   function prefill() {
     const plan = window.DateApp.plan;
     const review = plan && author ? entries.find((entry) => entry.key === entryKey(plan))?.reviews?.[author] : null;
-    setStars(review?.stars || 0);
+    resetHeartTaps();
+    setStars(review?.stars || 0, Boolean(review?.overflow));
     noteEl.value = review?.note || "";
     photo = undefined;
     setPreview(null);
@@ -109,8 +152,9 @@
     }
   }
 
-  function hearts(count) {
-    return [1, 2, 3, 4, 5].map((value) => `<span class="${value <= count ? "is-on" : ""}">${HEART}</span>`).join("");
+  function hearts(count, infinite) {
+    return [1, 2, 3, 4, 5].map((value) => `<span class="${value <= count ? "is-on" : ""}">${HEART}</span>`).join("")
+      + (infinite ? '<b class="journal-infinity">∞</b>' : "");
   }
 
   function renderList() {
@@ -123,7 +167,7 @@
         const review = entry.reviews?.[who];
         if (!review) return `<div class="journal-review is-pending"><p class="journal-review-head"><span>${escape(names[who])}</span></p><p class="journal-pending">Hasn't written yet</p></div>`;
         return `<div class="journal-review">
-          <p class="journal-review-head"><span>${escape(names[who])}</span><span class="journal-hearts" role="img" aria-label="${review.stars} out of 5 hearts">${hearts(review.stars)}</span></p>
+          <p class="journal-review-head"><span>${escape(names[who])}</span><span class="journal-hearts" role="img" aria-label="${review.overflow ? "Off the scale, infinity" : review.stars} out of 5 hearts">${hearts(review.stars, review.overflow)}</span></p>
           ${review.note ? `<p class="journal-note">“${escape(review.note)}”</p>` : ""}
           ${review.hasPhoto ? `<img class="journal-img" alt="Photo from ${escape(names[who])}" data-key="${escape(entry.key)}" data-author="${who}">` : ""}
         </div>`;
@@ -202,13 +246,16 @@
   authorButtons.forEach((button) => button.addEventListener("click", () => setAuthor(button.dataset.author)));
   ratingEl.addEventListener("click", (event) => {
     const button = event.target.closest("[data-stars]");
-    if (button) setStars(Number(button.dataset.stars));
+    if (!button) return;
+    const value = Number(button.dataset.stars);
+    setStars(value, overflow);
+    countHeartTap(value);
   });
   ratingEl.addEventListener("keydown", (event) => {
     if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
     event.preventDefault();
     const next = Math.min(5, Math.max(1, (stars || 0) + (event.key === "ArrowRight" ? 1 : -1)));
-    setStars(next);
+    setStars(next, overflow);
     ratingEl.querySelector(`[data-stars="${next}"]`)?.focus();
   });
   photoInput.addEventListener("change", async () => {
@@ -246,6 +293,7 @@
       place: plan.place,
       author,
       stars,
+      overflow,
       note: noteEl.value.trim()
     };
     if (photo !== undefined) body.photo = photo;
@@ -258,7 +306,7 @@
       window.LetterFX?.chime?.();
       if (author === "her") {
         window.DateApp.notify(
-          `${names.her} rated your date ${stars}/5 ${stars >= 4 ? "💕" : "💌"}`,
+          overflow ? `${names.her} rated your date ∞/5 💞 (she broke the scale)` : `${names.her} rated your date ${stars}/5 ${stars >= 4 ? "💕" : "💌"}`,
           `${body.activity} · ${window.DateApp.formatDate(body.date)}${body.note ? `\n“${body.note}”` : ""}${addedPhoto ? "\nShe added a photo too." : ""}`,
           ["heart", "star"]
         );
