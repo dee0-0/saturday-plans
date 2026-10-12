@@ -510,11 +510,75 @@
 
     <!-- ===== OUTFITS (outfits.js, planner.css) ===== -->
     <section class="step" data-step="outfits">
+      <p class="eyebrow">Outfit vote</p>
+      <h2>What should I wear?</h2>
+      <p class="planner-for" id="outfit-for" hidden></p>
+      <p class="planner-note" id="outfit-noplan" hidden>Once we have a date planned, we can post outfit ideas here and vote on them together.</p>
+      <div class="outfit-board" id="outfit-board" hidden>
+        <form class="outfit-add" id="outfit-form" novalidate>
+          <input class="visually-hidden" type="file" id="outfit-file" accept="image/*">
+          <label class="outfit-pick-photo" id="outfit-pick" for="outfit-file">
+            <span class="outfit-add-icon"><i class="icon" data-lucide="image-plus" aria-hidden="true"></i></span>
+            <span class="outfit-add-copy"><strong>Add an outfit</strong><small>Snap a mirror pic or pick a photo</small></span>
+            <i class="icon outfit-add-plus" data-lucide="plus" aria-hidden="true"></i>
+          </label>
+          <div class="outfit-draft" id="outfit-draft" hidden>
+            <img class="outfit-draft-img" id="outfit-draft-img" alt="The outfit photo you picked">
+            <div class="outfit-draft-copy">
+              <label for="outfit-title">Name it <span>(optional)</span></label>
+              <input type="text" id="outfit-title" maxlength="60" placeholder="Black dress, white sneakers" autocomplete="off" enterkeyhint="send">
+            </div>
+            <div class="planner-progress" id="outfit-progress" role="progressbar" aria-label="Uploading the photo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span id="outfit-progress-fill"></span></div>
+            <div class="outfit-draft-actions">
+              <button class="btn btn-ghost" id="outfit-cancel" type="button">Cancel</button>
+              <button class="btn btn-primary" id="outfit-post" type="submit">Post outfit <i class="icon" data-lucide="send" aria-hidden="true"></i></button>
+            </div>
+          </div>
+        </form>
+        <p class="error" id="outfit-error" role="alert" hidden></p>
+        <div class="outfit-list" id="outfit-list"></div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="planned" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Our plan</button>
+        <button class="btn btn-secondary" data-action="goto" data-target="snacks" type="button"><i class="icon" data-lucide="popcorn" aria-hidden="true"></i> Snacks</button>
+      </div>
     </section>
     <!-- ===== END OUTFITS ===== -->
 
     <!-- ===== SNACKS (snacks.js, planner.css) ===== -->
     <section class="step" data-step="snacks">
+      <p class="eyebrow">For our date</p>
+      <h2>Snack wishlist</h2>
+      <p class="question-hint">Add whatever you’re craving and tick it off once it’s in the bag. We both see the same list.</p>
+      <form class="snack-form" id="snack-form" novalidate>
+        <label class="visually-hidden" for="snack-input">Add a snack</label>
+        <input type="text" id="snack-input" maxlength="60" placeholder="Add a snack…" autocomplete="off" enterkeyhint="done">
+        <button class="btn btn-primary snack-add" type="submit"><i class="icon" data-lucide="plus" aria-hidden="true"></i> Add</button>
+      </form>
+      <div class="snack-chips" id="snack-chips" role="group" aria-label="Quick add">
+        <button class="snack-chip" type="button" data-snack="Nuggets"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Nuggets</button>
+        <button class="snack-chip" type="button" data-snack="Fries"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Fries</button>
+        <button class="snack-chip" type="button" data-snack="Popcorn"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Popcorn</button>
+        <button class="snack-chip" type="button" data-snack="Croissants"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Croissants</button>
+        <button class="snack-chip" type="button" data-snack="Gummy bears"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Gummy bears</button>
+        <button class="snack-chip" type="button" data-snack="Ice cream"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Ice cream</button>
+        <button class="snack-chip" type="button" data-snack="Chips"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Chips</button>
+        <button class="snack-chip" type="button" data-snack="Chocolate"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Chocolate</button>
+      </div>
+      <p class="error" id="snack-error" role="alert" hidden></p>
+      <ul class="snack-list" id="snack-open" aria-label="Still to get"></ul>
+      <p class="planner-note snack-empty" id="snack-empty">Loading our list…</p>
+      <div class="snack-done" id="snack-done" hidden>
+        <div class="snack-done-head">
+          <p class="snack-done-label">Got it <span id="snack-done-count">0</span></p>
+          <button class="snack-clear" id="snack-clear" type="button"><i class="icon" data-lucide="eraser" aria-hidden="true"></i> Clear done</button>
+        </div>
+        <ul class="snack-list is-done" id="snack-done-list" aria-label="Got it"></ul>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="planned" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Our plan</button>
+        <button class="btn btn-secondary" data-action="goto" data-target="outfits" type="button"><i class="icon" data-lucide="shirt" aria-hidden="true"></i> Outfits</button>
+      </div>
     </section>
     <!-- ===== END SNACKS ===== -->
   </main>
