@@ -90,6 +90,14 @@
     ]);
   }
 
+  // A little tune for the sound-button secret.
+  function melody() {
+    playChime([
+      [783.99, 0], [659.25, .22], [783.99, .44], [1046.5, .66, .5],
+      [987.77, 1.08], [880, 1.3], [783.99, 1.52], [659.25, 1.74], [698.46, 1.96], [783.99, 2.18, .9]
+    ].map(([frequency, delay, duration = .34]) => ({ frequency, delay, duration, volume: .03 })));
+  }
+
   updateSoundToggle();
   soundToggle?.addEventListener("click", () => {
     soundEnabled = !soundEnabled;
@@ -413,6 +421,7 @@
         fallbackBurst();
       },
       chime: chimeSuccess,
+      melody,
       burstFrom,
       scatter,
       burst(x, y, count = 24) { petals.burst(x, y, count); }
@@ -689,6 +698,7 @@
     enterStep,
     celebrate,
     chime: chimeSuccess,
+    melody,
     burstFrom,
     scatter,
     burst: (x, y, n) => petals.burst(x, y, n)

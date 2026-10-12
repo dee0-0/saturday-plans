@@ -40,7 +40,7 @@
   let heartTaps = 0;
   let heartTimer = null;
   const OVERFLOW_TAPS = 10;
-  const OVERFLOW_HINTS = ["More than 5? 👀", "Keep going…", "They're filling up…", "Almost overflowing…"];
+  const OVERFLOW_HINTS = ["More than 5?", "Keep going…", "They're filling up…", "Almost overflowing…"];
   let photo; // undefined: keep the saved one · null: remove it · string: new photo
   let entries = [];
   let loaded = false;
@@ -112,10 +112,10 @@
     }
     resetHeartTaps();
     setStars(5, true);
-    window.LetterSecrets?.rain(["💗", "💖", "💕", "❤️", "💞"], 36);
+    window.LetterSecrets?.spray("hearts", { count: 36 });
     window.LetterFX?.burstFrom(ratingEl, 24);
     window.LetterFX?.chime?.();
-    window.LetterSecrets?.found("hearts", { icon: "💞", title: "Off the scale!", text: "∞ / 5. I'm taking that as a compliment 💕" });
+    window.LetterSecrets?.found("hearts", { toast: { text: "∞ / 5. I'm taking that as a compliment." } });
   }
 
   function setPreview(src) {
