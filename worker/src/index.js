@@ -127,6 +127,8 @@ function normalizeReview(input) {
     place: cleanText(input.place, "Meeting place"),
     author: input.author,
     stars: input.stars,
+    // The "tapped past 5 hearts" easter egg: shown as ∞ / 5.
+    overflow: input.overflow === true && input.stars === 5,
     note: cleanText(input.note, "Note", true),
     photo
   };
@@ -237,7 +239,7 @@ export class PlanStore {
           await txn.delete(photoKey);
           hasPhoto = false;
         }
-        entry.reviews[review.author] = { stars: review.stars, note: review.note, hasPhoto, at: new Date().toISOString() };
+        entry.reviews[review.author] = { stars: review.stars, ...(review.overflow ? { overflow: true } : {}), note: review.note, hasPhoto, at: new Date().toISOString() };
         entries.sort((a, b) => b.key.localeCompare(a.key));
         await txn.put(JOURNAL_KEY, entries);
         return { entries };

@@ -16,6 +16,8 @@
   const tileNote = $("#coupon-tile-note");
   const coupons = Array.isArray(CONFIG.coupons) ? CONFIG.coupons : [];
   const bonus = CONFIG.bonusCoupon || null;
+  // Stays out of sight until she finds every secret (secrets.js).
+  const secretPrize = CONFIG.secretsCoupon || null;
   let state = { redeemed: {}, unlocked: {} };
   // The Worker might still be the old version (before deploy): keep coupons on this device then.
   let localOnly = false;
@@ -31,7 +33,9 @@
   }
 
   function allCoupons() {
-    return bonus ? [...coupons, { ...bonus, bonus: true }] : coupons;
+    const list = bonus ? [...coupons, { ...bonus, bonus: true }] : [...coupons];
+    if (secretPrize && state.unlocked[secretPrize.id]) list.push(secretPrize);
+    return list;
   }
 
   function showError(message) {
@@ -140,17 +144,18 @@
     armTimer = window.setTimeout(disarm, 3500);
   });
 
-  async function unlockBonus() {
-    if (!bonus) return false;
+  // True when this just unlocked it, false when it already was, null when saving failed.
+  async function unlock(coupon) {
+    if (!coupon) return false;
     if (localOnly) {
-      const fresh = !state.unlocked[bonus.id];
-      state.unlocked[bonus.id] = state.unlocked[bonus.id] || new Date().toISOString();
+      const fresh = !state.unlocked[coupon.id];
+      state.unlocked[coupon.id] = state.unlocked[coupon.id] || new Date().toISOString();
       writeLocal();
       render();
       return fresh;
     }
     try {
-      const data = await window.DateApp.apiRequest("/coupons", "POST", { action: "unlock", id: bonus.id });
+      const data = await window.DateApp.apiRequest("/coupons", "POST", { action: "unlock", id: coupon.id });
       state = data.coupons;
       render();
       return Boolean(data.changed);
@@ -158,9 +163,9 @@
       if (error.status === 404) {
         localOnly = true;
         state = readLocal();
-        return unlockBonus();
+        return unlock(coupon);
       }
-      return false;
+      return null;
     }
   }
 
@@ -175,6 +180,8 @@
   const timeEl = $("#game-time");
   const bestEl = $("#game-best");
   const TARGET = Number(CONFIG.gameTarget) || 15;
+  const SECRET_SCORE = window.LetterSecrets?.gameSecretScore ?? Infinity;
+  const secretEl = $("#game-secret");
   const DURATION = 20;
   const BEST_KEY = "date-letter-fry-best";
   const ITEMS = [
@@ -341,6 +348,7 @@
     scoreEl.textContent = "0";
     timeEl.textContent = String(DURATION);
     overlay.hidden = true;
+    secretEl.hidden = true;
     stage.classList.add("is-playing");
     last = performance.now();
     frameId = window.requestAnimationFrame(step);
@@ -363,11 +371,21 @@
     startButton.innerHTML = `Play again ${document.querySelector("svg.lucide-play")?.outerHTML || ""}`;
     const points = `${score} point${score === 1 ? "" : "s"}`;
     if (score >= TARGET) {
-      resultEl.textContent = `${points}! You won 🏆 Your prize coupon is unlocked.`;
+      const legend = score >= SECRET_SCORE;
+      resultEl.textContent = legend
+        ? `${points}!! That's the secret high score 🤯 Your prize coupon is unlocked too.`
+        : `${points}! You won 🏆 Your prize coupon is unlocked.`;
       prizeButton.hidden = false;
-      window.LetterFX?.burstFrom(stage, 40);
+      window.LetterFX?.burstFrom(stage, legend ? 60 : 40);
       window.LetterFX?.chime?.();
-      const fresh = await unlockBonus();
+      if (legend) {
+        secretEl.textContent = CONFIG.gameSecretMessage || "You're officially a fry legend 🍟";
+        secretEl.hidden = false;
+        if (window.LetterSecrets.found("game")) {
+          window.LetterSecrets.notify(`${herName()} hit the secret fry score 🍟🤯`, `She scored ${score} points. The secret score was ${SECRET_SCORE}.`, ["fries", "exploding_head"]);
+        }
+      }
+      const fresh = await unlock(bonus);
       if (fresh) window.DateApp?.notify(`${herName()} won the fry game 🍟🏆`, `She scored ${score} points (needed ${TARGET}) and unlocked the prize coupon.`, ["trophy", "fries"]);
     } else {
       const cheer = score >= TARGET * 0.7 ? "So close!" : "Nice try!";
@@ -413,6 +431,8 @@
   }
 
   /* ------------------------------- Wiring -------------------------------- */
+  window.DateCoupons = { unlockSecretPrize: () => unlock(secretPrize) };
+
   document.addEventListener("date:step", (event) => {
     const { name } = event.detail;
     if (name !== "game") stop();
@@ -421,6 +441,7 @@
       bestEl.textContent = String(best());
       overlay.hidden = false;
       prizeButton.hidden = true;
+      secretEl.hidden = true;
       resultEl.textContent = "Move the bag with your finger to catch what falls.";
       window.requestAnimationFrame(idleScene);
     }

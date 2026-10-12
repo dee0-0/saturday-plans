@@ -17,6 +17,7 @@ A mobile-friendly, one-question-at-a-time date invitation in a soft rose envelop
 - Has a silver scratch card hiding `scratchSecret`, your name written as an animated signature, and a wax seal that reveals `secretMessage` after 5 taps.
 - Love coupons she can redeem once each (you get a notification), plus a 20-second "Catch the fries" game that unlocks a prize coupon.
 - A date journal: after the date has started, each of you can rate it with hearts, write a note and add a photo. Past dates stay as a shared history.
+- A secret hunt with five easter eggs: the wax seal, shaking her phone on the plan page (petals plus a random compliment), opening the letter between midnight and 4 a.m., beating a secret fry-game score, and tapping the fifth journal heart 10 times so the rating overflows into ∞ / 5 with a heart shower. After her first find, a small "Secrets found 2/5" tracker with hints appears on the plan page. Finding all five unlocks a hidden prize coupon. You get a notification for each find.
 - Can be added to the home screen like an app, with its own icon. Sending the link in Snapchat, WhatsApp or iMessage shows a pink envelope preview card.
 
 ## Connect cross-device storage
@@ -37,6 +38,8 @@ Keep the Cloudflare API token in GitHub Secrets; do not put it in `config.js` or
 Edit `config.js` to change the greeting, her name, your name (`yourName`, used for the signature and the journal), the closing note, the scratch-card and secret messages, the coupons, the fry-game target, and the optional push-notification topic. The date, time, activity, and place are chosen in the page itself.
 
 Coupon redemptions are saved by `id`, so give every coupon its own short id and don't reuse an old one for a different coupon.
+
+The secret hunt is set up in the "Secret hunt" part of `config.js`: the secret fry score and its message, the late-night message, the shake compliments, and the prize coupon (`secretsCoupon`) with its last message. On iPhones, Safari only shares motion after she taps "Allow shaking" in the secrets list and says yes. Android phones don't need to ask. Secrets she finds are remembered on her phone, but the prize coupon is saved for both of you. If you open the letter on your own phone and pick your name in the journal, your own finds don't send notifications. The ∞ / 5 rating needs the Worker update in `worker/` to stay saved in the journal.
 
 The link-preview image (`assets/og-preview.jpg`) and app icons (`assets/icon-*.png`, `assets/apple-touch-icon.png`) are plain image files; replace them with same-sized images if you want a different look.
 
