@@ -1,7 +1,8 @@
 /*
- * Date journal: after a date has started, each of you rates it (1–5 hearts),
- * writes a note and can add a photo. Entries are stored in the Worker, so
- * past dates stay as a shared history on both phones.
+ * Our journal: a scrapbook of every date. Once the current date has started,
+ * each of you rates it (1–5 hearts) and writes a note. Every date gets a card
+ * with both reviews, the outfit pick and a shared gallery of photos and videos
+ * (media.js). It all lives in the Worker, so both phones see the same book.
  */
 (function () {
   "use strict";
@@ -15,17 +16,18 @@
   const ratingEl = $("#heart-rating");
   const heartHint = $("#heart-hint");
   const noteEl = $("#journal-note");
-  const photoInput = $("#journal-photo-input");
-  const photoPreview = $("#journal-photo-preview");
-  const photoRemove = $("#journal-photo-remove");
-  const photoLabel = $("#photo-pick-label");
   const saveButton = $("#journal-save");
   const errorEl = $("#journal-error");
+  const savedEl = $("#journal-saved");
   const waitingEl = $("#journal-waiting");
+  const waitingText = $("#journal-waiting-text");
+  const nextButton = $("#journal-next");
   const listEl = $("#journal-list");
+  const mediaInput = $("#journal-media-input");
   const promptEl = $("#journal-prompt");
   const AUTHOR_KEY = "date-letter-author";
-  const MAX_PHOTO_CHARS = 650000;
+  const AUTHORS = ["her", "sender"];
+  const POLL_MS = 20000;
   const names = {
     her: CONFIG.herName || "Her",
     sender: (CONFIG.yourName || "").trim() || "Your date"
@@ -41,20 +43,23 @@
   let heartTimer = null;
   const OVERFLOW_TAPS = 10;
   const OVERFLOW_HINTS = ["More than 5?", "Keep going…", "They're filling up…", "Almost overflowing…"];
-  let photo; // undefined: keep the saved one · null: remove it · string: new photo
   let entries = [];
   let loaded = false;
-  const photoCache = new Map();
+  let loading = null;
+  let listSignature = "";
+  let formKey = "";
+  let formDirty = false; // she's mid-review: polling must not reset the form
+  let pollTimer = null;
+  // Uploads in progress, shown as chips on their date's card.
+  let uploads = [];
+  let uploadSeq = 0;
+  let uploadQueue = Promise.resolve();
+  let pickKey = null;
+  // Review photos from before the gallery existed: "key:who" -> blob URL, null (missing) or a pending promise.
+  const legacyPhotos = new Map();
 
   const escape = (text) => window.DateApp.escapeHtml(text);
-  const entryKey = (plan) => `${plan.date}T${plan.time}`;
-
-  function planStarted(plan) {
-    if (!plan || plan.status !== "confirmed") return false;
-    const [year, month, day] = plan.date.split("-").map(Number);
-    const [hour, minute] = plan.time.split(":").map(Number);
-    return window.DateApp.dateInTimeZone(year, month, day, hour, minute).getTime() <= Date.now();
-  }
+  const plural = (count, word) => `${count} ${word}${count === 1 ? "" : "s"}`;
 
   authorButtons.forEach((button) => { button.textContent = names[button.dataset.author]; });
   ratingEl.innerHTML = [1, 2, 3, 4, 5].map((value) =>
@@ -67,6 +72,21 @@
     errorEl.hidden = !message;
   }
 
+  function refreshIcons(root) {
+    try { window.lucide?.createIcons({ root }); } catch { /* Icons are decoration. */ }
+  }
+
+  function canPlanNext() {
+    return window.DateApp.planStarted(window.DateApp.plan) && typeof window.DateApp.startNextPlan === "function";
+  }
+
+  // A confirmed date that hasn't started yet: the waiting card shows instead of the form.
+  function upcomingPlan() {
+    const plan = window.DateApp.plan;
+    return plan && plan.status === "confirmed" && !window.DateApp.planStarted(plan) ? plan : null;
+  }
+
+  /* ------------------------------ Review form ----------------------------- */
   function setAuthor(value) {
     author = value;
     try { window.localStorage.setItem(AUTHOR_KEY, value); } catch { /* Private browsing. */ }
@@ -118,175 +138,385 @@
     window.LetterSecrets?.found("hearts", { toast: { text: "∞ / 5. I'm taking that as a compliment." } });
   }
 
-  function setPreview(src) {
-    photoPreview.hidden = !src;
-    photoRemove.hidden = !src;
-    if (src) photoPreview.src = src;
-    else photoPreview.removeAttribute("src");
-    photoLabel.textContent = src ? "Change photo" : "Add a photo";
-  }
-
   // Fill the form with what this person already wrote for the current date.
   function prefill() {
     const plan = window.DateApp.plan;
-    const review = plan && author ? entries.find((entry) => entry.key === entryKey(plan))?.reviews?.[author] : null;
+    const review = plan && author ? entries.find((entry) => entry.key === window.DateApp.entryKey(plan))?.reviews?.[author] : null;
     resetHeartTaps();
     setStars(review?.stars || 0, Boolean(review?.overflow));
     noteEl.value = review?.note || "";
-    photo = undefined;
-    setPreview(null);
-    if (review?.hasPhoto) loadPhoto(entryKey(plan), author).then((src) => { if (photo === undefined && src) setPreview(src); });
+    formDirty = false;
     saveButton.firstChild.textContent = review ? "Update my review " : "Save to our journal ";
   }
 
-  async function loadPhoto(key, who) {
-    const cacheKey = `${key}:${who}`;
-    if (photoCache.has(cacheKey)) return photoCache.get(cacheKey);
-    try {
-      const data = await window.DateApp.apiRequest(`/journal/photo?key=${encodeURIComponent(key)}&author=${encodeURIComponent(who)}`);
-      const src = typeof data.photo === "string" && data.photo.startsWith("data:image/") ? data.photo : null;
-      photoCache.set(cacheKey, src);
-      return src;
-    } catch {
-      return null;
-    }
+  function markDirty() {
+    formDirty = true;
+    savedEl.hidden = true;
   }
 
+  /* ------------------------------- Timeline ------------------------------- */
   function hearts(count, infinite) {
     return [1, 2, 3, 4, 5].map((value) => `<span class="${value <= count ? "is-on" : ""}">${HEART}</span>`).join("")
       + (infinite ? '<b class="journal-infinity">∞</b>' : "");
   }
 
-  function renderList() {
-    if (!entries.length) {
-      listEl.innerHTML = '<p class="journal-empty">No dates in here yet. Our first one goes right here.</p>';
+  function dateStamp(iso) {
+    const [year, month, day] = iso.split("-").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day, 12));
+    const part = (options) => new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", ...options }).format(date);
+    return `<span class="scrap-stamp" aria-hidden="true"><strong>${part({ day: "numeric" })}</strong><small>${part({ month: "short" })}</small><small>${part({ year: "numeric" })}</small></span>`;
+  }
+
+  function galleryItems(entry) {
+    const legacy = AUTHORS.filter((who) => entry.reviews?.[who]?.hasPhoto && typeof legacyPhotos.get(`${entry.key}:${who}`) === "string")
+      .map((who) => {
+        const src = legacyPhotos.get(`${entry.key}:${who}`);
+        return { id: `review-photo-${who}`, kind: "photo", author: who, legacy: true, src, thumbSrc: src, at: entry.reviews[who].at };
+      });
+    return [...legacy, ...entry.media];
+  }
+
+  function reviewHtml(entry, who) {
+    const review = entry.reviews?.[who];
+    if (!review) {
+      return `<div class="scrap-review is-pending"><p class="scrap-review-head"><span>${escape(names[who])}</span></p><p class="journal-pending">Hasn't written yet</p></div>`;
+    }
+    const label = review.overflow ? "Off the scale, infinity" : `${review.stars} out of 5 hearts`;
+    return `<div class="scrap-review">
+      <p class="scrap-review-head"><span>${escape(names[who])}</span><span class="journal-hearts" role="img" aria-label="${label}">${hearts(review.stars, review.overflow)}</span></p>
+      ${review.note ? `<p class="journal-note">“${escape(review.note)}”</p>` : ""}
+    </div>`;
+  }
+
+  function outfitHtml(outfit) {
+    if (!outfit?.mediaId) return "";
+    const thumb = window.DateMedia.thumbUrl(outfit.mediaId);
+    return `<button class="scrap-outfit" type="button" data-outfit-media="${escape(outfit.mediaId)}" data-outfit-author="${escape(outfit.author || "")}">
+      <span class="scrap-outfit-photo"><img src="${escape(thumb)}" data-fallback="${escape(window.DateMedia.fileUrl(outfit.mediaId))}" alt="" loading="lazy" decoding="async"></span>
+      <span class="scrap-outfit-copy"><small><i class="icon" data-lucide="shirt" aria-hidden="true"></i> Outfit pick</small><strong>${escape(outfit.title || "The outfit")}</strong></span>
+      <i class="icon scrap-outfit-arrow" data-lucide="chevron-right" aria-hidden="true"></i>
+    </button>`;
+  }
+
+  function chipHtml(job) {
+    const video = job.kind === "video";
+    const state = {
+      queued: "Waiting",
+      preparing: "Preparing",
+      uploading: `${Math.round(job.progress * 100)}%`,
+      done: "Added",
+      error: ""
+    }[job.status];
+    if (job.status === "error") {
+      return `<li class="upload-chip is-error" data-upload="${job.uid}">
+        <i class="icon" data-lucide="circle-alert" aria-hidden="true"></i>
+        <span class="upload-chip-copy"><strong>${escape(job.name)}</strong><small>${escape(job.error)}</small></span>
+        <button class="upload-chip-dismiss" type="button" data-dismiss-upload="${job.uid}" aria-label="Dismiss"><i class="icon" data-lucide="x" aria-hidden="true"></i></button>
+      </li>`;
+    }
+    return `<li class="upload-chip is-${job.status}" data-upload="${job.uid}">
+      <i class="icon" data-lucide="${video ? "film" : "image"}" aria-hidden="true"></i>
+      <span class="upload-chip-name">${escape(job.name)}</span>
+      <span class="upload-chip-state">${state}</span>
+      <span class="upload-chip-bar" aria-hidden="true"><span style="width:${Math.round((job.status === "done" ? 1 : job.progress) * 100)}%"></span></span>
+    </li>`;
+  }
+
+  function chipsHtml(key) {
+    return uploads.filter((job) => job.key === key).map(chipHtml).join("");
+  }
+
+  function entryHtml(entry) {
+    const items = galleryItems(entry);
+    const waitingLegacy = AUTHORS.some((who) => entry.reviews?.[who]?.hasPhoto && legacyPhotos.get(`${entry.key}:${who}`) instanceof Promise);
+    const gallery = items.length
+      ? `<div class="scrap-gallery">${items.map((item) => window.DateMedia.tileHtml(item)).join("")}</div>`
+      : `<p class="scrap-empty">${waitingLegacy ? "Loading photos…" : "No photos or videos yet."}</p>`;
+    return `<article class="scrap${entry.current ? " is-current" : ""}" data-key="${escape(entry.key)}" aria-labelledby="scrap-${escape(entry.key.replace(/\W/g, ""))}">
+      <header class="scrap-head">
+        ${dateStamp(entry.date)}
+        <div class="scrap-title">
+          <h3 id="scrap-${escape(entry.key.replace(/\W/g, ""))}">${escape(entry.activity)}</h3>
+          <p>${escape(window.DateApp.formatDate(entry.date))}${entry.place ? ` · ${escape(entry.place)}` : ""}</p>
+        </div>
+      </header>
+      <div class="scrap-reviews">${AUTHORS.map((who) => reviewHtml(entry, who)).join("")}</div>
+      ${outfitHtml(entry.outfit)}
+      ${gallery}
+      <ul class="scrap-uploads" data-uploads-for="${escape(entry.key)}" aria-live="polite">${chipsHtml(entry.key)}</ul>
+      <button class="scrap-add" type="button" data-add-media="${escape(entry.key)}"><i class="icon" data-lucide="image-plus" aria-hidden="true"></i><span>Add photos &amp; videos</span></button>
+    </article>`;
+  }
+
+  // Remember what had focus, so a background refresh doesn't drop it.
+  function focusedSelector() {
+    const active = document.activeElement;
+    if (!active || !listEl.contains(active)) return null;
+    const card = active.closest("[data-key]");
+    if (!card) return null;
+    const attribute = ["data-media-id", "data-add-media", "data-outfit-media"].find((name) => active.hasAttribute(name));
+    return attribute ? { key: card.dataset.key, attribute, value: active.getAttribute(attribute) } : null;
+  }
+
+  function restoreFocus(saved) {
+    if (!saved) return;
+    const card = [...listEl.querySelectorAll("[data-key]")].find((element) => element.dataset.key === saved.key);
+    const target = card && [...card.querySelectorAll(`[${saved.attribute}]`)].find((element) => element.getAttribute(saved.attribute) === saved.value);
+    target?.focus({ preventScroll: true });
+  }
+
+  function renderList(force = false) {
+    const waiting = Boolean(upcomingPlan());
+    const signature = JSON.stringify([waiting, entries]);
+    if (!force && signature === listSignature) return;
+    listSignature = signature;
+    const focus = focusedSelector();
+    // Before the very first date the waiting card says it all.
+    listEl.innerHTML = entries.length
+      ? entries.map(entryHtml).join("")
+      : waiting ? "" : '<p class="journal-empty">No dates in here yet. Our first one goes right here.</p>';
+    refreshIcons(listEl);
+    restoreFocus(focus);
+  }
+
+  function renderChips(key) {
+    const list = [...listEl.querySelectorAll("[data-uploads-for]")].find((element) => element.dataset.uploadsFor === key);
+    if (!list) return;
+    list.innerHTML = chipsHtml(key);
+    refreshIcons(list);
+  }
+
+  // Progress ticks only touch their own chip.
+  function updateChip(job) {
+    const chip = listEl.querySelector(`[data-upload="${job.uid}"]`);
+    if (!chip || !chip.classList.contains(`is-${job.status}`)) {
+      renderChips(job.key);
       return;
     }
-    listEl.innerHTML = entries.map((entry) => {
-      const reviews = ["her", "sender"].map((who) => {
-        const review = entry.reviews?.[who];
-        if (!review) return `<div class="journal-review is-pending"><p class="journal-review-head"><span>${escape(names[who])}</span></p><p class="journal-pending">Hasn't written yet</p></div>`;
-        return `<div class="journal-review">
-          <p class="journal-review-head"><span>${escape(names[who])}</span><span class="journal-hearts" role="img" aria-label="${review.overflow ? "Off the scale, infinity" : review.stars} out of 5 hearts">${hearts(review.stars, review.overflow)}</span></p>
-          ${review.note ? `<p class="journal-note">“${escape(review.note)}”</p>` : ""}
-          ${review.hasPhoto ? `<img class="journal-img" alt="Photo from ${escape(names[who])}" data-key="${escape(entry.key)}" data-author="${who}">` : ""}
-        </div>`;
-      }).join("");
-      return `<article class="journal-entry">
-        <header><strong>${escape(entry.activity)}</strong><small>${escape(window.DateApp.formatDate(entry.date))} · ${escape(entry.place)}</small></header>
-        <div class="journal-reviews">${reviews}</div>
-      </article>`;
-    }).join("");
-    listEl.querySelectorAll("img[data-key]").forEach(async (img) => {
-      const src = await loadPhoto(img.dataset.key, img.dataset.author);
-      if (src) img.src = src;
-      else img.remove();
+    chip.querySelector(".upload-chip-state").textContent = `${Math.round(job.progress * 100)}%`;
+    chip.querySelector(".upload-chip-bar span").style.width = `${Math.round(job.progress * 100)}%`;
+  }
+
+  /* -------------------------------- Render -------------------------------- */
+  function renderTop() {
+    const plan = upcomingPlan();
+    nextButton.hidden = !canPlanNext();
+    if (!canPlanNext()) savedEl.hidden = true;
+    waitingEl.hidden = !plan || !loaded;
+    if (plan) {
+      waitingText.textContent = entries.length
+        ? `Next up: ${plan.activity} on ${window.DateApp.formatDate(plan.date)}. Afterwards, come back here to rate it and add photos and videos. Both of us can.`
+        : "After our date, come back here to rate it and add photos and videos. Both of us can.";
+    }
+  }
+
+  function renderForm(full) {
+    const plan = window.DateApp.plan;
+    const started = window.DateApp.planStarted(plan);
+    form.hidden = !started || !loaded;
+    if (!started) return;
+    const key = window.DateApp.entryKey(plan);
+    forEl.textContent = `${plan.activity} · ${window.DateApp.formatDate(plan.date)}`;
+    authorButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.author === author)));
+    if (full || key !== formKey || !formDirty) prefill();
+    formKey = key;
+  }
+
+  let arriveTimer = null;
+  function render(full = false) {
+    renderTop();
+    renderForm(full);
+    if (full) {
+      // Cards drift in when the journal opens, not on every background refresh.
+      listEl.classList.add("is-arriving");
+      window.clearTimeout(arriveTimer);
+      arriveTimer = window.setTimeout(() => listEl.classList.remove("is-arriving"), 1200);
+    }
+    renderList(full);
+  }
+
+  /* --------------------------------- Data --------------------------------- */
+  function normalize(list) {
+    return (Array.isArray(list) ? list : [])
+      .filter((entry) => entry && typeof entry.key === "string" && typeof entry.date === "string")
+      .map((entry) => ({
+        ...entry,
+        reviews: entry.reviews && typeof entry.reviews === "object" ? entry.reviews : {},
+        media: Array.isArray(entry.media) ? entry.media.filter((item) => item && item.id) : [],
+        outfit: entry.outfit || null
+      }))
+      .sort((a, b) => b.key.localeCompare(a.key));
+  }
+
+  async function fetchLegacyPhoto(key, who) {
+    try {
+      const data = await window.DateApp.apiRequest(`/journal/photo?key=${encodeURIComponent(key)}&author=${encodeURIComponent(who)}`);
+      if (typeof data.photo !== "string" || !data.photo.startsWith("data:image/")) return null;
+      // A blob URL keeps a 600 KB data URL out of the page markup.
+      try { return URL.createObjectURL(await (await fetch(data.photo)).blob()); } catch { return data.photo; }
+    } catch {
+      return null;
+    }
+  }
+
+  function loadLegacyPhotos() {
+    const pending = [];
+    entries.forEach((entry) => AUTHORS.forEach((who) => {
+      const cacheKey = `${entry.key}:${who}`;
+      if (!entry.reviews?.[who]?.hasPhoto || legacyPhotos.has(cacheKey)) return;
+      const request = fetchLegacyPhoto(entry.key, who).then((src) => legacyPhotos.set(cacheKey, src));
+      legacyPhotos.set(cacheKey, request);
+      pending.push(request);
+    }));
+    if (pending.length) Promise.all(pending).then(() => renderList(true));
+  }
+
+  // `fresh` waits out a refresh that is already running and asks again, for
+  // when the answer has to include something that just changed.
+  function load({ full = false, fresh = false } = {}) {
+    if (loading) return loading.then(() => (fresh ? load({ full }) : full ? render(true) : undefined));
+    loading = (async () => {
+      try {
+        entries = normalize((await window.DateApp.apiRequest("/journal")).entries);
+        loaded = true;
+      } catch (error) {
+        // A failed background refresh keeps the last good journal on screen.
+        if (loaded) return;
+        listSignature = "";
+        listEl.innerHTML = `<p class="journal-empty">${error.status === 404
+          ? "The journal needs the latest server update first."
+          : "Couldn’t load the journal. Check your connection and try again."}</p>`;
+        form.hidden = true;
+        waitingEl.hidden = true;
+        nextButton.hidden = !canPlanNext();
+        return;
+      }
+      render(full);
+      loadLegacyPhotos();
+    })().finally(() => { loading = null; });
+    return loading;
+  }
+
+  function startPolling() {
+    window.clearInterval(pollTimer);
+    pollTimer = window.setInterval(() => {
+      if (!document.hidden && window.DateApp.step === "journal") load();
+    }, POLL_MS);
+  }
+
+  function stopPolling() {
+    window.clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
+  /* -------------------------------- Uploads ------------------------------- */
+  function describeBatch(photos, videos) {
+    return [photos ? plural(photos, "photo") : "", videos ? plural(videos, "video") : ""].filter(Boolean).join(" and ");
+  }
+
+  async function runBatch(key, jobs, files) {
+    let photos = 0;
+    let videos = 0;
+    for (const [index, job] of jobs.entries()) {
+      job.status = "preparing";
+      renderChips(key);
+      try {
+        const media = await window.DateMedia.upload(files[index], {
+          key,
+          scope: "journal",
+          onProgress(fraction) {
+            const changed = job.status !== "uploading";
+            job.status = "uploading";
+            job.progress = fraction;
+            if (changed) renderChips(key);
+            else updateChip(job);
+          }
+        });
+        job.status = "done";
+        if (media?.kind === "video") videos += 1;
+        else photos += 1;
+      } catch (error) {
+        job.status = "error";
+        job.error = error.message || "That one didn’t upload. Please try again.";
+      }
+      renderChips(key);
+    }
+    uploads = uploads.filter((job) => !(jobs.includes(job) && job.status === "done"));
+    await load({ fresh: true });
+    renderList(true);
+    if (!photos && !videos) return;
+    window.LetterFX?.chime?.();
+    if (window.DateApp.me() === "her") {
+      const entry = entries.find((item) => item.key === key);
+      window.DateApp.notify(
+        `${names.her} added ${describeBatch(photos, videos)} to ${entry?.activity || "our journal"}`,
+        entry ? `${window.DateApp.formatDate(entry.date)} · ${entry.place}` : "Open our journal to see them.",
+        ["camera"]
+      );
+    }
+  }
+
+  function queueUploads(key, files) {
+    const jobs = files.map((file) => ({
+      uid: ++uploadSeq,
+      key,
+      name: file.name || "Photo",
+      kind: String(file.type).startsWith("video/") || /\.(mov|mp4|m4v|webm|qt)$/i.test(file.name || "") ? "video" : "photo",
+      status: "queued",
+      progress: 0,
+      error: ""
+    }));
+    uploads.push(...jobs);
+    renderChips(key);
+    // One file at a time keeps memory low on the phone.
+    uploadQueue = uploadQueue.then(() => runBatch(key, jobs, files)).catch(() => {});
+  }
+
+  const uploading = () => uploads.some((job) => ["queued", "preparing", "uploading"].includes(job.status));
+
+  function openGallery(card, tile) {
+    const entry = entries.find((item) => item.key === card.dataset.key);
+    if (!entry) return;
+    const items = galleryItems(entry);
+    const index = items.findIndex((item) => String(item.id) === tile.dataset.mediaId);
+    window.DateMedia.view(items, Math.max(0, index), {
+      onDelete: () => load({ fresh: true })
     });
   }
 
-  function render() {
-    const plan = window.DateApp.plan;
-    const canRate = planStarted(plan);
-    form.hidden = !canRate || !loaded;
-    waitingEl.hidden = canRate || !plan || plan.status !== "confirmed";
-    if (canRate) {
-      forEl.textContent = `${plan.activity} · ${window.DateApp.formatDate(plan.date)}`;
-      authorButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.author === author)));
-      prefill();
-    }
-    renderList();
-  }
-
-  async function load() {
-    showError("");
-    try {
-      entries = (await window.DateApp.apiRequest("/journal")).entries || [];
-      loaded = true;
-    } catch (error) {
-      loaded = false;
-      listEl.innerHTML = `<p class="journal-empty">${error.status === 404
-        ? "The journal needs the latest server update first."
-        : "Couldn’t load the journal. Check your connection and try again."}</p>`;
-      form.hidden = true;
-      return;
-    }
-    render();
-  }
-
-  async function shrinkPhoto(file) {
-    let source;
-    try {
-      source = await createImageBitmap(file);
-    } catch {
-      source = await new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = URL.createObjectURL(file);
-      });
-    }
-    const naturalWidth = source.width || source.naturalWidth;
-    const naturalHeight = source.height || source.naturalHeight;
-    let maxSide = 1280;
-    let quality = 0.82;
-    const canvas = document.createElement("canvas");
-    for (let attempt = 0; attempt < 6; attempt += 1) {
-      const scale = Math.min(1, maxSide / Math.max(naturalWidth, naturalHeight));
-      canvas.width = Math.round(naturalWidth * scale);
-      canvas.height = Math.round(naturalHeight * scale);
-      canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
-      const data = canvas.toDataURL("image/jpeg", quality);
-      if (data.length <= MAX_PHOTO_CHARS) return data;
-      maxSide *= 0.8;
-      quality = Math.max(0.55, quality - 0.07);
-    }
-    throw new Error("That photo is too large. Try another one.");
-  }
-
-  authorButtons.forEach((button) => button.addEventListener("click", () => setAuthor(button.dataset.author)));
+  /* -------------------------------- Events -------------------------------- */
+  authorButtons.forEach((button) => button.addEventListener("click", () => {
+    setAuthor(button.dataset.author);
+    savedEl.hidden = true;
+  }));
   ratingEl.addEventListener("click", (event) => {
     const button = event.target.closest("[data-stars]");
     if (!button) return;
     const value = Number(button.dataset.stars);
+    markDirty();
     setStars(value, overflow);
     countHeartTap(value);
   });
   ratingEl.addEventListener("keydown", (event) => {
     if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
     event.preventDefault();
+    markDirty();
     const next = Math.min(5, Math.max(1, (stars || 0) + (event.key === "ArrowRight" ? 1 : -1)));
     setStars(next, overflow);
     ratingEl.querySelector(`[data-stars="${next}"]`)?.focus();
   });
-  photoInput.addEventListener("change", async () => {
-    const file = photoInput.files?.[0];
-    photoInput.value = "";
-    if (!file) return;
-    showError("");
-    photoLabel.textContent = "Preparing photo…";
-    try {
-      photo = await shrinkPhoto(file);
-      setPreview(photo);
-    } catch (error) {
-      showError(error.message || "That photo couldn't be read.");
-      photoLabel.textContent = "Add a photo";
-    }
-  });
-  photoRemove.addEventListener("click", () => {
-    photo = null;
-    setPreview(null);
-  });
+  noteEl.addEventListener("input", markDirty);
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const plan = window.DateApp.plan;
-    if (!planStarted(plan)) return;
+    if (!window.DateApp.planStarted(plan)) return;
     if (!author) { showError("Tap who's writing first."); return; }
     if (!stars) { showError("Pick 1 to 5 hearts."); return; }
     showError("");
     saveButton.disabled = true;
     const body = {
-      key: entryKey(plan),
+      key: window.DateApp.entryKey(plan),
       date: plan.date,
       time: plan.time,
       activity: plan.activity,
@@ -296,18 +526,26 @@
       overflow,
       note: noteEl.value.trim()
     };
-    if (photo !== undefined) body.photo = photo;
-    const addedPhoto = typeof photo === "string";
     try {
-      entries = (await window.DateApp.apiRequest("/journal", "PUT", body)).entries || [];
-      if (photo !== undefined) photoCache.set(`${body.key}:${author}`, photo);
-      render();
+      const saved = normalize((await window.DateApp.apiRequest("/journal", "PUT", body)).entries);
+      // PUT answers with the reviews only; the full scrapbook comes from GET.
+      const review = saved.find((entry) => entry.key === body.key)?.reviews;
+      const mine = entries.find((entry) => entry.key === body.key);
+      if (review && mine) mine.reviews = review;
+      else if (review) {
+        const { key, date, time, activity, place } = body;
+        entries = normalize([{ key, date, time, activity, place, current: true, reviews: review }, ...entries]);
+      }
+      formDirty = false;
+      render(true);
+      load({ fresh: true });
+      savedEl.hidden = !canPlanNext();
       window.LetterFX?.burstFrom(saveButton, 26);
       window.LetterFX?.chime?.();
       if (author === "her") {
         window.DateApp.notify(
           overflow ? `${names.her} rated your date ∞/5 💞 (she broke the scale)` : `${names.her} rated your date ${stars}/5 ${stars >= 4 ? "💕" : "💌"}`,
-          `${body.activity} · ${window.DateApp.formatDate(body.date)}${body.note ? `\n“${body.note}”` : ""}${addedPhoto ? "\nShe added a photo too." : ""}`,
+          `${body.activity} · ${window.DateApp.formatDate(body.date)}${body.note ? `\n“${body.note}”` : ""}`,
           ["heart", "star"]
         );
       }
@@ -318,10 +556,74 @@
     }
   });
 
+  [nextButton, $("#journal-saved-next")].forEach((button) => button?.addEventListener("click", () => {
+    window.DateApp.startNextPlan?.();
+  }));
+
+  listEl.addEventListener("click", (event) => {
+    const card = event.target.closest("[data-key]");
+    if (!card) return;
+    const tile = event.target.closest(".media-tile");
+    if (tile) { openGallery(card, tile); return; }
+    const add = event.target.closest("[data-add-media]");
+    if (add) {
+      pickKey = add.dataset.addMedia;
+      mediaInput.click();
+      return;
+    }
+    const outfit = event.target.closest("[data-outfit-media]");
+    if (outfit) {
+      window.DateMedia.view([{ id: outfit.dataset.outfitMedia, kind: "photo", author: outfit.dataset.outfitAuthor, hasThumb: true }], 0, { canDelete: false });
+      return;
+    }
+    const dismiss = event.target.closest("[data-dismiss-upload]");
+    if (dismiss) {
+      uploads = uploads.filter((job) => String(job.uid) !== dismiss.dataset.dismissUpload);
+      renderChips(card.dataset.key);
+      card.querySelector("[data-add-media]")?.focus({ preventScroll: true });
+    }
+  });
+
+  // The outfit thumbnail falls back to the full photo, then hides.
+  listEl.addEventListener("error", (event) => {
+    const img = event.target;
+    if (!(img instanceof HTMLImageElement) || !img.closest(".scrap-outfit")) return;
+    if (img.dataset.fallback) {
+      img.src = img.dataset.fallback;
+      delete img.dataset.fallback;
+    } else {
+      img.closest(".scrap-outfit-photo").classList.add("is-missing");
+      img.remove();
+    }
+  }, true);
+
+  mediaInput.addEventListener("change", () => {
+    const files = [...(mediaInput.files || [])];
+    const key = pickKey;
+    mediaInput.value = "";
+    pickKey = null;
+    if (files.length && key) queueUploads(key, files);
+  });
+
+  window.addEventListener("beforeunload", (event) => {
+    if (!uploading()) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
+
   document.addEventListener("date:plan", (event) => {
-    if (promptEl) promptEl.hidden = !planStarted(event.detail.plan);
+    if (promptEl) promptEl.hidden = !window.DateApp.planStarted(event.detail.plan);
   });
   document.addEventListener("date:step", (event) => {
-    if (event.detail.name === "journal") load();
+    if (event.detail.name === "journal") {
+      savedEl.hidden = true;
+      load({ full: true });
+      startPolling();
+    } else {
+      stopPolling();
+    }
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && window.DateApp?.step === "journal") load();
   });
 })();
