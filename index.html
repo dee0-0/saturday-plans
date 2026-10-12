@@ -466,6 +466,11 @@
     <section class="step" data-step="journal">
       <p class="eyebrow">Our date journal</p>
       <h2>Our dates, remembered</h2>
+      <button class="journal-next" id="journal-next" type="button" hidden>
+        <span class="journal-next-icon"><i class="icon" data-lucide="calendar-heart" aria-hidden="true"></i></span>
+        <span><strong>What's next?</strong><small>Pick our next date together</small></span>
+        <i class="icon" data-lucide="arrow-right" aria-hidden="true"></i>
+      </button>
       <form class="journal-form" id="journal-form" hidden novalidate>
         <p class="journal-for" id="journal-for"></p>
         <p class="field-label">Who's writing?</p>
@@ -478,17 +483,20 @@
         <p class="heart-hint" id="heart-hint" aria-live="polite"></p>
         <label for="journal-note">A few words</label>
         <textarea id="journal-note" maxlength="400" rows="3" placeholder="Best part, funniest moment, who stole whose fries…"></textarea>
-        <div class="journal-photo">
-          <label class="photo-pick" for="journal-photo-input"><i class="icon" data-lucide="image-plus" aria-hidden="true"></i><span id="photo-pick-label">Add a photo</span></label>
-          <input class="visually-hidden" type="file" id="journal-photo-input" accept="image/*">
-          <img class="journal-photo-preview" id="journal-photo-preview" alt="The photo you picked" hidden>
-          <button class="btn btn-ghost journal-photo-remove" id="journal-photo-remove" type="button" hidden>Remove photo</button>
-        </div>
+        <p class="journal-form-hint"><i class="icon" data-lucide="images" aria-hidden="true"></i><span>Photos and videos go on our date's page in the scrapbook below.</span></p>
         <button class="btn btn-primary journal-save" id="journal-save" type="submit">Save to our journal <i class="icon" data-lucide="heart" aria-hidden="true"></i></button>
         <p class="error" id="journal-error" hidden></p>
+        <div class="journal-saved" id="journal-saved" role="status" hidden>
+          <span class="journal-saved-copy"><strong>Saved to our journal</strong><small>Ready to plan the next one?</small></span>
+          <button class="btn btn-secondary journal-saved-next" id="journal-saved-next" type="button">What's next? <i class="icon" data-lucide="arrow-right" aria-hidden="true"></i></button>
+        </div>
       </form>
-      <p class="journal-waiting" id="journal-waiting" hidden>After our date, come back here to rate it and add a photo. Both of us can.</p>
+      <div class="journal-waiting" id="journal-waiting" hidden>
+        <span class="journal-waiting-icon"><i class="icon" data-lucide="hourglass" aria-hidden="true"></i></span>
+        <p id="journal-waiting-text">After our date, come back here to rate it and add photos and videos. Both of us can.</p>
+      </div>
       <div class="journal-list" id="journal-list"></div>
+      <input class="visually-hidden" type="file" id="journal-media-input" accept="image/*,video/*" multiple tabindex="-1" aria-hidden="true">
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="planned" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Our plan</button>
       </div>
