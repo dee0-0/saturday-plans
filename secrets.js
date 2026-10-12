@@ -93,17 +93,21 @@
     }[character]));
   }
 
-  const found = storedSet(FOUND_KEY);
+  // Opening the letter once with ?me marks the phone as yours (same as picking
+  // your name in the journal).
+  if (new URLSearchParams(window.location.search).has("me")) save("date-letter-author", "sender");
+  // Your own phone doesn't count as hers: it shows her progress from the server,
+  // your taps don't count or notify, and they never unlock her prize.
+  const isOwnPhone = () => !preview && stored("date-letter-author") === "sender";
+  const ownPhone = isOwnPhone();
+
+  const found = ownPhone ? new Set() : storedSet(FOUND_KEY);
   const hintsShown = storedSet(HINTS_KEY);
   // The wax seal is older than the tracker, so a seal she already opened counts.
-  if (!preview && stored("date-letter-secret") === "1") found.add("seal");
+  if (!preview && !ownPhone && stored("date-letter-secret") === "1") found.add("seal");
 
   const foundCount = () => SECRETS.filter((secret) => found.has(secret.id)).length;
   const complete = () => foundCount() === SECRETS.length;
-
-  // Your own phone (you picked your name in the journal) doesn't count as hers:
-  // no notifications for your finds, and they never unlock her prize.
-  const isOwnPhone = () => !preview && stored("date-letter-author") === "sender";
   function notify(title, message, tags) {
     if (isOwnPhone()) return Promise.resolve(false);
     return window.DateApp?.notify(title, message, tags) ?? Promise.resolve(false);
@@ -315,10 +319,15 @@
   function markFound(id, { toast: custom, detail = "", quietRepeat = false } = {}) {
     const secret = byId[id];
     if (!secret) return false;
+    if (ownPhone) {
+      if (custom !== false) toast({ icon: secret.icon, title: secret.name, text: secret.reward(), ...custom, note: "Your phone · doesn't count for her" });
+      return false;
+    }
     const fresh = !found.has(id);
     if (fresh) {
       found.add(id);
       save(FOUND_KEY, JSON.stringify([...found]));
+      postFound(id);
     }
     const count = foundCount();
     const total = SECRETS.length;
@@ -510,11 +519,37 @@
     markFound("sound");
   });
 
+  /* ---------------------------- Server sync ------------------------------ */
+  // Her finds are saved in the shared store too, so your phone shows her hunt.
+  function postFound(id) {
+    if (ownPhone) return;
+    window.DateApp?.apiRequest("/secrets", "POST", { id }).catch(() => { /* Sent again on the next sync. */ });
+  }
+
+  async function syncWithServer() {
+    if (!window.DateApp) return;
+    let saved;
+    try { saved = (await window.DateApp.apiRequest("/secrets")).found || []; } catch { return; }
+    const before = foundCount();
+    saved.forEach((id) => { if (byId[id]) found.add(id); });
+    if (!ownPhone) {
+      // Finds from before the server kept them, or that couldn't be sent.
+      [...found].filter((id) => byId[id] && !saved.includes(id)).forEach(postFound);
+      save(FOUND_KEY, JSON.stringify([...found]));
+    }
+    if (foundCount() !== before) renderTracker();
+    if (!ownPhone && complete()) claimPrize();
+  }
+  window.setInterval(() => {
+    if (!document.hidden && window.DateApp?.step === "planned") syncWithServer();
+  }, 30000);
+
   /* ------------------------------- Wiring -------------------------------- */
   document.addEventListener("date:step", (event) => {
     if (event.detail.name !== "planned") return;
     renderTracker();
     if (complete()) claimPrize();
+    syncWithServer();
   });
   renderTracker();
 
