@@ -243,6 +243,8 @@ body.petals-in-front .petal-canvas { z-index: 2; opacity: 1; }
 }
 .secret-toast.is-visible { opacity: 1; pointer-events: auto; transform: translate(-50%, 0) scale(1); }
 body.has-preview-bar .secret-toast { bottom: max(66px, calc(env(safe-area-inset-bottom) + 60px)); }
+/* Keep her name in the footer (a secret) above the preview bar. */
+body.has-preview-bar .page-note { margin-bottom: 44px; }
 .secret-toast-icon { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border-radius: 11px; background: var(--rose); color: #fff; }
 .secret-toast-icon .icon, .secret-toast-icon .lucide, .secret-toast-icon svg { width: 19px; height: 19px; }
 .secret-toast-copy { display: grid; gap: 2px; min-width: 0; padding-top: 1px; }

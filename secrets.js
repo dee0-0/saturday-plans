@@ -12,8 +12,9 @@
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const herName = () => CONFIG.herName || "She";
   const preview = new URLSearchParams(window.location.search).has("preview");
-  const FOUND_KEY = "date-letter-secrets";
-  const HINTS_KEY = "date-letter-secret-hints";
+  // Preview keeps its own finds and hints, so testing never counts toward her letter.
+  const FOUND_KEY = preview ? "date-letter-secrets-preview" : "date-letter-secrets";
+  const HINTS_KEY = preview ? "date-letter-secret-hints-preview" : "date-letter-secret-hints";
   // The prize lives in the shared store, and preview has its own store.
   const REWARD_KEY = preview ? "date-letter-secrets-reward-preview" : "date-letter-secrets-reward";
   const MOTION_KEY = "date-letter-motion";
@@ -95,14 +96,16 @@
   const found = storedSet(FOUND_KEY);
   const hintsShown = storedSet(HINTS_KEY);
   // The wax seal is older than the tracker, so a seal she already opened counts.
-  if (stored("date-letter-secret") === "1") found.add("seal");
+  if (!preview && stored("date-letter-secret") === "1") found.add("seal");
 
   const foundCount = () => SECRETS.filter((secret) => found.has(secret.id)).length;
   const complete = () => foundCount() === SECRETS.length;
 
-  // Your own phone (you picked your name in the journal) doesn't report your finds as hers.
+  // Your own phone (you picked your name in the journal) doesn't count as hers:
+  // no notifications for your finds, and they never unlock her prize.
+  const isOwnPhone = () => !preview && stored("date-letter-author") === "sender";
   function notify(title, message, tags) {
-    if (!preview && stored("date-letter-author") === "sender") return Promise.resolve(false);
+    if (isOwnPhone()) return Promise.resolve(false);
     return window.DateApp?.notify(title, message, tags) ?? Promise.resolve(false);
   }
 
@@ -281,7 +284,7 @@
   }
 
   async function claimPrize() {
-    if (stored(REWARD_KEY) === "1" || !window.DateCoupons) return;
+    if (stored(REWARD_KEY) === "1" || !window.DateCoupons || isOwnPhone()) return;
     const unlocked = await window.DateCoupons.unlockSecretPrize();
     // null means the request failed; it tries again next time the plan page opens.
     if (unlocked !== null) save(REWARD_KEY, "1");
@@ -492,15 +495,16 @@
 
   // Sound off and on three times: a little melody.
   const soundToggle = $("#sound-toggle");
-  let soundFlips = 0;
+  let soundOns = 0;
   let soundTimer = null;
   soundToggle?.addEventListener("click", () => {
-    soundFlips += 1;
     window.clearTimeout(soundTimer);
-    soundTimer = window.setTimeout(() => { soundFlips = 0; }, 1500);
-    // Off and on three times is six flips, and it has to end with the sound on.
-    if (soundFlips < 6 || soundToggle.getAttribute("aria-pressed") !== "true") return;
-    soundFlips = 0;
+    soundTimer = window.setTimeout(() => { soundOns = 0; }, 1500);
+    if (soundToggle.getAttribute("aria-pressed") !== "true") return;
+    // Counting switches to "on", so it works whether the sound started on or off.
+    soundOns += 1;
+    if (soundOns < 3) return;
+    soundOns = 0;
     window.LetterMusic?.duck?.(3.4);
     window.setTimeout(() => window.LetterFX?.melody?.(), 250);
     markFound("sound");

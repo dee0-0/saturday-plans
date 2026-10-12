@@ -381,6 +381,8 @@
 
   async function finish() {
     stop();
+    // Read before anything awaits: "Play again" resets the count for the next round.
+    const caughtBroccoli = broccoli;
     const previousBest = best();
     if (score > previousBest) {
       try { window.localStorage.setItem(BEST_KEY, String(score)); } catch { /* Private browsing. */ }
@@ -413,8 +415,8 @@
       resultEl.textContent = `${points}. You need ${TARGET} to win. ${cheer} One more round?`;
       prizeButton.hidden = !state.unlocked[bonus?.id];
     }
-    if (broccoli >= 5) {
-      window.LetterSecrets?.found("broccoli", { detail: `She caught ${broccoli} broccoli in one round.`, quietRepeat: true });
+    if (caughtBroccoli >= 5) {
+      window.LetterSecrets?.found("broccoli", { detail: `She caught ${caughtBroccoli} broccoli in one round.`, quietRepeat: true });
     }
   }
 
