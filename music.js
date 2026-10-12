@@ -25,6 +25,7 @@
   let unlocked = false;
   let playing = false;
   let stopTimer = null;
+  let duckTimer = null;
 
   function ensureContext() {
     if (ctx) return true;
@@ -236,6 +237,13 @@
       enabled = on;
       if (on) { unlocked = true; start(); }
       else stop();
+    },
+    // Quieter for a few seconds, so the sound-button secret's melody comes through.
+    duck(seconds) {
+      if (!playing) return;
+      rampTo(url ? 0.15 : 0.3, 0.3);
+      window.clearTimeout(duckTimer);
+      duckTimer = window.setTimeout(() => { if (playing) rampTo(url ? 0.8 : 1.7, 1.2); }, seconds * 1000);
     }
   };
 })();

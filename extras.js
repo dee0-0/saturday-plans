@@ -8,7 +8,6 @@
 
   const $ = (selector) => document.querySelector(selector);
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const herName = () => CONFIG.herName || "She";
 
   function stored(key) {
     try { return window.localStorage.getItem(key); } catch { return null; }
@@ -165,6 +164,18 @@
   let strokes = 0;
 
   if (scratchSecret) scratchSecret.textContent = CONFIG.scratchSecret || "You're my favorite person.";
+  const scratchPs = $("#scratch-ps");
+  if (scratchPs) scratchPs.textContent = CONFIG.scratchSecretTwo || "P.S. The wish never expires.";
+  function showScratchPs() {
+    if (scratchPs) scratchPs.hidden = !(scratchRevealed && window.LetterSecrets?.isFound("scratch"));
+  }
+  // Secret: once the card is scratched, five taps on its message reveal a P.S.
+  window.LetterSecrets?.onTaps(scratchSecret, 5, () => {
+    if (!scratchRevealed) return;
+    window.LetterSecrets.found("scratch");
+    showScratchPs();
+    window.LetterFX?.burstFrom(scratchCard, 18);
+  }, { onTap: () => window.LetterSecrets.nudge(scratchSecret) });
 
   function paintFoil(width, height) {
     const ctx = foilContext;
@@ -196,6 +207,7 @@
     if (!scratchCard) return;
     scratchCard.classList.toggle("is-revealed", scratchRevealed);
     scratchSkip.hidden = scratchRevealed;
+    showScratchPs();
     if (scratchRevealed) {
       scratchSecret.removeAttribute("aria-hidden");
       return;
@@ -351,6 +363,34 @@
     signatureObserver.observe(signature);
   }
 
+  // Secret: hold the signature for 2 seconds and it rewrites itself as the nickname.
+  let holdTimer = null;
+  let holdStart = null;
+  function cancelHold() {
+    window.clearTimeout(holdTimer);
+    holdStart = null;
+    signature?.classList.remove("is-holding");
+  }
+  signature?.addEventListener("pointerdown", (event) => {
+    holdStart = { x: event.clientX, y: event.clientY };
+    signature.classList.add("is-holding");
+    window.clearTimeout(holdTimer);
+    holdTimer = window.setTimeout(() => {
+      cancelHold();
+      const nickname = (CONFIG.signatureNickname || "").trim() || "Yours ♡";
+      signatureText.textContent = nickname;
+      $("#signature-label").textContent = `Signed, ${nickname}`;
+      signatureReveal.setAttribute("width", "0");
+      writeSignature();
+      window.LetterSecrets?.found("signature");
+    }, 2000);
+  });
+  signature?.addEventListener("pointermove", (event) => {
+    if (holdStart && Math.hypot(event.clientX - holdStart.x, event.clientY - holdStart.y) > 12) cancelHold();
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach((type) => signature?.addEventListener(type, cancelHold));
+  signature?.addEventListener("contextmenu", (event) => event.preventDefault());
+
   /* ------------------------ Wax seal easter egg -------------------------- */
   const sealStamp = $("#seal-stamp");
   const sealHint = $("#seal-hint");
@@ -383,8 +423,7 @@
     window.LetterFX?.burstFrom(sealStamp, 30);
     window.LetterFX?.chime?.();
     secretCard.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "nearest" });
-    window.DateApp?.notify(`${herName()} found the secret message 🤫`, "She tapped the wax seal 5 times and unlocked it.", ["lock", "sparkles"]);
-    window.LetterSecrets?.found("seal");
+    window.LetterSecrets?.found("seal", { detail: "She tapped the wax seal 5 times." });
   });
 
   /* ------------------------- Home-screen install ------------------------- */

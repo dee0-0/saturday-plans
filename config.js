@@ -24,7 +24,7 @@ const CONFIG = {
   scratchSecret: "Plot twist: you get one wish. Ask me for anything you want ✨",
 
   // Revealed when she taps the little wax seal next to your signature 5 times.
-  secretMessage: "You found the secret! 🤫 I smiled the whole time I was making this for you.",
+  secretMessage: "You found the secret! I smiled the whole time I was making this for you.",
 
   // Coupons she can redeem. You get a notification each time.
   // Keep each id short, lowercase, with dashes only, and never reuse one.
@@ -44,33 +44,45 @@ const CONFIG = {
   gameTarget: 15,
 
   // ---- Secret hunt ----
-  // A small "Secrets found 2/5" tracker shows up on the plan page once she finds
-  // her first secret: the wax seal, shaking her phone, opening the letter late at
-  // night, the secret fry-game score, or tapping the journal hearts past 5.
+  // 16 easter eggs are hidden around the letter. A "Secret hunt" tracker with a
+  // progress bar and hints shows up on the plan page once she finds the first
+  // one, and finding all of them unlocks secretsCoupon.
+
+  // Tapping the big heart above "The plan is set!" five times.
+  heartMessage: "You stole my heart. Please return it in person.",
+
+  // Holding your signature for two seconds rewrites it as this.
+  signatureNickname: "Yours ♡",
+
+  // Tapping the weather card three times shows this forecast instead.
+  fakeForecast: "100% chance of me annoying you",
+
+  // Five taps on the scratch card's message (after it's scratched) add this line.
+  scratchSecretTwo: "P.S. The wish never expires.",
 
   // A secret high score in the fry game (higher than gameTarget) shows this message.
   gameSecretScore: 30,
-  gameSecretMessage: "Okay, you're officially better at this than me. Next McDonald's run, you get my fries too 🍟",
+  gameSecretMessage: "Okay, you're officially better at this than me. Next McDonald's run, you get my fries too.",
 
   // Shown when she opens the letter between midnight and 4 a.m.
-  lateNightMessage: "Shouldn't you be asleep? …thinking about me? 😏",
+  lateNightMessage: "Shouldn't you be asleep? …thinking about me?",
 
   // Shaking her phone on the plan page throws petals and shows one of these.
   compliments: [
     "You're annoyingly easy to like.",
     "You're the reason I keep smiling at my phone.",
-    "You're cuter than a fresh croissant 🥐",
+    "You're cuter than a fresh croissant.",
     "Talking to you is my favorite part of the day.",
-    "I'd share my fries with you. That's how serious this is 🍟",
+    "I'd share my fries with you. That's how serious this is.",
     "Even your lazy days are cute.",
     "10/10, no notes.",
-    "Stop shaking your phone and text me instead 😏",
+    "Stop shaking your phone and text me instead.",
     "Shaking your phone won't make me stop thinking about you."
   ],
 
-  // Unlocked when she finds every secret. Keep the id unused, like the coupons above.
+  // Unlocked only when she finds every secret. Keep the id unused, like the coupons above.
   secretsCoupon: { id: "secret-hunter", icon: "🗝️", title: "Secret hunter prize", detail: "For finding every secret: a whole date planned by me, every detail a surprise." },
-  allSecretsMessage: "You found every single secret. I knew you would, you little detective 🕵️‍♀️",
+  allSecretsMessage: "You found every single secret. I knew you would, you little detective.",
 
   // Background music. Leave empty for the built-in music-box melody, or put an
   // .mp3 in the assets folder and set e.g. "assets/our-song.mp3" to loop that instead.

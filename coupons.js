@@ -144,6 +144,22 @@
     armTimer = window.setTimeout(disarm, 3500);
   });
 
+  // Secret: five taps on the fry-game prize coupon itself (not its button).
+  let prizeTaps = 0;
+  let prizeTimer = null;
+  list?.addEventListener("click", (event) => {
+    const ticket = event.target.closest(".coupon");
+    if (!bonus || !ticket || ticket.dataset.id !== bonus.id || event.target.closest("button")) return;
+    window.LetterSecrets?.nudge(ticket);
+    prizeTaps += 1;
+    window.clearTimeout(prizeTimer);
+    prizeTimer = window.setTimeout(() => { prizeTaps = 0; }, 1500);
+    if (prizeTaps < 5) return;
+    prizeTaps = 0;
+    const locked = !state.unlocked[bonus.id];
+    window.LetterSecrets?.found("coupon", { toast: locked ? {} : { icon: "trophy", text: "You already earned it. Show-off." } });
+  });
+
   // True when this just unlocked it, false when it already was, null when saving failed.
   async function unlock(coupon) {
     if (!coupon) return false;
@@ -197,6 +213,7 @@
   let last = 0;
   let elapsed = 0;
   let score = 0;
+  let broccoli = 0; // caught this round, for the "healthy queen" secret
   let spawnTimer = 0;
   let items = [];
   let pops = [];
@@ -315,6 +332,7 @@
       const caught = item.y + item.size * 0.35 >= catchTop && item.y <= height - 10 && Math.abs(item.x - playerX) < PLAYER_W / 2 + 6;
       if (caught) {
         score = Math.max(0, score + item.points);
+        if (item.points < 0) broccoli += 1;
         pops.push({ x: item.x, y: catchTop - 8, points: item.points, life: 1 });
         scoreEl.textContent = String(score);
         return false;
@@ -342,6 +360,7 @@
     running = true;
     elapsed = 0;
     score = 0;
+    broccoli = 0;
     spawnTimer = 0.3;
     items = [];
     pops = [];
@@ -373,17 +392,19 @@
     if (score >= TARGET) {
       const legend = score >= SECRET_SCORE;
       resultEl.textContent = legend
-        ? `${points}!! That's the secret high score 🤯 Your prize coupon is unlocked too.`
+        ? `${points}! That's the secret high score. Your prize coupon is unlocked too.`
         : `${points}! You won 🏆 Your prize coupon is unlocked.`;
       prizeButton.hidden = false;
       window.LetterFX?.burstFrom(stage, legend ? 60 : 40);
       window.LetterFX?.chime?.();
       if (legend) {
-        secretEl.textContent = CONFIG.gameSecretMessage || "You're officially a fry legend 🍟";
+        secretEl.textContent = CONFIG.gameSecretMessage || "You're officially a fry legend.";
         secretEl.hidden = false;
-        if (window.LetterSecrets.found("game")) {
-          window.LetterSecrets.notify(`${herName()} hit the secret fry score 🍟🤯`, `She scored ${score} points. The secret score was ${SECRET_SCORE}.`, ["fries", "exploding_head"]);
-        }
+        window.LetterSecrets?.found("game", {
+          toast: { text: "You hit the secret high score." },
+          detail: `She scored ${score} points. The secret score was ${SECRET_SCORE}.`,
+          quietRepeat: true
+        });
       }
       const fresh = await unlock(bonus);
       if (fresh) window.DateApp?.notify(`${herName()} won the fry game 🍟🏆`, `She scored ${score} points (needed ${TARGET}) and unlocked the prize coupon.`, ["trophy", "fries"]);
@@ -391,6 +412,9 @@
       const cheer = score >= TARGET * 0.7 ? "So close!" : "Nice try!";
       resultEl.textContent = `${points}. You need ${TARGET} to win. ${cheer} One more round?`;
       prizeButton.hidden = !state.unlocked[bonus?.id];
+    }
+    if (broccoli >= 5) {
+      window.LetterSecrets?.found("broccoli", { detail: `She caught ${broccoli} broccoli in one round.`, quietRepeat: true });
     }
   }
 
