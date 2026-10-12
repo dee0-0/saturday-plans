@@ -352,6 +352,8 @@
           <button class="extra-tile" data-action="goto" data-target="coupons" type="button"><span class="extra-icon"><i class="icon" data-lucide="ticket" aria-hidden="true"></i></span><strong>Coupons</strong><small id="coupon-tile-note">Just for you</small></button>
           <button class="extra-tile" data-action="goto" data-target="game" type="button"><span class="extra-icon"><i class="icon" data-lucide="gamepad-2" aria-hidden="true"></i></span><strong>Fry game</strong><small>Win a prize</small></button>
           <button class="extra-tile" data-action="goto" data-target="journal" type="button"><span class="extra-icon"><i class="icon" data-lucide="book-heart" aria-hidden="true"></i></span><strong>Our journal</strong><small>Rate our dates</small></button>
+          <button class="extra-tile" data-action="goto" data-target="outfits" type="button"><span class="extra-icon"><i class="icon" data-lucide="shirt" aria-hidden="true"></i></span><strong>Outfits</strong><small>Vote together</small></button>
+          <button class="extra-tile" data-action="goto" data-target="snacks" type="button"><span class="extra-icon"><i class="icon" data-lucide="popcorn" aria-hidden="true"></i></span><strong>Snacks</strong><small>Our wishlist</small></button>
         </div>
       </div>
 
@@ -497,6 +499,26 @@
 
     <!-- ===== NEXT DATE (app.js) ===== -->
     <section class="step" data-step="next">
+      <p class="eyebrow">What's next?</p>
+      <h2>Pick our next date</h2>
+      <p class="question-hint">Choose an idea first. Then we'll pick the day, the time and the place.</p>
+      <div class="choices idea-choices" data-field="next-activity" aria-describedby="next-activity-message">
+        <button class="choice idea-card" data-value="Cooking dinner together" data-message="We cook, we eat, and I provide extremely important taste-testing." type="button"><span class="idea-art"><i class="icon" data-lucide="utensils" aria-hidden="true"></i></span><span class="idea-copy"><strong>Cook dinner together</strong><small>Make something, then eat together</small></span></button>
+        <button class="choice idea-card" data-value="Movie night" data-message="You pick the film; I reserve the right to critique the snacks." type="button"><span class="idea-art"><i class="icon" data-lucide="clapperboard" aria-hidden="true"></i></span><span class="idea-copy"><strong>Movie night</strong><small>A film and a cozy evening</small></span></button>
+        <button class="choice idea-card" data-value="Building LEGO together" data-message="We build something cute, then argue about who misplaced the tiny brick." type="button"><span class="idea-art"><i class="icon" data-lucide="blocks" aria-hidden="true"></i></span><span class="idea-copy"><strong>Build LEGO together</strong><small>Teamwork, tiny bricks, mild chaos</small></span></button>
+        <button class="choice idea-card" data-value="Surprise me" data-message="Bold. I accept this responsibility with only moderate panic." type="button"><span class="idea-art"><i class="icon" data-lucide="sparkles" aria-hidden="true"></i></span><span class="idea-copy"><strong>Surprise me</strong><small>Hand over the planning reins</small></span></button>
+        <button class="choice idea-card" data-value="Stay in &amp; relax" data-message="A peaceful plan. Pants with elastic waistbands encouraged." type="button"><span class="idea-art"><i class="icon" data-lucide="house" aria-hidden="true"></i></span><span class="idea-copy"><strong>Stay in &amp; relax</strong><small>Comfy clothes very welcome</small></span></button>
+        <button class="choice" data-value="other" type="button"><i class="icon choice-icon" data-lucide="compass" aria-hidden="true"></i><span>Something else</span></button>
+      </div>
+      <p class="choice-message" id="next-activity-message" aria-live="polite">Pick a card to reveal the official commentary.</p>
+      <div class="reveal" data-reveal-for="other">
+        <label for="nextCustomActivity">What are you thinking?</label>
+        <input type="text" id="nextCustomActivity" maxlength="400" placeholder="Your idea…">
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="back" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Back</button>
+        <button class="btn btn-primary" data-action="next" type="button" disabled>Next <i class="icon" data-lucide="arrow-right" aria-hidden="true"></i></button>
+      </div>
     </section>
     <!-- ===== END NEXT DATE ===== -->
 
