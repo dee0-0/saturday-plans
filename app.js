@@ -1,7 +1,7 @@
 (function () {
   const TIME_ZONE = "Europe/Zurich";
-  const steps = ["loading", "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game", "journal"];
-  const extraSteps = ["planned", "coupons", "game", "journal"];
+  const steps = ["loading", "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game", "journal", "next", "outfits", "snacks"];
+  const extraSteps = ["planned", "coupons", "game", "journal", "outfits", "snacks"];
   const questionSteps = ["date", "time", "activity", "place", "note"];
   const state = { date: "", time: "", activity: null, place: null };
   const stepEls = Object.fromEntries(steps.map((name) => [name, document.querySelector(`[data-step="${name}"]`)]));
@@ -844,7 +844,23 @@
     document.body.append(bar);
   }
 
-  // Shared helpers for the feature scripts (ask.js, extras.js, coupons.js, journal.js).
+  // Who is using this phone: "sender" once Dee marked it (?me or the journal), otherwise "her".
+  function me() {
+    try { return window.localStorage.getItem("date-letter-author") === "sender" ? "sender" : "her"; } catch { return "her"; }
+  }
+
+  function entryKey(plan) {
+    return plan ? `${plan.date}T${plan.time}` : "";
+  }
+
+  function planStarted(plan) {
+    if (!plan || plan.status !== "confirmed") return false;
+    const [year, month, day] = plan.date.split("-").map(Number);
+    const [hour, minute] = plan.time.split(":").map(Number);
+    return dateInTimeZone(year, month, day, hour, minute).getTime() <= Date.now();
+  }
+
+  // Shared helpers for the feature scripts (ask.js, extras.js, coupons.js, media.js, journal.js, outfits.js, snacks.js).
   window.DateApp = {
     preview: previewMode,
     get plan() { return activePlan; },
@@ -857,7 +873,12 @@
     escapeHtml,
     refreshIcons,
     dateInTimeZone,
-    todayISO: bernTodayISO
+    todayISO: bernTodayISO,
+    apiUrl,
+    me,
+    names: { her: CONFIG.herName || "Her", sender: (CONFIG.yourName || "").trim() || "Your date" },
+    entryKey,
+    planStarted
   };
 
   refreshIcons();
