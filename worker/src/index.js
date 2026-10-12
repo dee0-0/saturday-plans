@@ -1,6 +1,9 @@
 const ALLOWED_ORIGIN = "https://dee0-0.github.io";
 const PLAN_KEY = "current-plan";
 const COUPONS_KEY = "coupons";
+const SECRETS_KEY = "secrets";
+const SECRET_ID = /^[a-z]{1,24}$/;
+const MAX_SECRETS = 64;
 const JOURNAL_KEY = "journal";
 const MAX_TEXT_LENGTH = 400;
 const MAX_COUPONS = 100;
@@ -9,7 +12,7 @@ const MAX_PHOTO_LENGTH = 700_000;
 const COUPON_ID = /^[a-z0-9-]{1,40}$/;
 const ENTRY_KEY = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 const AUTHORS = ["her", "sender"];
-const ROUTES = ["/plan", "/plan/late", "/coupons", "/journal", "/journal/photo", "/reset"];
+const ROUTES = ["/plan", "/plan/late", "/coupons", "/journal", "/journal/photo", "/secrets", "/reset"];
 // ?store=preview uses a separate sandbox so the letter can be tested end to end
 // without touching her real plan, coupons or journal. Only the sandbox can be reset.
 const STORES = { live: "one-plan-for-this-invitation", preview: "preview-sandbox" };
@@ -203,6 +206,26 @@ export class PlanStore {
       if (result.conflict) return json({ error: "This coupon was already redeemed.", coupons: result.coupons }, 409, origin);
       if (result.full) return json({ error: "There are too many coupons saved." }, 400, origin);
       return json({ coupons: result.coupons, changed: Boolean(result.changed) }, 200, origin);
+    }
+
+    // The easter eggs she has found, so both phones show her secret hunt.
+    if (path === "/secrets" && request.method === "GET") {
+      return json({ found: (await this.ctx.storage.get(SECRETS_KEY)) || [] }, 200, origin);
+    }
+
+    if (path === "/secrets" && request.method === "POST") {
+      let input;
+      try { input = await request.json(); } catch { return json({ error: "Invalid request body." }, 400, origin); }
+      if (typeof input?.id !== "string" || !SECRET_ID.test(input.id)) return json({ error: "Unknown secret." }, 400, origin);
+      const found = await this.ctx.storage.transaction(async (txn) => {
+        const list = (await txn.get(SECRETS_KEY)) || [];
+        if (!list.includes(input.id) && list.length < MAX_SECRETS) {
+          list.push(input.id);
+          await txn.put(SECRETS_KEY, list);
+        }
+        return list;
+      });
+      return json({ found }, 200, origin);
     }
 
     if (path === "/journal" && request.method === "GET") {
