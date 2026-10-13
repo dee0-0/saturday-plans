@@ -16,7 +16,11 @@ A mobile-friendly, one-question-at-a-time date invitation in a soft rose envelop
 - Shows the weather forecast for the date's hour and place on the plan screen (Open-Meteo, no key needed), with a tip like "bring an umbrella". Towns and areas near Bern (Thun, Gurten, Murten…) get their own forecast; venue names and the generic choices use Bern. It appears about 16 days ahead.
 - Has a silver scratch card hiding `scratchSecret`, your name written as an animated signature, and a wax seal that reveals `secretMessage` after 5 taps.
 - Love coupons she can redeem once each (you get a notification), plus a 20-second "Catch the fries" game that unlocks a prize coupon.
-- A date journal: after the date has started, each of you can rate it with hearts, write a note and add a photo. Past dates stay as a shared history.
+- A date journal that works like a scrapbook: every date gets a card with both of your heart ratings and notes, its outfit pick, and a gallery of photos and videos either of you can add once the date has started (photos are resized on the phone; videos up to 80 MB). Tap a photo or video to open it full screen. Rating opens once the date has started, and every past date keeps a "Write my review" button, so a date can still be rated after the next one is planned.
+- "What's next?": after a date, either of you can pick the next activity and plan the next date. The date that just happened moves into the journal with everything on it, and the new plan starts. Rescheduling or cancelling a date that already happened keeps it in the journal too.
+- Outfit vote: either of you posts outfit photos for the upcoming date, you both rate them with hearts, comment, and tap "My pick". You get a notification when she posts one or picks her favorite. Rescheduling the date keeps its outfits.
+- Snack wishlist: one shared list. Add snacks (or tap a quick-add chip), tick them off when you have them, clear the done ones.
+- Everything is shared through the Worker, and open pages refresh by themselves (journal every 20 s, outfits every 10 s, snacks every 8 s).
 - A secret hunt with 16 easter eggs hidden around the letter, like tapping the wax seal or the big heart, holding the signature, shaking the phone, tapping the weather card or countdown, a secret fry-game score, catching broccoli, and opening the letter after midnight. After her first find, a "Secret hunt" tracker on the plan page shows a progress bar, how many are left, and a hint for any secret she taps "Hint" on. Only finding all 16 unlocks the hidden prize coupon. You get a notification for each find.
 - Can be added to the home screen like an app, with its own icon. Sending the link in Snapchat, WhatsApp or iMessage shows a pink envelope preview card.
 
@@ -45,7 +49,7 @@ The link-preview image (`assets/og-preview.jpg`) and app icons (`assets/icon-*.p
 
 Background music: leave `musicUrl` empty for the built-in music-box melody, or drop an `.mp3` into `assets/` and set e.g. `"assets/our-song.mp3"` to loop your own song. It starts on her first tap (browsers block sound before that), and the speaker button in the top-right corner turns it off.
 
-The repository and GitHub Pages site are public. Anyone who has the site URL can read or change the shared plan, the coupons and the journal, including journal photos, so only add photos you'd be fine with someone else seeing. The existing ntfy topic is also in the public client config; rotate it if you want to stop unsolicited notifications.
+The repository and GitHub Pages site are public. Anyone who has the site URL can read or change the shared plan, the coupons, the journal, the outfit vote and the snack list, and photos and videos can be opened by anyone who has their link, so only add photos and videos you'd be fine with someone else seeing. They are stored in the Worker's Durable Object storage (Cloudflare's free plan allows 5 GB in total). The existing ntfy topic is also in the public client config; rotate it if you want to stop unsolicited notifications.
 
 ## Try it without touching her letter
 

@@ -1,9 +1,17 @@
 (function () {
   const TIME_ZONE = "Europe/Zurich";
-  const steps = ["loading", "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game", "journal"];
-  const extraSteps = ["planned", "coupons", "game", "journal"];
+  const steps = ["loading", "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game", "journal", "next", "outfits", "snacks"];
+  const extraSteps = ["planned", "coupons", "game", "journal", "outfits", "snacks"];
   const questionSteps = ["date", "time", "activity", "place", "note"];
-  const state = { date: "", time: "", activity: null, place: null };
+  const state = { date: "", time: "", activity: null, place: null, "next-activity": null };
+  // The "Something else" text field that belongs to each choice group.
+  const customInputs = { activity: "customActivity", place: "customPlace", "next-activity": "nextCustomActivity" };
+  // Heading and send button on the review step for each way into the questions.
+  const reviewCopy = {
+    invite: { heading: "Here’s the plan you’re setting", button: "Set this date", saving: "Setting the plan…" },
+    reschedule: { heading: "Review your changes", button: "Save changes", saving: "Saving changes…" },
+    next: { heading: "Our next date", button: "Plan our next date", saving: "Planning our next date…" }
+  };
   const stepEls = Object.fromEntries(steps.map((name) => [name, document.querySelector(`[data-step="${name}"]`)]));
   const dateInput = document.getElementById("planDate");
   const timeInput = document.getElementById("planTime");
@@ -25,6 +33,8 @@
   let selectedDaypart = "";
   let activePlan = null;
   let isRescheduling = false;
+  // True while the questions are planning a new date after the current one happened.
+  let planningNext = false;
   let countdownTimer = null;
 
   function iconMarkup(name) {
@@ -40,9 +50,11 @@
     return steps.find((name) => stepEls[name].classList.contains("is-active"));
   }
 
-  function showStep(name) {
+  // `forward` overrides the slide direction for jumps that skip around the step list
+  // (the next-date page sits at the end of `steps` but leads into the first question).
+  function showStep(name, { forward: direction } = {}) {
     const previous = currentStepName();
-    const forward = steps.indexOf(name) >= steps.indexOf(previous);
+    const forward = typeof direction === "boolean" ? direction : steps.indexOf(name) >= steps.indexOf(previous);
     document.body.classList.toggle("is-envelope-landing", name === "intro");
     steps.forEach((step) => {
       const element = stepEls[step];
@@ -51,7 +63,7 @@
       element.classList.toggle("enter-backward", step === name && !forward);
     });
     updateProgress(name);
-    if (["date", "time", "activity", "place"].includes(name)) validateStep(stepEls[name]);
+    if (["date", "time", "activity", "place", "next"].includes(name)) validateStep(stepEls[name]);
     if (name === "review") renderSummary();
     if (name === "planned") renderPlan();
     window.LetterFX?.enterStep(stepEls[name], name, previous);
@@ -352,6 +364,7 @@
     if (name === "time") valid = dateTimeIsFuture(dateInput.value, timeInput.value);
     if (name === "activity") valid = (state.activity && state.activity !== "other") || (state.activity === "other" && value("customActivity"));
     if (name === "place") valid = (state.place && state.place !== "other") || (state.place === "other" && value("customPlace"));
+    if (name === "next") valid = Boolean(nextActivityChoice());
     next.disabled = !valid;
   }
 
@@ -366,10 +379,43 @@
       choice.setAttribute("aria-pressed", String(selected));
     });
     state[field] = chosen?.dataset.value || null;
-    if (field === "activity") document.getElementById("customActivity").value = match ? "" : customValue;
-    if (field === "place") document.getElementById("customPlace").value = match ? "" : customValue;
-    const reveal = document.querySelector(`[data-reveal-for="other"]`);
-    if (reveal && reveal.closest(".step").dataset.step === field) reveal.classList.toggle("is-visible", state[field] === "other");
+    if (customInputs[field]) document.getElementById(customInputs[field]).value = match ? "" : customValue;
+    // Each step has its own "Something else" field, so look it up inside this group's step.
+    const reveal = group.closest(".step").querySelector('[data-reveal-for="other"]');
+    if (reveal) reveal.classList.toggle("is-visible", state[field] === "other");
+  }
+
+  // Unselects every card in a group (setChoice always lands on a card).
+  function clearChoice(field) {
+    const group = document.querySelector(`.choices[data-field="${field}"]`);
+    group.querySelectorAll(".choice").forEach((choice) => {
+      choice.classList.remove("selected");
+      choice.setAttribute("aria-pressed", "false");
+    });
+    state[field] = null;
+    if (customInputs[field]) document.getElementById(customInputs[field]).value = "";
+    group.closest(".step").querySelector('[data-reveal-for="other"]')?.classList.remove("is-visible");
+  }
+
+  function showChoiceMessage(field, message) {
+    const element = document.getElementById(`${field}-message`);
+    if (!element) return;
+    element.textContent = message || "A custom plan. The plot thickens.";
+    element.classList.add("is-revealed");
+  }
+
+  function resetChoiceMessage(field) {
+    const element = document.getElementById(`${field}-message`);
+    if (!element) return;
+    element.textContent = "Pick a card to reveal the official commentary.";
+    element.classList.remove("is-revealed");
+  }
+
+  // The idea picked on the next-date page: a card's value, the typed idea, or "".
+  function nextActivityChoice() {
+    const choice = state["next-activity"];
+    if (!choice) return "";
+    return choice === "other" ? value("nextCustomActivity") : choice;
   }
 
   document.querySelectorAll(".choices[data-field]").forEach((group) => {
@@ -378,11 +424,7 @@
       if (!button) return;
       const field = group.dataset.field;
       setChoice(field, button.dataset.value);
-      if (field === "activity") {
-        const message = document.getElementById("activity-message");
-        message.textContent = button.dataset.message || "A custom plan. The plot thickens.";
-        message.classList.add("is-revealed");
-      }
+      showChoiceMessage(field, button.dataset.message);
       if (field === "place") updatePlaceMap();
       validateStep(button.closest(".step"));
     });
@@ -408,6 +450,10 @@
   });
 
   function goNext() {
+    if (currentStepName() === "next") {
+      beginNextPlan();
+      return;
+    }
     const next = steps[steps.indexOf(currentStepName()) + 1];
     if (next) showStep(next);
   }
@@ -416,6 +462,15 @@
     if (isRescheduling && currentStepName() === "date") {
       isRescheduling = false;
       showStep("planned");
+      return;
+    }
+    if (planningNext && currentStepName() === "date") {
+      showStep("next", { forward: false });
+      return;
+    }
+    if (currentStepName() === "next") {
+      planningNext = false;
+      showStep("journal", { forward: false });
       return;
     }
     if (!isRescheduling && currentStepName() === "ask") {
@@ -531,9 +586,9 @@
     countdownTimer = window.setInterval(tick, 1000);
   }
 
-  async function requestPlan(method = "GET", plan = null) {
+  async function requestPlan(method = "GET", plan = null, path = "/plan") {
     if (!apiRoot) throw new Error("Shared plan sync is not connected yet.");
-    const response = await fetch(apiUrl("/plan"), {
+    const response = await fetch(apiUrl(path), {
       method,
       headers: plan ? { "Content-Type": "application/json" } : {},
       body: plan ? JSON.stringify(plan) : undefined
@@ -687,33 +742,67 @@
     } catch { /* Keep the last loaded plan visible while offline. */ }
   }
 
+  function reviewMode() {
+    if (planningNext) return "next";
+    return isRescheduling ? "reschedule" : "invite";
+  }
+
+  function setReviewCopy(mode = reviewMode()) {
+    document.getElementById("review-heading").textContent = reviewCopy[mode].heading;
+    document.querySelector('[data-action="send"]').innerHTML = `${reviewCopy[mode].button} ${iconMarkup("heart")}`;
+  }
+
   async function setPlan() {
     const button = document.querySelector('[data-action="send"]');
     const error = document.getElementById("sendError");
+    const mode = reviewMode();
     error.hidden = true;
     button.disabled = true;
-    button.textContent = isRescheduling ? "Saving changes…" : "Setting the plan…";
+    button.textContent = reviewCopy[mode].saving;
     const plan = buildPlan();
     try {
-      const data = await requestPlan(isRescheduling ? "PUT" : "POST", plan);
+      const data = mode === "next"
+        ? await requestPlan("POST", plan, "/plan/next")
+        : await requestPlan(isRescheduling ? "PUT" : "POST", plan);
       activePlan = data.plan;
-      const action = isRescheduling ? "rescheduled" : "date plan set";
+      const action = { invite: "date plan set", reschedule: "rescheduled", next: "planned our next date" }[mode];
       isRescheduling = false;
+      planningNext = false;
+      button.disabled = false;
+      setReviewCopy("invite");
       showStep("planned");
       window.LetterFX?.celebrate();
+      // Dee only wants to hear about her planning the next date, not about himself.
+      if (mode === "next" && me() !== "her") return;
       const delivered = await notifyOwner(action, activePlan);
       if (!delivered) displayPlanError("The plan is saved across devices, but the notification didn’t go through.");
     } catch (saveError) {
-      if (saveError.status === 409 && saveError.plan) {
+      if (mode === "next" && saveError.status === 409 && saveError.plan) {
+        // The other phone planned the next date first (that one hasn't happened yet): show it.
+        activePlan = saveError.plan;
+        planningNext = false;
+        button.disabled = false;
+        setReviewCopy("invite");
+        showStep("planned");
+        displayPlanError("Our next date was already planned on the other phone, so here it is.");
+      } else if (mode === "next") {
+        if (saveError.plan) activePlan = saveError.plan;
+        error.textContent = saveError.message || "Couldn’t plan our next date. Please try again.";
+        error.hidden = false;
+        button.disabled = false;
+        setReviewCopy(mode);
+      } else if (saveError.status === 409 && saveError.plan) {
         activePlan = saveError.plan;
         isRescheduling = false;
+        button.disabled = false;
+        setReviewCopy("invite");
         showStep("planned");
         displayPlanError("A plan was already set on another device, so this invitation is now showing that plan.");
       } else {
         error.textContent = saveError.message || "Couldn’t save the plan. Please try again.";
         error.hidden = false;
         button.disabled = false;
-        button.innerHTML = `${isRescheduling ? "Save changes" : "Set this date"} ${iconMarkup("heart")}`;
+        setReviewCopy(mode);
       }
     }
   }
@@ -738,20 +827,63 @@
   function restorePlanForEditing() {
     if (!activePlan) return;
     isRescheduling = true;
+    planningNext = false;
     if (datePicker) datePicker.setDate(activePlan.date, false, "Y-m-d");
     else dateInput.value = activePlan.date;
     timeInput.value = activePlan.time;
     if (timePicker) timePicker.setDate(activePlan.time, false, "H:i");
     chooseDaypart(daypartForTime(activePlan.time), { preserveTime: true });
     document.getElementById("note").value = activePlan.note || "";
-    setChoice("activity", activePlan.activity);
-    setChoice("place", activePlan.place);
+    // A typed activity or place lands in its "Something else" field.
+    setChoice("activity", activePlan.activity, activePlan.activity);
+    setChoice("place", activePlan.place, activePlan.place);
     updatePlaceMap();
-    document.getElementById("review-heading").textContent = "Review your changes";
-    const sendButton = document.querySelector('[data-action="send"]');
-    sendButton.innerHTML = `Save changes ${iconMarkup("heart")}`;
+    document.getElementById("sendError").hidden = true;
+    setReviewCopy("reschedule");
     showStep("date");
     validateStep(stepEls.date);
+  }
+
+  // Empties the date, time, place and note questions (and their pickers) for a fresh plan.
+  function clearQuestions() {
+    dateInput.min = bernTodayISO();
+    if (datePicker) {
+      datePicker.set("minDate", dateInput.min);
+      datePicker.clear(false);
+    }
+    dateInput.value = "";
+    if (timePicker) timePicker.clear(false);
+    timeInput.value = "";
+    updateSelectedDaypart("");
+    timePickerHint.textContent = "Choose any time, or tap one of the suggestions above.";
+    clearChoice("place");
+    updatePlaceMap();
+    document.getElementById("note").value = "";
+    document.getElementById("sendError").hidden = true;
+    questionSteps.forEach((name) => validateStep(stepEls[name]));
+  }
+
+  // The journal's "What's next?" button: a fresh next-date page, nothing picked yet.
+  function startNextPlan() {
+    isRescheduling = false;
+    planningNext = false;
+    clearChoice("next-activity");
+    resetChoiceMessage("next-activity");
+    clearQuestions();
+    showStep("next", { forward: true });
+  }
+
+  // "Next" on the next-date page: carry the idea into the normal questions, starting at the date.
+  function beginNextPlan() {
+    const activity = nextActivityChoice();
+    if (!activity) return;
+    setChoice("activity", activity, state["next-activity"] === "other" ? activity : "");
+    showChoiceMessage("activity", document.querySelector('.choices[data-field="activity"] .choice.selected')?.dataset.message);
+    clearQuestions();
+    isRescheduling = false;
+    planningNext = true;
+    setReviewCopy("next");
+    showStep("date", { forward: true });
   }
 
   function updatePlaceMap() {
@@ -789,6 +921,7 @@
       case "back": goBack(); break;
       case "send": setPlan(); break;
       case "reschedule": restorePlanForEditing(); break;
+      case "start-next": startNextPlan(); break;
       case "cancel": cancelPlan(); break;
       case "retry": loadPlan(); break;
       case "add-calendar": if (activePlan && activePlan.status === "confirmed") downloadCalendar(activePlan); break;
@@ -844,7 +977,23 @@
     document.body.append(bar);
   }
 
-  // Shared helpers for the feature scripts (ask.js, extras.js, coupons.js, journal.js).
+  // Who is using this phone: "sender" once Dee marked it (?me or the journal), otherwise "her".
+  function me() {
+    try { return window.localStorage.getItem("date-letter-author") === "sender" ? "sender" : "her"; } catch { return "her"; }
+  }
+
+  function entryKey(plan) {
+    return plan ? `${plan.date}T${plan.time}` : "";
+  }
+
+  function planStarted(plan) {
+    if (!plan || plan.status !== "confirmed") return false;
+    const [year, month, day] = plan.date.split("-").map(Number);
+    const [hour, minute] = plan.time.split(":").map(Number);
+    return dateInTimeZone(year, month, day, hour, minute).getTime() <= Date.now();
+  }
+
+  // Shared helpers for the feature scripts (ask.js, extras.js, coupons.js, media.js, journal.js, outfits.js, snacks.js).
   window.DateApp = {
     preview: previewMode,
     get plan() { return activePlan; },
@@ -857,7 +1006,13 @@
     escapeHtml,
     refreshIcons,
     dateInTimeZone,
-    todayISO: bernTodayISO
+    todayISO: bernTodayISO,
+    apiUrl,
+    me,
+    names: { her: CONFIG.herName || "Her", sender: (CONFIG.yourName || "").trim() || "Your date" },
+    entryKey,
+    planStarted,
+    startNextPlan
   };
 
   refreshIcons();

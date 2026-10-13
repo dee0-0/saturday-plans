@@ -30,8 +30,10 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <link rel="preload" as="image" href="assets/letter-bg-mobile.jpg" media="(max-aspect-ratio: 1/1)">
 <link rel="preload" as="image" href="assets/letter-bg-desktop.jpg" media="(min-aspect-ratio: 1/1)">
-<link rel="stylesheet" href="style.css?v=letter-14">
-<link rel="stylesheet" href="extras.css?v=letter-14">
+<link rel="stylesheet" href="style.css?v=letter-16">
+<link rel="stylesheet" href="extras.css?v=letter-16">
+<link rel="stylesheet" href="journal.css?v=letter-16">
+<link rel="stylesheet" href="planner.css?v=letter-16">
 <script>document.documentElement.classList.add("intro-pending");setTimeout(function(){document.documentElement.classList.remove("intro-pending");},3000);</script>
 </head>
 <body class="is-envelope-landing">
@@ -303,7 +305,7 @@
       </div>
       <button class="journal-prompt" id="journal-prompt" data-action="goto" data-target="journal" type="button" hidden>
         <i class="icon" data-lucide="sparkles" aria-hidden="true"></i>
-        <span><strong>How was it?</strong><small>Rate our date and add a photo</small></span>
+        <span><strong>How was it?</strong><small>Rate our date and add photos and videos</small></span>
         <i class="icon" data-lucide="arrow-right" aria-hidden="true"></i>
       </button>
       <dl class="summary planned-summary" id="planned-summary"></dl>
@@ -350,6 +352,8 @@
           <button class="extra-tile" data-action="goto" data-target="coupons" type="button"><span class="extra-icon"><i class="icon" data-lucide="ticket" aria-hidden="true"></i></span><strong>Coupons</strong><small id="coupon-tile-note">Just for you</small></button>
           <button class="extra-tile" data-action="goto" data-target="game" type="button"><span class="extra-icon"><i class="icon" data-lucide="gamepad-2" aria-hidden="true"></i></span><strong>Fry game</strong><small>Win a prize</small></button>
           <button class="extra-tile" data-action="goto" data-target="journal" type="button"><span class="extra-icon"><i class="icon" data-lucide="book-heart" aria-hidden="true"></i></span><strong>Our journal</strong><small>Rate our dates</small></button>
+          <button class="extra-tile" data-action="goto" data-target="outfits" type="button"><span class="extra-icon"><i class="icon" data-lucide="shirt" aria-hidden="true"></i></span><strong>Outfits</strong><small>Vote together</small></button>
+          <button class="extra-tile" data-action="goto" data-target="snacks" type="button"><span class="extra-icon"><i class="icon" data-lucide="popcorn" aria-hidden="true"></i></span><strong>Snacks</strong><small>Our wishlist</small></button>
         </div>
       </div>
 
@@ -460,9 +464,15 @@
       </div>
     </section>
 
+    <!-- ===== JOURNAL (journal.js, media.js, journal.css) ===== -->
     <section class="step" data-step="journal">
       <p class="eyebrow">Our date journal</p>
       <h2>Our dates, remembered</h2>
+      <button class="journal-next" id="journal-next" type="button" hidden>
+        <span class="journal-next-icon"><i class="icon" data-lucide="calendar-heart" aria-hidden="true"></i></span>
+        <span><strong>What's next?</strong><small>Pick our next date together</small></span>
+        <i class="icon" data-lucide="arrow-right" aria-hidden="true"></i>
+      </button>
       <form class="journal-form" id="journal-form" hidden novalidate>
         <p class="journal-for" id="journal-for"></p>
         <p class="field-label">Who's writing?</p>
@@ -475,38 +485,144 @@
         <p class="heart-hint" id="heart-hint" aria-live="polite"></p>
         <label for="journal-note">A few words</label>
         <textarea id="journal-note" maxlength="400" rows="3" placeholder="Best part, funniest moment, who stole whose fries…"></textarea>
-        <div class="journal-photo">
-          <label class="photo-pick" for="journal-photo-input"><i class="icon" data-lucide="image-plus" aria-hidden="true"></i><span id="photo-pick-label">Add a photo</span></label>
-          <input class="visually-hidden" type="file" id="journal-photo-input" accept="image/*">
-          <img class="journal-photo-preview" id="journal-photo-preview" alt="The photo you picked" hidden>
-          <button class="btn btn-ghost journal-photo-remove" id="journal-photo-remove" type="button" hidden>Remove photo</button>
-        </div>
+        <p class="journal-form-hint"><i class="icon" data-lucide="images" aria-hidden="true"></i><span>Photos and videos go on our date's page in the scrapbook below.</span></p>
         <button class="btn btn-primary journal-save" id="journal-save" type="submit">Save to our journal <i class="icon" data-lucide="heart" aria-hidden="true"></i></button>
         <p class="error" id="journal-error" hidden></p>
+        <div class="journal-saved" id="journal-saved" role="status" hidden>
+          <span class="journal-saved-copy"><strong>Saved to our journal</strong><small>Ready to plan the next one?</small></span>
+          <button class="btn btn-secondary journal-saved-next" id="journal-saved-next" type="button">What's next? <i class="icon" data-lucide="arrow-right" aria-hidden="true"></i></button>
+        </div>
       </form>
-      <p class="journal-waiting" id="journal-waiting" hidden>After our date, come back here to rate it and add a photo. Both of us can.</p>
+      <div class="journal-waiting" id="journal-waiting" hidden>
+        <span class="journal-waiting-icon"><i class="icon" data-lucide="hourglass" aria-hidden="true"></i></span>
+        <p id="journal-waiting-text">After our date, come back here to rate it and add photos and videos. Both of us can.</p>
+      </div>
       <div class="journal-list" id="journal-list"></div>
+      <input class="visually-hidden" type="file" id="journal-media-input" accept="image/*,video/*" multiple tabindex="-1" aria-hidden="true">
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="planned" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Our plan</button>
       </div>
     </section>
+    <!-- ===== END JOURNAL ===== -->
+
+    <!-- ===== NEXT DATE (app.js) ===== -->
+    <section class="step" data-step="next">
+      <p class="eyebrow">What's next?</p>
+      <h2>Pick our next date</h2>
+      <p class="question-hint">Choose an idea first. Then we'll pick the day, the time and the place.</p>
+      <div class="choices idea-choices" data-field="next-activity" aria-describedby="next-activity-message">
+        <button class="choice idea-card" data-value="Cooking dinner together" data-message="We cook, we eat, and I provide extremely important taste-testing." type="button"><span class="idea-art"><i class="icon" data-lucide="utensils" aria-hidden="true"></i></span><span class="idea-copy"><strong>Cook dinner together</strong><small>Make something, then eat together</small></span></button>
+        <button class="choice idea-card" data-value="Movie night" data-message="You pick the film; I reserve the right to critique the snacks." type="button"><span class="idea-art"><i class="icon" data-lucide="clapperboard" aria-hidden="true"></i></span><span class="idea-copy"><strong>Movie night</strong><small>A film and a cozy evening</small></span></button>
+        <button class="choice idea-card" data-value="Building LEGO together" data-message="We build something cute, then argue about who misplaced the tiny brick." type="button"><span class="idea-art"><i class="icon" data-lucide="blocks" aria-hidden="true"></i></span><span class="idea-copy"><strong>Build LEGO together</strong><small>Teamwork, tiny bricks, mild chaos</small></span></button>
+        <button class="choice idea-card" data-value="Surprise me" data-message="Bold. I accept this responsibility with only moderate panic." type="button"><span class="idea-art"><i class="icon" data-lucide="sparkles" aria-hidden="true"></i></span><span class="idea-copy"><strong>Surprise me</strong><small>Hand over the planning reins</small></span></button>
+        <button class="choice idea-card" data-value="Stay in &amp; relax" data-message="A peaceful plan. Pants with elastic waistbands encouraged." type="button"><span class="idea-art"><i class="icon" data-lucide="house" aria-hidden="true"></i></span><span class="idea-copy"><strong>Stay in &amp; relax</strong><small>Comfy clothes very welcome</small></span></button>
+        <button class="choice" data-value="other" type="button"><i class="icon choice-icon" data-lucide="compass" aria-hidden="true"></i><span>Something else</span></button>
+      </div>
+      <p class="choice-message" id="next-activity-message" aria-live="polite">Pick a card to reveal the official commentary.</p>
+      <div class="reveal" data-reveal-for="other">
+        <label for="nextCustomActivity">What are you thinking?</label>
+        <input type="text" id="nextCustomActivity" maxlength="400" placeholder="Your idea…">
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="back" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Back</button>
+        <button class="btn btn-primary" data-action="next" type="button" disabled>Next <i class="icon" data-lucide="arrow-right" aria-hidden="true"></i></button>
+      </div>
+    </section>
+    <!-- ===== END NEXT DATE ===== -->
+
+    <!-- ===== OUTFITS (outfits.js, planner.css) ===== -->
+    <section class="step" data-step="outfits">
+      <p class="eyebrow">Outfit vote</p>
+      <h2>What should I wear?</h2>
+      <p class="planner-for" id="outfit-for" hidden></p>
+      <p class="planner-note" id="outfit-noplan" hidden>Once we have a date planned, we can post outfit ideas here and vote on them together.</p>
+      <div class="outfit-board" id="outfit-board" hidden>
+        <form class="outfit-add" id="outfit-form" novalidate>
+          <input class="visually-hidden" type="file" id="outfit-file" accept="image/*">
+          <label class="outfit-pick-photo" id="outfit-pick" for="outfit-file">
+            <span class="outfit-add-icon"><i class="icon" data-lucide="image-plus" aria-hidden="true"></i></span>
+            <span class="outfit-add-copy"><strong>Add an outfit</strong><small>Snap a mirror pic or pick a photo</small></span>
+            <i class="icon outfit-add-plus" data-lucide="plus" aria-hidden="true"></i>
+          </label>
+          <div class="outfit-draft" id="outfit-draft" hidden>
+            <img class="outfit-draft-img" id="outfit-draft-img" alt="The outfit photo you picked">
+            <div class="outfit-draft-copy">
+              <label for="outfit-title">Name it <span>(optional)</span></label>
+              <input type="text" id="outfit-title" maxlength="60" placeholder="Black dress, white sneakers" autocomplete="off" enterkeyhint="send">
+            </div>
+            <div class="planner-progress" id="outfit-progress" role="progressbar" aria-label="Uploading the photo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span id="outfit-progress-fill"></span></div>
+            <div class="outfit-draft-actions">
+              <button class="btn btn-ghost" id="outfit-cancel" type="button">Cancel</button>
+              <button class="btn btn-primary" id="outfit-post" type="submit">Post outfit <i class="icon" data-lucide="send" aria-hidden="true"></i></button>
+            </div>
+          </div>
+        </form>
+        <p class="error" id="outfit-error" role="alert" hidden></p>
+        <div class="outfit-list" id="outfit-list"></div>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="planned" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Our plan</button>
+        <button class="btn btn-secondary" data-action="goto" data-target="snacks" type="button"><i class="icon" data-lucide="popcorn" aria-hidden="true"></i> Snacks</button>
+      </div>
+    </section>
+    <!-- ===== END OUTFITS ===== -->
+
+    <!-- ===== SNACKS (snacks.js, planner.css) ===== -->
+    <section class="step" data-step="snacks">
+      <p class="eyebrow">For our date</p>
+      <h2>Snack wishlist</h2>
+      <p class="question-hint">Add whatever you’re craving and tick it off once it’s in the bag. We both see the same list.</p>
+      <form class="snack-form" id="snack-form" novalidate>
+        <label class="visually-hidden" for="snack-input">Add a snack</label>
+        <input type="text" id="snack-input" maxlength="60" placeholder="Add a snack…" autocomplete="off" enterkeyhint="done">
+        <button class="btn btn-primary snack-add" type="submit"><i class="icon" data-lucide="plus" aria-hidden="true"></i> Add</button>
+      </form>
+      <div class="snack-chips" id="snack-chips" role="group" aria-label="Quick add">
+        <button class="snack-chip" type="button" data-snack="Nuggets"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Nuggets</button>
+        <button class="snack-chip" type="button" data-snack="Fries"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Fries</button>
+        <button class="snack-chip" type="button" data-snack="Popcorn"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Popcorn</button>
+        <button class="snack-chip" type="button" data-snack="Croissants"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Croissants</button>
+        <button class="snack-chip" type="button" data-snack="Gummy bears"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Gummy bears</button>
+        <button class="snack-chip" type="button" data-snack="Ice cream"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Ice cream</button>
+        <button class="snack-chip" type="button" data-snack="Chips"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Chips</button>
+        <button class="snack-chip" type="button" data-snack="Chocolate"><i class="icon" data-lucide="plus" aria-hidden="true"></i><i class="icon" data-lucide="check" aria-hidden="true"></i>Chocolate</button>
+      </div>
+      <p class="error" id="snack-error" role="alert" hidden></p>
+      <ul class="snack-list" id="snack-open" aria-label="Still to get"></ul>
+      <p class="planner-note snack-empty" id="snack-empty">Loading our list…</p>
+      <div class="snack-done" id="snack-done" hidden>
+        <div class="snack-done-head">
+          <p class="snack-done-label">Got it <span id="snack-done-count">0</span></p>
+          <button class="snack-clear" id="snack-clear" type="button"><i class="icon" data-lucide="eraser" aria-hidden="true"></i> Clear done</button>
+        </div>
+        <ul class="snack-list is-done" id="snack-done-list" aria-label="Got it"></ul>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="planned" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Our plan</button>
+        <button class="btn btn-secondary" data-action="goto" data-target="outfits" type="button"><i class="icon" data-lucide="shirt" aria-hidden="true"></i> Outfits</button>
+      </div>
+    </section>
+    <!-- ===== END SNACKS ===== -->
   </main>
 
   <footer class="page-note"><span>MADE WITH INTENTION</span><span class="page-note-dot"></span><span id="footer-name">FOR ℬ𝓁ℴ𝓃𝒹𝒾ℯ🥐</span></footer>
 </div>
 
-<script src="config.js?v=letter-14"></script>
+<script src="config.js?v=letter-16"></script>
 <script src="https://unpkg.com/lucide@1.55.0/dist/umd/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Observer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-<script src="music.js?v=letter-14"></script>
-<script src="effects.js?v=letter-14"></script>
-<script src="ask.js?v=letter-14"></script>
-<script src="secrets.js?v=letter-14"></script>
-<script src="extras.js?v=letter-14"></script>
-<script src="coupons.js?v=letter-14"></script>
-<script src="journal.js?v=letter-14"></script>
-<script src="app.js?v=letter-14"></script>
+<script src="music.js?v=letter-16"></script>
+<script src="effects.js?v=letter-16"></script>
+<script src="ask.js?v=letter-16"></script>
+<script src="secrets.js?v=letter-16"></script>
+<script src="extras.js?v=letter-16"></script>
+<script src="coupons.js?v=letter-16"></script>
+<script src="media.js?v=letter-16"></script>
+<script src="journal.js?v=letter-16"></script>
+<script src="outfits.js?v=letter-16"></script>
+<script src="snacks.js?v=letter-16"></script>
+<script src="app.js?v=letter-16"></script>
 </body>
 </html>
