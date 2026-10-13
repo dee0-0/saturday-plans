@@ -1,7 +1,7 @@
 (function () {
   const TIME_ZONE = "Europe/Zurich";
-  const steps = ["loading", "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game", "journal", "next", "outfits", "snacks"];
-  const extraSteps = ["planned", "coupons", "game", "journal", "outfits", "snacks"];
+  const steps = ["loading", "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game", "journal", "next", "outfits", "snacks", "movies", "ideas", "question"];
+  const extraSteps = ["planned", "coupons", "game", "journal", "outfits", "snacks", "movies", "ideas", "question"];
   const questionSteps = ["date", "time", "activity", "place", "note"];
   const state = { date: "", time: "", activity: null, place: null, "next-activity": null };
   // The "Something else" text field that belongs to each choice group.
