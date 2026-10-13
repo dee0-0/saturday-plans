@@ -469,6 +469,13 @@
     renderList(true);
     if (!photos && !videos) return;
     window.LetterFX?.chime?.();
+    window.DateActivity?.post({
+      kind: "journal.media",
+      text: `added ${describeBatch(photos, videos)}`,
+      detail: entries.find((item) => item.key === key)?.activity || "",
+      step: "journal",
+      icon: "camera"
+    });
     if (window.DateApp.me() === "her") {
       const entry = entries.find((item) => item.key === key);
       window.DateApp.notify(
@@ -566,6 +573,13 @@
       savedEl.hidden = !canPlanNext();
       window.LetterFX?.burstFrom(saveButton, 26);
       window.LetterFX?.chime?.();
+      window.DateActivity?.post({
+        kind: "journal.review",
+        text: body.overflow ? "rated our date ∞ / 5" : `rated our date ${plural(body.stars, "heart")}`,
+        detail: `${body.activity} · ${window.DateApp.formatDate(body.date)}`,
+        step: "journal",
+        icon: "heart"
+      });
       if (author === "her") {
         window.DateApp.notify(
           overflow ? `${names.her} rated your date ∞/5 💞 (she broke the scale)` : `${names.her} rated your date ${stars}/5 ${stars >= 4 ? "💕" : "💌"}`,

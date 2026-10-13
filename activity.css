@@ -1,1 +1,293 @@
-/* placeholder: filled in by the feature build */
+/* Activity bell, panel and toasts (activity.js). Builds on style.css tokens. */
+
+/* ---------- Bell: left of the sound toggle (40px wide off the landing page) ---------- */
+.activity-bell {
+  position: fixed;
+  z-index: 20;
+  top: max(16px, env(safe-area-inset-top));
+  right: calc(max(14px, env(safe-area-inset-right)) + 48px);
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .72);
+  border-radius: 999px;
+  background: rgba(255, 250, 252, .68);
+  color: #8e3c5b;
+  box-shadow: 0 5px 18px rgba(78, 35, 52, .08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+.activity-bell:hover { background: rgba(255, 255, 255, .9); box-shadow: 0 7px 20px rgba(78, 35, 52, .12); transform: translateY(-1px); }
+.activity-bell:active { transform: scale(.97); }
+.activity-bell:focus-visible { outline: 3px solid rgba(220, 79, 131, .3); outline-offset: 3px; }
+.activity-bell .icon, .activity-bell .lucide { width: 16px; height: 16px; transform-origin: 50% 2px; }
+.activity-bell.is-ringing .lucide { animation: activity-ring 900ms ease-in-out; }
+@keyframes activity-ring {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(16deg); }
+  30% { transform: rotate(-14deg); }
+  45% { transform: rotate(10deg); }
+  60% { transform: rotate(-6deg); }
+  75% { transform: rotate(3deg); }
+}
+.activity-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  min-width: 19px;
+  height: 19px;
+  place-items: center;
+  padding: 0 5px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #e5304f;
+  color: #fff;
+  box-shadow: 0 2px 7px rgba(160, 20, 50, .3);
+  font-size: 10px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.activity-badge.is-bumped { animation: activity-badge-pop 460ms cubic-bezier(.3, .7, .3, 1.4); }
+@keyframes activity-badge-pop { 0% { transform: scale(.4); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+
+/* Not on the envelope landing. */
+body.is-envelope-landing .activity-bell,
+body.is-envelope-landing .activity-toast { display: none; }
+/* On narrow phones the bell sits where the header's "for the two of us" ends, so that part steps aside. */
+@media (max-width: 386px) {
+  body:not(.is-envelope-landing) .brand-line,
+  body:not(.is-envelope-landing) .brand-caption { display: none; }
+}
+
+/* ---------- Toast: something new while the letter is open ---------- */
+.activity-toast {
+  position: fixed;
+  z-index: 45;
+  top: calc(max(16px, env(safe-area-inset-top)) + 50px);
+  left: 50%;
+  display: flex;
+  width: min(calc(100% - 24px), 380px);
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid #ecc4d2;
+  border-radius: 16px;
+  background: rgba(255, 250, 252, .97);
+  box-shadow: 0 14px 34px rgba(80, 20, 45, .2);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -12px) scale(.97);
+  transition: opacity 220ms ease, transform 300ms cubic-bezier(.2, .8, .25, 1.2);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.activity-toast.is-visible { opacity: 1; pointer-events: auto; transform: translate(-50%, 0) scale(1); }
+.activity-toast-body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 11px 4px 11px 11px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.activity-toast-icon { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 11px; background: var(--rose); color: #fff; }
+.activity-toast-icon .icon, .activity-toast-icon .lucide { width: 18px; height: 18px; }
+.activity-toast-copy { display: grid; min-width: 0; gap: 2px; padding-top: 1px; }
+.activity-toast-text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.activity-toast-text strong, .activity-item-text strong { color: var(--rose-deep); font-weight: 800; }
+.activity-toast-copy small { overflow: hidden; color: var(--muted); font-size: 11px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
+.activity-toast-close {
+  display: grid;
+  width: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #a59aa1;
+  cursor: pointer;
+}
+.activity-toast-close .icon, .activity-toast-close .lucide { width: 16px; height: 16px; }
+.activity-toast-body:focus-visible, .activity-toast-close:focus-visible { outline: 3px solid rgba(220, 79, 131, .3); outline-offset: -3px; border-radius: 14px; }
+
+/* ---------- Panel ---------- */
+html.activity-open, html.activity-open body { overflow: hidden; }
+.activity-layer { position: fixed; z-index: 50; inset: 0; }
+.activity-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(41, 20, 32, .3);
+  opacity: 0;
+  transition: opacity 220ms ease;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+.activity-layer.is-open .activity-backdrop { opacity: 1; }
+.activity-panel {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  display: flex;
+  width: min(400px, calc(100% - 20px));
+  max-height: min(640px, calc(100% - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .86);
+  border-radius: 24px;
+  background: rgba(255, 253, 253, .98);
+  box-shadow: var(--shadow-card);
+  color: var(--ink);
+  opacity: 0;
+  outline: none;
+  transform: translateY(-10px) scale(.98);
+  transform-origin: top right;
+  transition: opacity 200ms ease, transform 260ms cubic-bezier(.2, .8, .25, 1);
+}
+.activity-layer.is-open .activity-panel { opacity: 1; transform: none; }
+.activity-head { display: flex; flex: 0 0 auto; align-items: center; gap: 10px; padding: 12px 10px 11px 14px; border-bottom: 1px solid #f3e6ec; }
+.activity-head-icon { display: grid; width: 32px; height: 32px; flex: 0 0 auto; place-items: center; border-radius: 10px; background: var(--rose-light); color: var(--rose-deep); }
+.activity-head-icon .icon, .activity-head-icon .lucide { width: 17px; height: 17px; }
+.activity-title { flex: 1; margin: 0; font-size: 18px; letter-spacing: -.03em; }
+.activity-close {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: #8c8088;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+.activity-close:hover { background: #fff0f5; color: var(--rose-deep); }
+.activity-close .icon, .activity-close .lucide { width: 19px; height: 19px; }
+
+.activity-list {
+  min-height: 0;
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  list-style: none;
+}
+.activity-list li + li { margin-top: 3px; }
+.activity-item {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 10px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+.activity-item.is-link { cursor: pointer; transition: background 160ms ease; }
+.activity-item.is-link:hover { background: #fff4f8; }
+.activity-item.is-link:active { background: #ffeaf2; }
+.activity-item.is-new { background: #fff6f9; }
+.activity-item-icon { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border-radius: 12px; background: var(--rose); color: #fff; }
+.activity-item-icon .icon, .activity-item-icon .lucide { width: 18px; height: 18px; }
+.activity-item-copy { display: grid; min-width: 0; flex: 1; gap: 2px; }
+.activity-item-text { font-size: 13px; font-weight: 600; line-height: 1.42; overflow-wrap: anywhere; }
+.activity-item-detail {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #6f6570;
+  font-size: 12px;
+  line-height: 1.42;
+  overflow-wrap: anywhere;
+}
+.activity-item-time { margin-top: 1px; color: #a59aa1; font-size: 11px; font-weight: 700; }
+.activity-item-dot { width: 9px; height: 9px; flex: 0 0 auto; margin-top: 5px; border-radius: 50%; background: #e5304f; }
+/* Lines up with the dots of items that have an arrow. */
+.activity-item:not(.is-link) .activity-item-dot { margin-right: 27px; }
+.activity-item .activity-item-arrow { width: 16px; height: 16px; margin-top: 10px; color: #d3bec8; }
+/* My own things: there, but quieter. */
+.activity-item.is-mine .activity-item-icon { background: #f3e8ed; color: #a07d8d; }
+.activity-item.is-mine .activity-item-text { color: #7d737b; font-weight: 500; }
+.activity-item.is-mine .activity-item-text strong { color: #8d7781; font-weight: 700; }
+.activity-item.is-mine .activity-item-detail { color: #9a9198; }
+
+.activity-empty { flex: 0 0 auto; padding: 28px 24px 30px; color: var(--muted); font-size: 13px; line-height: 1.5; text-align: center; }
+.activity-empty p { margin: 0; }
+.activity-empty-icon { display: grid; width: 46px; height: 46px; margin: 0 auto 11px; place-items: center; border-radius: 15px; background: var(--rose-light); color: var(--rose-deep); }
+.activity-empty-icon .icon, .activity-empty-icon .lucide { width: 21px; height: 21px; }
+.activity-empty .activity-empty-title { margin-bottom: 4px; color: var(--ink); font-size: 14px; font-weight: 800; }
+
+/* ---------- Phone notifications ---------- */
+.activity-push { display: flex; flex: 0 0 auto; align-items: center; gap: 11px; padding: 12px 14px 13px; border-top: 1px solid #f3e6ec; background: #fff7fa; }
+.activity-push-icon { display: grid; width: 32px; height: 32px; flex: 0 0 auto; place-items: center; border: 1px solid var(--rose-border); border-radius: 10px; background: #fff; color: var(--rose-deep); }
+.activity-push-icon .icon, .activity-push-icon .lucide { width: 16px; height: 16px; }
+.activity-push.is-on .activity-push-icon { border-color: transparent; background: var(--rose); color: #fff; }
+.activity-push-copy { display: grid; min-width: 0; flex: 1; gap: 2px; }
+.activity-push-copy strong { font-size: 12px; font-weight: 800; }
+.activity-push-copy small { color: var(--muted); font-size: 11.5px; line-height: 1.45; }
+.activity-push-button {
+  min-height: 38px;
+  flex: 0 0 auto;
+  padding: 6px 13px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--rose);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 160ms ease, opacity 160ms ease;
+}
+.activity-push-button:hover:not(:disabled) { background: var(--rose-deep); }
+.activity-push.is-on .activity-push-button { border-color: var(--rose-border); background: #fff; color: var(--rose-deep); }
+.activity-push.is-on .activity-push-button:hover:not(:disabled) { background: #fff4f8; }
+.activity-push-button:disabled { opacity: .6; cursor: wait; }
+.activity-close:focus-visible, .activity-item:focus-visible, .activity-push-button:focus-visible { outline: 3px solid rgba(220, 79, 131, .32); outline-offset: -2px; }
+.activity-push-button:focus-visible { outline-offset: 2px; }
+
+/* ---------- Small and short screens ---------- */
+@media (max-width: 360px) {
+  .activity-head { padding-left: 12px; }
+  .activity-item { gap: 9px; padding: 9px 8px; }
+  .activity-item-icon { width: 32px; height: 32px; border-radius: 11px; }
+  .activity-push { gap: 9px; padding-right: 12px; padding-left: 12px; }
+  .activity-push-icon { display: none; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .activity-bell { top: max(8px, env(safe-area-inset-top)); width: 36px; height: 36px; }
+  .activity-toast { top: calc(max(8px, env(safe-area-inset-top)) + 44px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-panel, .activity-layer.is-open .activity-panel { transform: none; }
+  .activity-toast, .activity-toast.is-visible { transform: translate(-50%, 0); }
+  .activity-bell.is-ringing .lucide, .activity-badge.is-bumped { animation: none; }
+}

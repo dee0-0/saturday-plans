@@ -115,6 +115,7 @@
       ticket?.classList.add("just-redeemed");
       window.LetterFX?.burstFrom(ticket, 26);
       window.LetterFX?.chime?.();
+      window.DateActivity?.post({ kind: "coupons.redeem", text: `redeemed a coupon: ${coupon.title}`, detail: coupon.detail || "", step: "coupons", icon: "ticket" });
       const delivered = await window.DateApp.notify(`${herName()} redeemed a coupon 🎟️`, `${coupon.icon || ""} ${coupon.title}\n${coupon.detail || ""}`.trim(), ["tickets"]);
       if (!delivered) showError("Redeemed! The notification didn’t go through, so maybe tell me in person.");
     } catch (error) {
@@ -409,6 +410,7 @@
         });
       }
       const fresh = await unlock(bonus);
+      if (fresh) window.DateActivity?.post({ kind: "coupons.game", text: "won the fry game", detail: `${points}, prize coupon unlocked`, step: "coupons", icon: "trophy" });
       if (fresh) window.DateApp?.notify(`${herName()} won the fry game 🍟🏆`, `She scored ${score} points (needed ${TARGET}) and unlocked the prize coupon.`, ["trophy", "fries"]);
     } else {
       const cheer = score >= TARGET * 0.7 ? "So close!" : "Nice try!";

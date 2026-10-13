@@ -63,7 +63,33 @@
 <canvas class="petal-canvas" id="petal-canvas" aria-hidden="true"></canvas>
 
 <!-- ===== ACTIVITY BELL (activity.js, activity.css) ===== -->
-<div class="activity-root" id="activity-root"></div>
+<div class="activity-root" id="activity-root" hidden>
+  <button class="activity-bell" id="activity-bell" type="button" aria-label="Activity" aria-haspopup="dialog" aria-controls="activity-panel" aria-expanded="false">
+    <i class="icon" data-lucide="bell" aria-hidden="true"></i>
+    <span class="activity-badge" id="activity-badge" aria-hidden="true" hidden>0</span>
+  </button>
+  <div class="activity-toast" id="activity-toast" role="status" aria-live="polite" hidden>
+    <button class="activity-toast-body" id="activity-toast-body" type="button"></button>
+    <button class="activity-toast-close" id="activity-toast-close" type="button" aria-label="Dismiss"><i class="icon" data-lucide="x" aria-hidden="true"></i></button>
+  </div>
+  <div class="activity-layer" id="activity-layer" hidden>
+    <div class="activity-backdrop" data-activity-close aria-hidden="true"></div>
+    <section class="activity-panel" id="activity-panel" role="dialog" aria-modal="true" aria-labelledby="activity-title" tabindex="-1">
+      <header class="activity-head">
+        <span class="activity-head-icon" aria-hidden="true"><i class="icon" data-lucide="bell" aria-hidden="true"></i></span>
+        <h2 class="activity-title" id="activity-title">Activity</h2>
+        <button class="activity-close" type="button" data-activity-close aria-label="Close"><i class="icon" data-lucide="x" aria-hidden="true"></i></button>
+      </header>
+      <ul class="activity-list" id="activity-list" aria-label="What's new" hidden></ul>
+      <div class="activity-empty" id="activity-empty"></div>
+      <footer class="activity-push" id="activity-push" hidden>
+        <span class="activity-push-icon" aria-hidden="true"><i class="icon" data-lucide="smartphone" aria-hidden="true"></i></span>
+        <span class="activity-push-copy"><strong>Phone notifications</strong><small id="activity-push-text"></small></span>
+        <button class="activity-push-button" id="activity-push-button" type="button" hidden>Turn on</button>
+      </footer>
+    </section>
+  </div>
+</div>
 <!-- ===== END ACTIVITY BELL ===== -->
 
 <button class="sound-toggle" id="sound-toggle" type="button" aria-pressed="true" aria-label="Turn sound off">

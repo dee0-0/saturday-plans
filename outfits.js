@@ -335,6 +335,19 @@
   }
 
   /* ------------------------------ Actions -------------------------------- */
+  // Quick taps (3, then 4, then 5 hearts) land in the activity feed once, with the last rating.
+  const rateActivity = new Map();
+  function postRating(id, stars) {
+    window.clearTimeout(rateActivity.get(id));
+    rateActivity.set(id, window.setTimeout(() => {
+      rateActivity.delete(id);
+      const state = current();
+      const outfit = findOutfit(state, id);
+      if (!outfit) return;
+      window.DateActivity?.post({ kind: "outfits.rate", text: `gave ${titleOf(outfit, state.outfits.indexOf(outfit))} ${stars} heart${stars === 1 ? "" : "s"}`, detail: outfitLine(), step: "outfits", icon: "heart", push: false });
+    }, 2500));
+  }
+
   function rate(id, stars) {
     const author = me();
     const outfit = findOutfit(current(), id);
@@ -343,7 +356,8 @@
     send({ action: "rate", key, id, author, stars }, (state) => {
       const target = findOutfit(state, id);
       if (target) target.ratings = { ...target.ratings, [author]: stars };
-    }).catch((error) => failed(error, "Couldn’t save your hearts. Please try again."));
+    }).then(() => postRating(id, stars))
+      .catch((error) => failed(error, "Couldn’t save your hearts. Please try again."));
   }
 
   function togglePick(id) {
@@ -360,6 +374,7 @@
       if (!next) return;
       const card = listEl.querySelector(`.outfit-card[data-id="${CSS.escape(id)}"]`);
       window.LetterFX?.burstFrom(card?.querySelector(".outfit-pick") || card, 18);
+      window.DateActivity?.post({ kind: "outfits.pick", text: `picked an outfit: ${titleOf(outfit, index)}`, detail: outfitLine(), step: "outfits", icon: "crown" });
       if (author === "her") {
         const title = titleOf(outfit, index);
         app().notify(`${nameOf("her")} picked her favorite outfit: ${title}`, outfitLine(), ["crown"]);
@@ -382,6 +397,7 @@
       const target = findOutfit(draft, id);
       if (target) target.comments = [...target.comments, temp];
     }).then(() => {
+      window.DateActivity?.post({ kind: "outfits.comment", text: `commented on ${titleOf(outfit, index)}`, detail: text, step: "outfits", icon: "message-circle" });
       if (author === "her") {
         app().notify(`${nameOf("her")} commented on ${titleOf(outfit, index)}`, `“${text}”\n${outfitLine()}`, ["speech_balloon"]);
       }
@@ -515,6 +531,7 @@
         window.LetterFX?.burstFrom(card, 24);
       }
       window.LetterFX?.chime?.();
+      window.DateActivity?.post({ kind: "outfits.post", text: title ? `posted an outfit: ${title}` : "posted an outfit", detail: outfitLine(), step: "outfits", icon: "shirt" });
       if (author === "her") {
         app().notify(title ? `${nameOf("her")} posted an outfit: ${title}` : `${nameOf("her")} posted an outfit`, outfitLine(), ["shirt"]);
       }
