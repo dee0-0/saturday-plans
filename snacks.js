@@ -211,6 +211,8 @@
     const temp = { id: `temp-${tempCount += 1}`, name, author, done: false, doneBy: null, at: new Date().toISOString(), doneAt: null, pending: true };
     send({ action: "add", name, author }, (list) => {
       if (!list.some((snack) => !snack.done && sameName(snack.name, name))) list.push(temp);
+    }).then(() => {
+      window.DateActivity?.post({ kind: "snacks.add", text: `added ${name} to the snack list`, step: "snacks", icon: "popcorn", push: false });
     }).catch(() => {
       // Give her the text back so she doesn't have to type it again.
       if (!input.value) input.value = name;
@@ -228,6 +230,8 @@
     send({ action: "toggle", id, author, done }, (list) => {
       const target = list.find((item) => item.id === id);
       if (target) Object.assign(target, { done, doneBy: done ? author : null, doneAt: done ? at : null });
+    }).then(() => {
+      if (done) window.DateActivity?.post({ kind: "snacks.got", text: `got the ${snack.name}`, step: "snacks", icon: "shopping-bag", push: false });
     }).catch(() => {});
   }
 

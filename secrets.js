@@ -303,6 +303,7 @@
       text: prize ? `You unlocked a secret coupon: ${prize.title}.` : CONFIG.allSecretsMessage || "You found every single secret.",
       duration: 8000
     });
+    window.DateActivity?.post({ kind: "secrets.all", text: "found every secret", detail: prize ? `Unlocked ${prize.title}` : "", step: "planned", icon: "trophy" });
     notify(
       `${herName()} found ALL the secrets 🗝️`,
       `All ${SECRETS.length} easter eggs found${prize ? `, so "${prize.title}" is unlocked` : ""}.`,
@@ -339,6 +340,7 @@
     }
     renderTracker();
     if (fresh) {
+      window.DateActivity?.post({ kind: "secrets.find", text: `found a secret: ${secret.name}`, detail: `${count} of ${total} found`, step: "planned", icon: "key-round", push: false });
       notify(`${herName()} found a secret (${count}/${total})`, `${secret.name}${detail ? `\n${detail}` : ""}`, ["key"]);
       if (count === total) finishHunt();
     }

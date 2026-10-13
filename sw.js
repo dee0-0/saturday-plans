@@ -38,3 +38,55 @@ self.addEventListener("fetch", (event) => {
     }
   })());
 });
+
+// Web push (activity.js subscribes, the Worker sends): show what the other one
+// did, and open the letter on that page when the notification is tapped.
+const STEP_NAME = /^[a-z]{1,20}$/;
+
+function scopeUrl(path) {
+  return new URL(path, self.registration.scope).href;
+}
+
+// Open windows of this letter (other sites on the same origin don't count).
+async function letterWindows() {
+  const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  return windows.filter((client) => client.url.startsWith(self.registration.scope));
+}
+
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    try { payload = { body: event.data.text() }; } catch { payload = {}; }
+  }
+  if (!payload || typeof payload !== "object") payload = {};
+  const text = (value) => (typeof value === "string" ? value.trim() : "");
+  const title = text(payload.title) || "Our date";
+  const body = text(payload.title) ? text(payload.body) : text(payload.body) || "Something new is waiting in our letter.";
+  const step = STEP_NAME.test(payload.step || "") ? payload.step : "";
+  const tag = text(payload.tag).slice(0, 64) || "activity";
+  const icon = scopeUrl("assets/icon-192.png");
+  event.waitUntil(Promise.all([
+    self.registration.showNotification(title, { body, icon, badge: icon, tag, renotify: true, data: { step } }),
+    // An open letter refreshes its bell right away.
+    letterWindows()
+      .then((windows) => windows.forEach((client) => client.postMessage({ type: "date:activity" })))
+      .catch(() => {})
+  ]));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const step = STEP_NAME.test(event.notification.data?.step || "") ? event.notification.data.step : "";
+  event.waitUntil((async () => {
+    const windows = await letterWindows();
+    const client = windows.find((item) => item.focused) || windows.find((item) => item.visibilityState === "visible") || windows[0];
+    if (client) {
+      try { await client.focus(); } catch { /* Still show the page below. */ }
+      client.postMessage({ type: "date:show-step", step });
+      return;
+    }
+    await self.clients.openWindow(scopeUrl(step ? `./?step=${encodeURIComponent(step)}` : "./"));
+  })());
+});
