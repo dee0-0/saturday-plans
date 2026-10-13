@@ -11,9 +11,10 @@
   const $ = (selector) => document.querySelector(selector);
   const params = new URLSearchParams(window.location.search);
   const preview = params.has("preview");
-  // Preview has its own store on the Worker, so it keeps its own "seen" time and subscription record.
+  // Preview has its own activity feed, but the browser's push subscription is
+  // shared with the live letter. Never touch that subscription from preview.
   const SEEN_KEY = preview ? "date-letter-activity-seen-preview" : "date-letter-activity-seen";
-  const PUSH_KEY = preview ? "date-letter-push-preview" : "date-letter-push";
+  const PUSH_KEY = "date-letter-push";
   const POLL_MS = 15000;
   const MAX_BACKOFF_MS = 4 * 60 * 1000;
   const TOAST_MS = 6500;
@@ -259,7 +260,7 @@
         text: clip(text, 140),
         detail: clip(detail, 200),
         step: STEPS.includes(step) ? step : "",
-        push: push !== false
+        push: !preview && push !== false
       };
       if (ICON.test(icon || "")) body.icon = icon;
       if (!body.text) return null;
@@ -508,9 +509,11 @@
   const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window && window.isSecureContext;
   let pushState = { subscribed: false, busy: "", error: "", note: "" };
   let syncing = null;
+  let pushSyncAgain = false;
   let keyRequest = null;
 
   function support() {
+    if (preview) return "preview";
     if (iosTooOld) return "none";
     // iPhones only get web push in the Home Screen app, not in Safari itself.
     if (isIOS && !standalone()) return "howto";
@@ -536,6 +539,12 @@
     pushEl.hidden = mode === "none";
     if (mode === "none") return;
     pushEl.classList.toggle("is-on", mode === "ok" && pushState.subscribed);
+    if (mode === "preview") {
+      pushText.textContent = "The activity bell works in preview. Phone notifications are only available in the live letter.";
+      pushButton.hidden = true;
+      pushButton.disabled = true;
+      return;
+    }
     if (mode === "howto") {
       pushText.textContent = "Add this letter to your Home Screen (Share, then Add to Home Screen), open it from there and turn notifications on here.";
       pushButton.hidden = true;
@@ -545,7 +554,7 @@
     pushButton.hidden = false;
     pushButton.disabled = Boolean(pushState.busy);
     if (pushState.busy) {
-      pushButton.textContent = pushState.busy === "on" ? "Turning on…" : "Turning off…";
+      pushButton.textContent = pushState.busy === "sync" ? "Updating…" : pushState.busy === "on" ? "Turning on…" : "Turning off…";
     } else if (pushState.subscribed) {
       pushButton.textContent = "Turn off";
     } else {
@@ -559,7 +568,7 @@
       return;
     }
     if (pushState.error) pushText.textContent = pushState.error;
-    else if (pushState.subscribed) pushText.textContent = pushState.note || "On on this phone";
+    else if (pushState.subscribed) pushText.textContent = pushState.note || `On for ${app()?.names?.[app()?.me()] || "you"} on this phone`;
     else pushText.textContent = `Get a notification on this phone when ${otherName()} does something here.`;
   }
 
@@ -577,6 +586,7 @@
   }
 
   async function registration() {
+    if (preview) throw new Error("Phone notifications are only available in the live letter.");
     const container = navigator.serviceWorker;
     try {
       if (!(await container.getRegistration())) await container.register("sw.js");
@@ -604,6 +614,7 @@
   // The Worker's push key, asked for once (and again after a failure). Fetched when the panel
   // opens, so "Turn on" gets to subscribing quickly, while Safari still counts it as the tap's doing.
   function pushKey() {
+    if (preview) return Promise.reject(new Error("Phone notifications are only available in the live letter."));
     if (!keyRequest) {
       keyRequest = ready()
         .then((api) => api.apiRequest("/push/key"))
@@ -618,6 +629,7 @@
 
   // Subscribes (or reuses this phone's subscription) and tells the Worker who it belongs to.
   async function subscribe(reg) {
+    if (preview) throw new Error("Phone notifications are only available in the live letter.");
     const api = await ready();
     const bytes = keyBytes(await pushKey());
     let subscription = await reg.pushManager.getSubscription();
@@ -628,11 +640,13 @@
     }
     if (!subscription) subscription = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: bytes });
     const previous = record();
-    await api.apiRequest("/push/subscribe", "POST", { author: api.me(), subscription: subscriptionBody(subscription) });
+    const author = api.me();
+    await api.apiRequest("/push/subscribe", "POST", { author, subscription: subscriptionBody(subscription) });
     if (previous?.endpoint && previous.endpoint !== subscription.endpoint) {
       api.apiRequest("/push/unsubscribe", "POST", { endpoint: previous.endpoint }).catch(() => {});
     }
-    save(PUSH_KEY, JSON.stringify({ endpoint: subscription.endpoint, author: api.me(), at: Date.now() }));
+    save(PUSH_KEY, JSON.stringify({ endpoint: subscription.endpoint, author, at: Date.now() }));
+    if (author !== api.me()) pushSyncAgain = true;
     return subscription;
   }
 
@@ -649,7 +663,7 @@
   }
 
   async function turnOn() {
-    if (pushState.busy) return;
+    if (preview || pushState.busy) return;
     // Asked right away, inside the tap: Safari only shows the question for a tap.
     const asking = permission() === "granted" ? Promise.resolve("granted") : askPermission();
     setPush({ busy: "on", error: "", note: "" });
@@ -666,11 +680,13 @@
       api.apiRequest("/push/test", "POST", { author: api.me() }).catch(() => {});
     } catch {
       setPush({ busy: "", error: "Couldn’t turn on notifications. Check your connection and try again." });
+    } finally {
+      continuePushSync();
     }
   }
 
   async function turnOff() {
-    if (pushState.busy) return;
+    if (preview || pushState.busy) return;
     setPush({ busy: "off", error: "", note: "" });
     let endpoint = record()?.endpoint || "";
     try {
@@ -682,12 +698,14 @@
       }
     } catch {
       setPush({ busy: "", error: "Couldn’t turn notifications off. Please try again." });
+      continuePushSync();
       return;
     }
     // Remembered, so the next visit doesn't switch it back on by itself.
     save(PUSH_KEY, JSON.stringify({ off: true }));
     setPush({ busy: "", subscribed: false });
     if (endpoint) ready().then((api) => api.apiRequest("/push/unsubscribe", "POST", { endpoint })).catch(() => { /* A dead endpoint is dropped on the next send anyway. */ });
+    continuePushSync();
   }
 
   pushButton.addEventListener("click", () => (pushState.subscribed ? turnOff() : turnOn()));
@@ -696,8 +714,18 @@
   // whose subscription went missing, or that belongs to the other person (?me switched who this
   // phone is), subscribe again quietly. Once a day the Worker hears about it again anyway, in
   // case it dropped the subscription. Turned off here stays off.
-  function syncPush() {
-    if (syncing) return syncing;
+  function continuePushSync() {
+    if (!pushSyncAgain || syncing || pushState.busy) return;
+    pushSyncAgain = false;
+    syncPush();
+  }
+
+  function syncPush({ identityChanged = false } = {}) {
+    if (preview) return Promise.resolve();
+    if (syncing || pushState.busy) {
+      if (identityChanged) pushSyncAgain = true;
+      return syncing || Promise.resolve();
+    }
     syncing = (async () => {
       if (support() !== "ok" || pushState.busy) return;
       if (permission() !== "granted") {
@@ -709,6 +737,7 @@
         setPush({ subscribed: false });
         return;
       }
+      setPush({ busy: "sync" });
       let subscription = null;
       try {
         const api = await ready();
@@ -730,7 +759,11 @@
         // Offline for now: the subscription this phone still has keeps counting as on.
         setPush({ subscribed: Boolean(subscription && saved?.endpoint === subscription.endpoint) });
       }
-    })().finally(() => { syncing = null; });
+    })().finally(() => {
+      syncing = null;
+      if (pushState.busy === "sync") setPush({ busy: "" });
+      continuePushSync();
+    });
     return syncing;
   }
 
@@ -739,6 +772,11 @@
     // sw.js: a tapped notification shows its page here; a push that arrived refreshes the feed.
     navigator.serviceWorker.addEventListener("message", (event) => {
       const data = event.data || {};
+      // An old worker might broadcast to every open letter. Keep its live
+      // notification from navigating a preview, and legacy preview messages
+      // from navigating the live letter.
+      const messagePreview = data.store === "preview";
+      if (preview !== messagePreview) return;
       if (data.type === "date:show-step") {
         if (panelOpen) closePanel({ restoreFocus: false });
         goTo(data.step);
@@ -781,9 +819,27 @@
   });
 
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) poll({ force: true });
+    if (!document.hidden) {
+      poll({ force: true });
+      syncPush();
+    }
   });
-  window.addEventListener("focus", () => poll());
+  window.addEventListener("focus", () => {
+    poll();
+    syncPush();
+  });
+
+  function identityChanged() {
+    hideToast();
+    listSignature = "";
+    render();
+    setPush({ note: "", error: "" });
+    syncPush({ identityChanged: true });
+  }
+  document.addEventListener("date:identity", identityChanged);
+  window.addEventListener("storage", (event) => {
+    if (event.key === "date-letter-author" || event.key === null) identityChanged();
+  });
 
   // Relative times ("2 min ago") stay fresh while the panel is open.
   window.setInterval(() => {

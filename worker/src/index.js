@@ -1032,6 +1032,27 @@ function sortIdeas(ideas) {
   return [...open, ...used];
 }
 
+// The next plan and its selected idea commit together. Old clients can omit this.
+async function consumePlanIdea(txn, input, plan) {
+  if (input.jarIdea === undefined || input.jarIdea === null) return null;
+  const selected = input.jarIdea;
+  if (!selected || typeof selected !== "object") throw new Error("Choose an idea from the jar again.");
+  const id = itemId(selected.id, "That idea is gone. Pull another idea from the jar.");
+  if (!AUTHORS.includes(selected.author)) throw new Error("Choose who is planning.");
+  const same = (text) => String(text || "").trim().replace(/\s+/g, " ").toLowerCase();
+  const text = cleanLabel(selected.text, 120, "Choose an idea from the jar again.");
+  const activity = cleanText(selected.activity, "Activity");
+  if (same(activity) !== same(plan.activity)) throw new Error("The activity changed. Choose an idea from the jar again.");
+  const ideas = (await txn.get(IDEAS_KEY)) || [];
+  const idea = ideas.find((item) => item.id === id);
+  if (!idea || idea.usedAt || same(idea.text) !== same(text)) {
+    throw new Error("That idea has changed or was already used. Pull another idea from the jar.");
+  }
+  Object.assign(idea, { usedAt: plan.createdAt, usedBy: selected.author, usedForPlan: plan.id });
+  await txn.put(IDEAS_KEY, ideas);
+  return id;
+}
+
 function normalizeIdeaAction(input) {
   if (!input || typeof input !== "object" || !IDEA_ACTIONS.includes(input.action)) throw new Error("Unknown idea action.");
   const change = { action: input.action };
@@ -1258,13 +1279,23 @@ function sortCustom(custom) {
   return [...waiting, ...asked];
 }
 
+// Other people's queued wording never leaves the store; order alone keeps "Up next" accurate.
+function customQuestionView(doc, author) {
+  const queue = doc.custom.filter((item) => !item.usedOn).sort(byAt)
+    .map(({ id, author: owner, at }) => ({ id, author: owner, at }));
+  return {
+    author,
+    custom: sortCustom(doc.custom.filter((item) => item.author === author)),
+    otherWaiting: queue.filter((item) => item.author !== author).length,
+    queue
+  };
+}
+
 function normalizeQuestionAction(input) {
   if (!input || typeof input !== "object" || !QUESTION_ACTIONS.includes(input.action)) throw new Error("Unknown question action.");
   const change = { action: input.action };
-  if (change.action !== "uncustom") {
-    if (!AUTHORS.includes(input.author)) throw new Error("Choose who is writing.");
-    change.author = input.author;
-  }
+  if (!AUTHORS.includes(input.author)) throw new Error("Choose who is writing.");
+  change.author = input.author;
   if (change.action === "answer") {
     change.day = questionDay(input.day);
     const text = typeof input.text === "string" ? input.text.replace(/\r\n?/g, "\n").trim() : "";
@@ -1343,7 +1374,14 @@ export class PlanStore {
     if (path === "/outfits") return this.outfits(request, url, origin);
     if (path === "/snacks") return this.snacks(request, origin);
     if (path === "/activity") return this.activity(request, url, origin);
-    if (path.startsWith("/push/")) return this.push(request, path, origin);
+    if (path.startsWith("/push/")) {
+      if (url.searchParams.get("store") === "preview" && path !== "/push/unsubscribe") {
+        // Finish the forwarded request stream before replying (especially for old clients' POSTs).
+        await request.arrayBuffer();
+        return json({ error: "Phone notifications are disabled in preview. Use the real letter instead." }, 409, origin);
+      }
+      return this.push(request, path, origin);
+    }
     if (path === "/movies") return this.movies(request, origin);
     if (path === "/ideas") return this.ideas(request, origin);
     if (path === "/question" || path === "/question/custom") return this.question(request, url, origin);
@@ -1501,17 +1539,23 @@ export class PlanStore {
       try { input = await request.json(); } catch { return json({ error: "Invalid request body." }, 400, origin); }
 
       try {
+        const requestId = input?.requestId === undefined ? null : itemId(input.requestId, "Could not identify this plan request.");
         const result = await this.ctx.storage.transaction(async (txn) => {
           const existing = await txn.get(PLAN_KEY);
+          // A lost response can be retried without replacing the saved date or consuming twice.
+          if (requestId && existing?.creationRequestId === requestId) return { plan: existing, replayed: true };
           if (existing?.status === "confirmed" && !planStarted(existing)) return { conflict: true, plan: existing };
           const plan = normalizePlan(input, null);
+          const jarIdeaId = await consumePlanIdea(txn, input, plan);
+          if (requestId) plan.creationRequestId = requestId;
+          if (jarIdeaId) plan.jarIdeaId = jarIdeaId;
           await archivePlan(txn, existing);
           await txn.put(PLAN_KEY, plan);
           return { plan };
         });
         return result.conflict
           ? json({ error: "Your current date hasn't happened yet.", plan: result.plan }, 409, origin)
-          : json({ plan: result.plan }, 201, origin);
+          : json({ plan: result.plan, jarIdeaUsed: Boolean(result.plan.jarIdeaId) }, result.replayed ? 200 : 201, origin);
       } catch (error) {
         return json({ error: error.message || "Could not save the plan." }, 400, origin);
       }
@@ -1768,7 +1812,7 @@ export class PlanStore {
       await txn.put(ACTIVITY_KEY, list.slice(0, MAX_ACTIVITY));
     });
     // A notification that can't be delivered never fails the activity itself.
-    if (change.push) await this.background(this.notifyOthers(change.item));
+    if (change.push && url.searchParams.get("store") !== "preview") await this.background(this.notifyOthers(change.item));
     return json({ item: change.item }, 201, origin);
   }
 
@@ -1786,7 +1830,7 @@ export class PlanStore {
 
   async notifyOthers(item) {
     const subscriptions = ((await this.ctx.storage.get(PUSH_KEY)) || []).filter((subscription) => subscription.author !== item.author);
-    return this.pushTo(subscriptions, activityPush(item));
+    return this.pushTo(subscriptions, { ...activityPush(item), store: "live" });
   }
 
   // The Worker's own VAPID key pair: made on first need, then kept in storage.
@@ -1876,7 +1920,7 @@ export class PlanStore {
     if (path === "/push/test") {
       if (!AUTHORS.includes(input?.author)) return json({ error: "Choose whose phone this is." }, 400, origin);
       const own = ((await storage.get(PUSH_KEY)) || []).filter((item) => item.author === input.author);
-      return json(await this.pushTo(own, TEST_PUSH), 200, origin);
+      return json(await this.pushTo(own, { ...TEST_PUSH, store: "live" }), 200, origin);
     }
     return json({ error: "Not found." }, 404, origin);
   }
@@ -1931,7 +1975,9 @@ export class PlanStore {
     const path = url.pathname;
     if (path === "/question/custom") {
       if (request.method !== "GET") return json({ error: "Method not allowed." }, 405, origin);
-      return json({ custom: sortCustom(normalizeQuestions(await storage.get(QUESTIONS_KEY)).custom) }, 200, origin);
+      const author = url.searchParams.get("author") || "";
+      if (!AUTHORS.includes(author)) return json({ error: "Choose who is writing." }, 400, origin);
+      return json(customQuestionView(normalizeQuestions(await storage.get(QUESTIONS_KEY)), author), 200, origin);
     }
 
     if (request.method === "GET") {
@@ -1975,6 +2021,7 @@ export class PlanStore {
       } else {
         const item = doc.custom.find((entry) => entry.id === change.id);
         if (!item) return { doc };
+        if (item.author !== change.author) return { status: 403, error: "Only remove your own queued questions.", doc };
         if (item.usedOn) return { status: 409, error: "That question was already asked.", doc };
         doc.custom = doc.custom.filter((entry) => entry !== item);
       }
@@ -1987,7 +2034,7 @@ export class PlanStore {
         ? json({ error: result.error }, result.status, origin)
         : json(questionView(result.doc, change.day, change.author), 200, origin);
     }
-    const custom = sortCustom(result.doc.custom);
-    return result.error ? json({ error: result.error, custom }, result.status, origin) : json({ custom }, 200, origin);
+    const view = customQuestionView(result.doc, change.author);
+    return result.error ? json({ error: result.error, ...view }, result.status, origin) : json(view, 200, origin);
   }
 }

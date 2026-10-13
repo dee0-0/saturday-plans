@@ -50,8 +50,12 @@
   let pollTimer = null;
   let tileAskedAt = 0;
   let custom = [];
+  let customQueue = [];    // ids, owners and timestamps only; other queued text stays on the server
+  let otherWaiting = 0;
   let customLoaded = false;
   let customBusy = false;
+  let customLoadSeq = 0;
+  let identitySeq = 0;
   let historyOpen = "";    // the earlier day being answered right now
   let historyShown = HISTORY_STEP;
   let historyDrawn = "";
@@ -106,8 +110,10 @@
     if (!tileNote || document.hidden) return;
     if (!force && Date.now() - tileAskedAt < TILE_MS) return;
     tileAskedAt = Date.now();
+    const identity = identitySeq;
     try {
       const data = await app().apiRequest(questionPath(app().todayISO()));
+      if (identity !== identitySeq) return;
       if (data && data.day === app().todayISO()) updateTile(data);
     } catch { /* Keep the last text. */ }
   }
@@ -225,22 +231,29 @@
   }
 
   function renderCustom() {
-    const waiting = custom.filter((item) => !item.usedOn).sort((a, b) => time(a.at) - time(b.at));
-    const mine = waiting.filter((item) => item.author === me());
-    const theirs = waiting.length - mine.length;
+    const mine = custom.filter((item) => !item.usedOn && item.author === me())
+      .sort((a, b) => time(a.at) - time(b.at) || String(a.id).localeCompare(String(b.id)));
     customList.innerHTML = mine.map((item) => {
-      const next = waiting[0]?.id === item.id;
+      const next = customQueue[0]?.id === item.id;
       return `<li class="custom-item${item.pending ? " is-pending" : ""}" data-id="${escape(item.id)}">
           <span class="custom-copy"><strong>${escape(item.text)}</strong><small${next ? ' class="is-next"' : ""}>${next ? "Up next" : "Waiting its turn"}</small></span>
           <button class="planner-icon-btn" type="button" aria-label="Remove ${escape(item.text)}" data-remove${item.pending ? " disabled" : ""}><i class="icon" data-lucide="x" aria-hidden="true"></i></button>
         </li>`;
     }).join("");
     icons(customList);
-    customTheirs.hidden = !theirs;
-    customTheirs.textContent = theirs === 1
+    customTheirs.hidden = !otherWaiting;
+    customTheirs.textContent = otherWaiting === 1
       ? `${nameOf(other())} queued a question too. It stays a surprise.`
-      : `${nameOf(other())} queued ${theirs} questions too. They stay a surprise.`;
+      : `${nameOf(other())} queued ${otherWaiting} questions too. They stay a surprise.`;
   }
+
+  function applyCustomView(data) {
+    custom = Array.isArray(data.custom) ? data.custom.filter((item) => item.author === me()) : [];
+    customQueue = Array.isArray(data.queue) ? data.queue : [];
+    otherWaiting = Number.isInteger(data.otherWaiting) && data.otherWaiting >= 0 ? data.otherWaiting : 0;
+  }
+
+  const customSnapshot = () => ({ custom, queue: customQueue, otherWaiting });
 
   /* ------------------------------- Sync ---------------------------------- */
   async function load({ quiet = false } = {}) {
@@ -278,14 +291,18 @@
   }
 
   async function loadCustom({ quiet = false } = {}) {
+    if (customBusy) return;
+    const identity = identitySeq;
+    const seq = customLoadSeq += 1;
     try {
-      const data = await app().apiRequest("/question/custom");
-      if (customBusy) return;
-      custom = Array.isArray(data.custom) ? data.custom : [];
+      const data = await app().apiRequest(`/question/custom?author=${encodeURIComponent(me())}`);
+      if (customBusy || identity !== identitySeq || seq !== customLoadSeq) return;
+      applyCustomView(data);
       customLoaded = true;
       if (!quiet) showError(customError, "");
       renderCustom();
     } catch (error) {
+      if (identity !== identitySeq || seq !== customLoadSeq) return;
       if (quiet || customLoaded || error.status === 404) return;
       showError(customError, "Couldn’t load our queued questions. Check your connection and try again.");
     }
@@ -325,6 +342,8 @@
     }
     const first = !today.mine;
     const question = today.question;
+    const author = me();
+    const identity = identitySeq;
     showError(errorEl, "");
     saving = true;
     loadSeq += 1;
@@ -332,7 +351,8 @@
     cancelButton.disabled = true;
     setSubmitLabel();
     try {
-      const data = await app().apiRequest("/question", "POST", { action: "answer", day: today.day, author: me(), text });
+      const data = await app().apiRequest("/question", "POST", { action: "answer", day: today.day, author, text });
+      if (identity !== identitySeq) return;
       today = data;
       editing = false;
       answerInput.value = "";
@@ -346,12 +366,14 @@
       }
       answersEl.querySelector(".answer-card.is-mine")?.scrollIntoView({ block: "nearest", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     } catch (error) {
+      if (identity !== identitySeq) return;
       showError(errorEl, offline(error, "Couldn’t save your answer. Check your connection and try again."));
     } finally {
       saving = false;
       submitButton.disabled = false;
       cancelButton.disabled = false;
       setSubmitLabel();
+      if (identity !== identitySeq && app()?.step === "question") load();
     }
   }
 
@@ -389,8 +411,11 @@
     showError(errorBox, "");
     button.disabled = true;
     button.textContent = "Saving…";
+    const author = me();
+    const identity = identitySeq;
     try {
-      const data = await app().apiRequest("/question", "POST", { action: "answer", day: forDay, author: me(), text });
+      const data = await app().apiRequest("/question", "POST", { action: "answer", day: forDay, author, text });
+      if (identity !== identitySeq) return;
       const item = today?.history?.find((entry) => entry.day === forDay);
       if (item) Object.assign(item, { mine: data.mine, theirs: data.theirs, theirsAnswered: data.theirsAnswered });
       delete drafts[forDay];
@@ -398,6 +423,7 @@
       renderHistory(true);
       postActivity({ kind: "question.answer", text: "answered an earlier question", detail: data.question, step: "question", icon: "message-circle-heart", push: false });
     } catch (error) {
+      if (identity !== identitySeq) return;
       showError(errorBox, offline(error, "Couldn’t save your answer. Check your connection and try again."));
       button.disabled = false;
       button.textContent = "Save";
@@ -419,46 +445,92 @@
     }
     showError(customError, "");
     const button = customForm.querySelector('[type="submit"]');
-    const before = custom;
+    const before = customSnapshot();
+    const author = me();
+    const identity = identitySeq;
     customBusy = true;
+    customLoadSeq += 1;
     button.disabled = true;
-    custom = [...custom, { id: "temp-question", text, author: me(), at: new Date().toISOString(), usedOn: null, pending: true }];
+    const pending = { id: "temp-question", text, author, at: new Date().toISOString(), usedOn: null, pending: true };
+    custom = [...custom, pending];
+    customQueue = [...customQueue, { id: pending.id, author, at: pending.at }];
     customInput.value = "";
     renderCustom();
     try {
-      const data = await app().apiRequest("/question", "POST", { action: "custom", text, author: me() });
-      custom = Array.isArray(data.custom) ? data.custom : before;
+      const data = await app().apiRequest("/question", "POST", { action: "custom", text, author });
+      if (identity !== identitySeq) return;
+      applyCustomView(data);
     } catch (error) {
-      custom = before;
+      if (identity !== identitySeq) return;
+      applyCustomView(before);
       if (!customInput.value) customInput.value = text;
       showError(customError, offline(error, "Couldn’t add that. Check your connection and try again."));
     } finally {
       customBusy = false;
       button.disabled = false;
       renderCustom();
+      if (identity !== identitySeq && app()?.step === "question") loadCustom();
     }
   }
 
   async function removeCustom(id) {
     if (customBusy) return;
-    const before = custom;
+    const before = customSnapshot();
+    const author = me();
+    const identity = identitySeq;
     customBusy = true;
+    customLoadSeq += 1;
     custom = custom.filter((item) => item.id !== id);
+    customQueue = customQueue.filter((item) => item.id !== id);
     renderCustom();
     showError(customError, "");
     try {
-      const data = await app().apiRequest("/question", "POST", { action: "uncustom", id });
-      custom = Array.isArray(data.custom) ? data.custom : custom;
+      const data = await app().apiRequest("/question", "POST", { action: "uncustom", id, author });
+      if (identity !== identitySeq) return;
+      applyCustomView(data);
     } catch (error) {
-      custom = before;
+      if (identity !== identitySeq) return;
+      applyCustomView(before);
       showError(customError, offline(error, "Couldn’t remove that. Check your connection and try again."));
     } finally {
       customBusy = false;
       renderCustom();
+      if (identity !== identitySeq && app()?.step === "question") loadCustom();
     }
   }
 
   /* ------------------------------- Wiring -------------------------------- */
+  function resetIdentity() {
+    identitySeq += 1;
+    loadSeq += 1;
+    customLoadSeq += 1;
+    today = null;
+    editing = false;
+    day = "";
+    historyOpen = "";
+    answersDrawn = "";
+    historyDrawn = "";
+    historyShown = HISTORY_STEP;
+    Object.keys(drafts).forEach((key) => { delete drafts[key]; });
+    answerInput.value = "";
+    customInput.value = "";
+    customLoaded = false;
+    applyCustomView({});
+    answersEl.innerHTML = "";
+    historyList.innerHTML = "";
+    todayEl.hidden = true;
+    historyWrap.hidden = true;
+    tileAskedAt = 0;
+    updateTile(null);
+    renderCustom();
+    if (app()?.step === "question") { load(); loadCustom(); }
+    else if (app()?.step === "planned") refreshTile({ force: true });
+  }
+  document.addEventListener("date:identity", resetIdentity);
+  window.addEventListener("storage", (event) => {
+    if (event.key === "date-letter-author" || event.key === null) resetIdentity();
+  });
+
   form.addEventListener("submit", submitAnswer);
   answerInput.addEventListener("input", updateCount);
   cancelButton.addEventListener("click", stopEditing);

@@ -90,11 +90,23 @@
 
   /* ------------------------------ Review form ----------------------------- */
   function setAuthor(value) {
+    if (!AUTHORS.includes(value)) return;
     author = value;
     try { window.localStorage.setItem(AUTHOR_KEY, value); } catch { /* Private browsing. */ }
     authorButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.author === value)));
     prefill();
+    document.dispatchEvent(new CustomEvent("date:identity", { detail: { author: value } }));
   }
+
+  // A second open letter on this phone can change who is writing, too.
+  window.addEventListener("storage", (event) => {
+    if (event.key !== AUTHOR_KEY && event.key !== null) return;
+    let value = null;
+    try { value = window.localStorage.getItem(AUTHOR_KEY); } catch { /* Private browsing. */ }
+    author = AUTHORS.includes(value) ? value : null;
+    authorButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.author === author)));
+    if (window.DateApp) prefill();
+  });
 
   function setStars(value, infinite = false) {
     stars = value;

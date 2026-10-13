@@ -99,12 +99,11 @@
   // Your own phone doesn't count as hers: it shows her progress from the server,
   // your taps don't count or notify, and they never unlock her prize.
   const isOwnPhone = () => !preview && stored("date-letter-author") === "sender";
-  const ownPhone = isOwnPhone();
 
-  const found = ownPhone ? new Set() : storedSet(FOUND_KEY);
+  const found = isOwnPhone() ? new Set() : storedSet(FOUND_KEY);
   const hintsShown = storedSet(HINTS_KEY);
   // The wax seal is older than the tracker, so a seal she already opened counts.
-  if (!preview && !ownPhone && stored("date-letter-secret") === "1") found.add("seal");
+  if (!preview && !isOwnPhone() && stored("date-letter-secret") === "1") found.add("seal");
 
   const foundCount = () => SECRETS.filter((secret) => found.has(secret.id)).length;
   const complete = () => foundCount() === SECRETS.length;
@@ -320,7 +319,7 @@
   function markFound(id, { toast: custom, detail = "", quietRepeat = false } = {}) {
     const secret = byId[id];
     if (!secret) return false;
-    if (ownPhone) {
+    if (isOwnPhone()) {
       if (custom !== false) toast({ icon: secret.icon, title: secret.name, text: secret.reward(), ...custom, note: "Your phone · doesn't count for her" });
       return false;
     }
@@ -524,7 +523,7 @@
   /* ---------------------------- Server sync ------------------------------ */
   // Her finds are saved in the shared store too, so your phone shows her hunt.
   function postFound(id) {
-    if (ownPhone) return;
+    if (isOwnPhone()) return;
     window.DateApp?.apiRequest("/secrets", "POST", { id }).catch(() => { /* Sent again on the next sync. */ });
   }
 
@@ -534,19 +533,33 @@
     try { saved = (await window.DateApp.apiRequest("/secrets")).found || []; } catch { return; }
     const before = foundCount();
     saved.forEach((id) => { if (byId[id]) found.add(id); });
-    if (!ownPhone) {
+    if (!isOwnPhone()) {
       // Finds from before the server kept them, or that couldn't be sent.
       [...found].filter((id) => byId[id] && !saved.includes(id)).forEach(postFound);
       save(FOUND_KEY, JSON.stringify([...found]));
     }
     if (foundCount() !== before) renderTracker();
-    if (!ownPhone && complete()) claimPrize();
+    if (!isOwnPhone() && complete()) claimPrize();
   }
   window.setInterval(() => {
     if (!document.hidden && window.DateApp?.step === "planned") syncWithServer();
   }, 30000);
 
   /* ------------------------------- Wiring -------------------------------- */
+  function identityChanged() {
+    found.clear();
+    if (!isOwnPhone()) {
+      storedSet(FOUND_KEY).forEach((id) => { if (byId[id]) found.add(id); });
+      if (!preview && stored("date-letter-secret") === "1") found.add("seal");
+    }
+    renderTracker();
+    syncWithServer();
+  }
+  document.addEventListener("date:identity", identityChanged);
+  window.addEventListener("storage", (event) => {
+    if (event.key === "date-letter-author" || event.key === null) identityChanged();
+  });
+
   document.addEventListener("date:step", (event) => {
     if (event.detail.name !== "planned") return;
     renderTracker();

@@ -47,10 +47,15 @@ function scopeUrl(path) {
   return new URL(path, self.registration.scope).href;
 }
 
-// Open windows of this letter (other sites on the same origin don't count).
-async function letterWindows() {
+// Preview and the live letter share a worker, but a notification must only
+// open/refresh a window in the same mode as its payload.
+async function letterWindows(store = "live") {
   const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-  return windows.filter((client) => client.url.startsWith(self.registration.scope));
+  return windows.filter((client) => {
+    if (!client.url.startsWith(self.registration.scope)) return false;
+    try { return new URL(client.url).searchParams.has("preview") === (store === "preview"); }
+    catch { return false; }
+  });
 }
 
 self.addEventListener("push", (event) => {
@@ -65,13 +70,14 @@ self.addEventListener("push", (event) => {
   const title = text(payload.title) || "Our date";
   const body = text(payload.title) ? text(payload.body) : text(payload.body) || "Something new is waiting in our letter.";
   const step = STEP_NAME.test(payload.step || "") ? payload.step : "";
+  const store = payload.store === "preview" ? "preview" : "live";
   const tag = text(payload.tag).slice(0, 64) || "activity";
   const icon = scopeUrl("assets/icon-192.png");
   event.waitUntil(Promise.all([
-    self.registration.showNotification(title, { body, icon, badge: icon, tag, renotify: true, data: { step } }),
+    self.registration.showNotification(title, { body, icon, badge: icon, tag: `${store}:${tag}`, renotify: true, data: { step, store } }),
     // An open letter refreshes its bell right away.
-    letterWindows()
-      .then((windows) => windows.forEach((client) => client.postMessage({ type: "date:activity" })))
+    letterWindows(store)
+      .then((windows) => windows.forEach((client) => client.postMessage({ type: "date:activity", store })))
       .catch(() => {})
   ]));
 });
@@ -79,14 +85,18 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const step = STEP_NAME.test(event.notification.data?.step || "") ? event.notification.data.step : "";
+  const store = event.notification.data?.store === "preview" ? "preview" : "live";
   event.waitUntil((async () => {
-    const windows = await letterWindows();
+    const windows = await letterWindows(store);
     const client = windows.find((item) => item.focused) || windows.find((item) => item.visibilityState === "visible") || windows[0];
     if (client) {
       try { await client.focus(); } catch { /* Still show the page below. */ }
-      client.postMessage({ type: "date:show-step", step });
+      client.postMessage({ type: "date:show-step", step, store });
       return;
     }
-    await self.clients.openWindow(scopeUrl(step ? `./?step=${encodeURIComponent(step)}` : "./"));
+    const url = new URL(scopeUrl("./"));
+    if (store === "preview") url.searchParams.set("preview", "");
+    if (step) url.searchParams.set("step", step);
+    await self.clients.openWindow(url.href);
   })());
 });

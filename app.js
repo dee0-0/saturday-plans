@@ -35,8 +35,9 @@
   let isRescheduling = false;
   // True while the questions are planning a new date after the current one happened.
   let planningNext = false;
-  // The idea pulled from the ideas jar for the next date: { id, activity } or null.
+  // The selected jar idea, including its original wording so the server can check it.
   let jarIdea = null;
+  let nextPlanRequestId = null;
   // Where "Back" on the next-date page leads: the journal, or the jar when "Plan it" opened it.
   let nextBackStep = "journal";
   let countdownTimer = null;
@@ -777,11 +778,22 @@
     button.disabled = true;
     button.textContent = reviewCopy[mode].saving;
     const plan = buildPlan();
+    if (mode === "next") {
+      nextPlanRequestId ||= window.crypto.randomUUID();
+      plan.requestId = nextPlanRequestId;
+      const same = (text) => String(text || "").trim().replace(/\s+/g, " ").toLowerCase();
+      if (jarIdea?.id && same(plan.activity) === same(jarIdea.activity)) {
+        plan.jarIdea = { ...jarIdea, author: me() };
+      }
+    }
     try {
       const data = mode === "next"
         ? await requestPlan("POST", plan, "/plan/next")
         : await requestPlan(isRescheduling ? "PUT" : "POST", plan);
       activePlan = data.plan;
+      const fromJar = Boolean(data.jarIdeaUsed);
+      jarIdea = null;
+      nextPlanRequestId = null;
       const action = { invite: "date plan set", reschedule: "rescheduled", next: "planned our next date" }[mode];
       isRescheduling = false;
       planningNext = false;
@@ -790,7 +802,6 @@
       showStep("planned");
       window.LetterFX?.celebrate();
       if (mode === "next") {
-        const fromJar = markJarIdeaUsed(activePlan);
         postPlanActivity("plan.next", `planned our next date: ${activePlan.activity}`, activePlan, {
           detail: fromJar ? `${formatDate(activePlan.date)} · ${formatTime(activePlan.time)} · from our ideas jar` : undefined
         });
@@ -809,6 +820,8 @@
       if (mode === "next" && saveError.status === 409 && saveError.plan) {
         // The other phone planned the next date first (that one hasn't happened yet): show it.
         activePlan = saveError.plan;
+        jarIdea = null;
+        nextPlanRequestId = null;
         planningNext = false;
         button.disabled = false;
         setReviewCopy("invite");
@@ -902,6 +915,7 @@
     isRescheduling = false;
     planningNext = false;
     jarIdea = null;
+    nextPlanRequestId = null;
     nextBackStep = "journal";
     clearChoice("next-activity");
     resetChoiceMessage("next-activity");
@@ -938,7 +952,7 @@
       setChoice("next-activity", idea.text, idea.text);
       document.getElementById("nextCustomActivity").value = idea.text;
     }
-    jarIdea = { id: idea.id, activity: card ? card.dataset.value : idea.text };
+    jarIdea = { id: idea.id, text: idea.text, activity: card ? card.dataset.value : idea.text };
     validateStep(stepEls.next);
   }
 
@@ -988,17 +1002,6 @@
       jarButton.disabled = false;
       jarButton.classList.remove("is-shaking");
     }
-  }
-
-  // Once the next date is saved with the jar's idea (still unchanged), it leaves the jar.
-  // Returns whether the saved plan came from the jar.
-  function markJarIdeaUsed(plan) {
-    const idea = jarIdea;
-    jarIdea = null;
-    const same = (text) => String(text || "").trim().replace(/\s+/g, " ").toLowerCase();
-    if (!idea?.id || !plan || same(plan.activity) !== same(idea.activity)) return false;
-    apiRequest("/ideas", "POST", { action: "use", id: idea.id, author: me() }).catch(() => { /* It can be marked by hand in the jar. */ });
-    return true;
   }
 
   jarButton.addEventListener("click", pullFromJar);
