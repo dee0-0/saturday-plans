@@ -23,7 +23,9 @@ const ENTRY_KEY = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 const AUTHORS = ["her", "sender"];
 const ROUTES = [
   "/plan", "/plan/late", "/plan/next", "/coupons", "/journal", "/journal/photo", "/secrets",
-  "/media", "/media/file", "/media/thumb", "/outfits", "/snacks", "/reset"
+  "/media", "/media/file", "/media/thumb", "/outfits", "/snacks", "/reset",
+  "/activity", "/push/key", "/push/subscribe", "/push/unsubscribe", "/push/test",
+  "/movies", "/movies/search", "/ideas", "/question", "/question/custom"
 ];
 // <img> and <video> load these directly, without an Origin header, so they are public.
 const PUBLIC_ROUTES = ["/media/file", "/media/thumb"];
@@ -50,6 +52,50 @@ const MEDIA_KINDS = {
 };
 const OUTFIT_ACTIONS = ["add", "rate", "comment", "uncomment", "favorite", "remove"];
 const SNACK_ACTIONS = ["add", "toggle", "remove", "clearDone"];
+const MOVIE_ACTIONS = ["add", "heart", "watched", "remove", "spin", "clearPick"];
+const IDEA_ACTIONS = ["add", "remove", "use", "unuse"];
+const QUESTION_ACTIONS = ["answer", "custom", "uncustom"];
+const ACTIVITY_KEY = "activity";
+const PUSH_KEY = "push";
+const VAPID_KEY = "vapid";
+const MOVIES_KEY = "movies";
+const IDEAS_KEY = "ideas";
+const QUESTIONS_KEY = "questions";
+const MAX_ACTIVITY = 300;
+const MAX_ACTIVITY_RESPONSE = 100;
+const MAX_ACTIVITY_TEXT = 140;
+const MAX_ACTIVITY_DETAIL = 200;
+// Longer activity text (a long movie title or date plan) is cut to fit; past this it's refused.
+const MAX_ACTIVITY_INPUT = 1000;
+const MAX_PUSH_SUBSCRIPTIONS = 20;
+const MAX_MOVIES = 150;
+const MAX_IDEAS = 200;
+const MAX_QUESTION_DAYS = 400;
+const MAX_CUSTOM_QUESTIONS = 200;
+const QUESTION_HISTORY = 60;
+const FIRST_QUESTION_DAY = "2026-01-01";
+// Pages of the letter an activity can open (the steps in app.js).
+const STEPS = [
+  "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game",
+  "journal", "next", "outfits", "snacks", "movies", "ideas", "question"
+];
+const ACTIVITY_KIND = /^[a-z.]{1,40}$/;
+const ICON_NAME = /^[a-z0-9-]{0,40}$/;
+const BASE64URL = /^[A-Za-z0-9+/_-]+={0,2}$/;
+const POSTER_PATH = /^\/[A-Za-z0-9._-]{1,100}$/;
+// Web push (RFC 8030, 8291 and 8292). The VAPID subject tells push services who is sending.
+const PUSH_SUBJECT = "https://dee0-0.github.io/saturday-plans/";
+const PUSH_TTL = 86400;
+const PUSH_RECORD_SIZE = 4096;
+const PUSH_JWT_LIFETIME = 12 * 60 * 60;
+const PUSH_REQUEST_TIMEOUT = 8000;
+// Without background tasks, an activity waits at most this long for its notifications.
+const PUSH_WAIT = 3000;
+// Movie posters come from TMDB through the Worker, so the token stays a Worker secret.
+const TMDB_SEARCH_URL = "https://api.themoviedb.org/3/search/movie";
+const SEARCH_CACHE_TTL = 10 * 60 * 1000;
+const MAX_CACHED_SEARCHES = 200;
+const SEARCH_TIMEOUT = 6000;
 // ?store=preview uses a separate sandbox so the letter can be tested end to end
 // without touching her real plan, coupons or journal. Only the sandbox can be reset.
 const STORES = { live: "one-plan-for-this-invitation", preview: "preview-sandbox" };
@@ -635,6 +681,601 @@ function applySnackAction(snacks, change) {
   return { snacks: kept, changed: kept.length !== snacks.length };
 }
 
+// ---------- Small shared helpers ----------
+
+const encoder = new TextEncoder();
+
+function concatBytes(...parts) {
+  const result = new Uint8Array(parts.reduce((sum, part) => sum + part.byteLength, 0));
+  let offset = 0;
+  for (const part of parts) {
+    result.set(part, offset);
+    offset += part.byteLength;
+  }
+  return result;
+}
+
+function toBase64url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+// null when the text isn't base64url (plain base64 is read too).
+function fromBase64url(text) {
+  if (typeof text !== "string" || !BASE64URL.test(text)) return null;
+  const base64 = text.replace(/=+$/, "").replace(/-/g, "+").replace(/_/g, "/");
+  try {
+    return Uint8Array.from(atob(base64 + "=".repeat((4 - (base64.length % 4)) % 4)), (char) => char.charCodeAt(0));
+  } catch {
+    return null;
+  }
+}
+
+// A uniformly random index below count (no modulo bias).
+function randomIndex(count) {
+  const limit = Math.floor(0x100000000 / count) * count;
+  const value = new Uint32Array(1);
+  do crypto.getRandomValues(value); while (value[0] >= limit);
+  return value[0] % count;
+}
+
+function timeoutSignal(ms) {
+  return typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(ms) : undefined;
+}
+
+// Tidies whitespace and cuts long text with an ellipsis, at a word when one ends close to the limit.
+function shorten(text, maxLength) {
+  const clean = String(text).replace(/\s+/g, " ").trim();
+  if (clean.length <= maxLength) return clean;
+  // Never split an emoji (or any other two-part character) in half.
+  const cut = clean.slice(0, maxLength - 1).replace(/[\uD800-\uDBFF]$/, "");
+  const atWord = cut.replace(/\s+\S*$/, "");
+  return `${atWord.length >= cut.length - 24 ? atWord : cut.trimEnd()}…`;
+}
+
+// ---------- Activity and phone notifications ----------
+
+const TEST_PUSH = { title: "Notifications are on", body: "You'll hear from each other here.", step: "planned", tag: "test" };
+
+function normalizeActivity(input) {
+  if (!input || typeof input !== "object") throw new Error("Activity details are required.");
+  if (!AUTHORS.includes(input.author)) throw new Error("Choose who did this.");
+  if (typeof input.kind !== "string" || !ACTIVITY_KIND.test(input.kind)) throw new Error("Unknown kind of activity.");
+  const step = input.step === undefined || input.step === null ? "" : input.step;
+  if (step !== "" && !STEPS.includes(step)) throw new Error("Unknown page.");
+  const icon = input.icon === undefined || input.icon === null ? "" : input.icon;
+  if (typeof icon !== "string" || !ICON_NAME.test(icon)) throw new Error("Unknown icon.");
+  if (input.push !== undefined && input.push !== null && typeof input.push !== "boolean") throw new Error("Choose whether to send a notification.");
+  return {
+    item: {
+      id: crypto.randomUUID(),
+      author: input.author,
+      name: cleanLabel(input.name, 60, "Write a name (up to 60 characters)."),
+      kind: input.kind,
+      text: shorten(cleanLabel(input.text, MAX_ACTIVITY_INPUT, "Describe what happened."), MAX_ACTIVITY_TEXT),
+      detail: shorten(cleanLabel(input.detail, MAX_ACTIVITY_INPUT, "That detail is too long.", true), MAX_ACTIVITY_DETAIL),
+      step,
+      icon,
+      at: new Date().toISOString()
+    },
+    push: input.push !== false
+  };
+}
+
+function activityPush(item) {
+  return { title: `${item.name} ${item.text}`, body: item.detail || "", step: item.step, tag: item.kind };
+}
+
+function pushEndpoint(value) {
+  const message = "That notification address isn't valid.";
+  if (typeof value !== "string" || value.length > 600) throw new Error(message);
+  let url;
+  try { url = new URL(value); } catch { throw new Error(message); }
+  if (url.protocol !== "https:" || url.username || url.password) throw new Error(message);
+  return value;
+}
+
+async function normalizeSubscription(input) {
+  if (!input || typeof input !== "object") throw new Error("Notification details are required.");
+  if (!AUTHORS.includes(input.author)) throw new Error("Choose whose phone this is.");
+  const subscription = input.subscription;
+  if (!subscription || typeof subscription !== "object") throw new Error("Notification details are required.");
+  const endpoint = pushEndpoint(subscription.endpoint);
+  const keys = subscription.keys && typeof subscription.keys === "object" ? subscription.keys : {};
+  const p256dh = fromBase64url(keys.p256dh);
+  const auth = fromBase64url(keys.auth);
+  const invalid = "This phone's notification keys aren't valid.";
+  if (!p256dh || p256dh.byteLength !== 65 || p256dh[0] !== 4 || !auth || auth.byteLength !== 16) throw new Error(invalid);
+  // The phone's key has to be a real P-256 point, or nothing could ever be encrypted for it.
+  try {
+    await crypto.subtle.importKey("raw", p256dh, { name: "ECDH", namedCurve: "P-256" }, false, []);
+  } catch {
+    throw new Error(invalid);
+  }
+  return { endpoint, p256dh: toBase64url(p256dh), auth: toBase64url(auth), author: input.author, at: new Date().toISOString() };
+}
+
+async function hkdf(salt, ikm, info, length) {
+  const key = await crypto.subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt, info }, key, length * 8));
+}
+
+// RFC 8291 "aes128gcm": a fresh ECDH key per message, mixed with the phone's auth secret,
+// encrypting a single record that ends with the 0x02 padding delimiter.
+async function encryptPush(text, subscription) {
+  const uaPublic = fromBase64url(subscription.p256dh);
+  const authSecret = fromBase64url(subscription.auth);
+  const plaintext = concatBytes(encoder.encode(text), new Uint8Array([2]));
+  if (plaintext.byteLength + 16 > PUSH_RECORD_SIZE) throw new Error("The notification is too long.");
+  const uaKey = await crypto.subtle.importKey("raw", uaPublic, { name: "ECDH", namedCurve: "P-256" }, false, []);
+  const local = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+  const asPublic = new Uint8Array(await crypto.subtle.exportKey("raw", local.publicKey));
+  const ecdhSecret = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: uaKey }, local.privateKey, 256));
+  const keyInfo = concatBytes(encoder.encode("WebPush: info"), new Uint8Array([0]), uaPublic, asPublic);
+  const ikm = await hkdf(authSecret, ecdhSecret, keyInfo, 32);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const cek = await hkdf(salt, ikm, concatBytes(encoder.encode("Content-Encoding: aes128gcm"), new Uint8Array([0])), 16);
+  const nonce = await hkdf(salt, ikm, concatBytes(encoder.encode("Content-Encoding: nonce"), new Uint8Array([0])), 12);
+  const key = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["encrypt"]);
+  const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, key, plaintext));
+  // Header: salt, record size, key id length, then our public key as the key id.
+  const header = new Uint8Array(16 + 4 + 1 + asPublic.byteLength);
+  header.set(salt, 0);
+  new DataView(header.buffer).setUint32(16, PUSH_RECORD_SIZE);
+  header[20] = asPublic.byteLength;
+  header.set(asPublic, 21);
+  return concatBytes(header, ciphertext);
+}
+
+// RFC 8292 VAPID: a short-lived ES256 JWT for the push service's origin. WebCrypto ECDSA
+// signatures are already the raw r||s form that JWTs use.
+async function vapidToken(privateKey, audience) {
+  const part = (value) => toBase64url(encoder.encode(JSON.stringify(value)));
+  const unsigned = `${part({ typ: "JWT", alg: "ES256" })}.${part({ aud: audience, exp: Math.floor(Date.now() / 1000) + PUSH_JWT_LIFETIME, sub: PUSH_SUBJECT })}`;
+  const signature = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, privateKey, encoder.encode(unsigned));
+  return `${unsigned}.${toBase64url(new Uint8Array(signature))}`;
+}
+
+// Sends one notification: "sent", "gone" (the phone unsubscribed: 404 or 410) or "failed".
+async function sendPush(subscription, payload, vapid) {
+  try {
+    const body = await encryptPush(JSON.stringify(payload), subscription);
+    const token = await vapidToken(vapid.privateKey, new URL(subscription.endpoint).origin);
+    const response = await fetch(subscription.endpoint, {
+      method: "POST",
+      headers: {
+        TTL: String(PUSH_TTL),
+        "Content-Encoding": "aes128gcm",
+        "Content-Type": "application/octet-stream",
+        Urgency: "normal",
+        Authorization: `vapid t=${token}, k=${vapid.publicKey}`
+      },
+      body,
+      signal: timeoutSignal(PUSH_REQUEST_TIMEOUT)
+    });
+    try { await response.arrayBuffer(); } catch { /* Only the status matters. */ }
+    if (response.ok) return "sent";
+    return [404, 410].includes(response.status) ? "gone" : "failed";
+  } catch {
+    return "failed";
+  }
+}
+
+// ---------- Movies ----------
+
+function normalizeMovies(value) {
+  return { movies: Array.isArray(value?.movies) ? value.movies : [], pick: value?.pick || null };
+}
+
+// Movies we haven't watched yet first (oldest first), then the watched ones, latest first.
+function movieState(value) {
+  const { movies, pick } = normalizeMovies(value);
+  const open = movies.filter((movie) => !movie.watched).sort(byAt);
+  const watched = movies.filter((movie) => movie.watched).sort((a, b) => String(b.watchedAt).localeCompare(String(a.watchedAt)));
+  return { movies: [...open, ...watched], pick: pick && movies.some((movie) => movie.id === pick.id) ? pick : null };
+}
+
+function movieYear(value) {
+  if (value === undefined || value === null || value === "") return "";
+  const year = typeof value === "number" ? String(value) : value;
+  if (typeof year !== "string" || !/^\d{4}$/.test(year.trim())) throw new Error("Choose a valid year.");
+  return year.trim();
+}
+
+function normalizeMovieAction(input) {
+  if (!input || typeof input !== "object" || !MOVIE_ACTIONS.includes(input.action)) throw new Error("Unknown movie action.");
+  const change = { action: input.action };
+  if (["add", "heart", "watched", "spin"].includes(change.action)) {
+    if (!AUTHORS.includes(input.author)) throw new Error("Choose who is choosing.");
+    change.author = input.author;
+  }
+  if (change.action === "add") {
+    change.title = cleanLabel(input.title, 120, "Write a movie title (up to 120 characters).");
+    change.year = movieYear(input.year);
+    if (input.tmdbId === undefined || input.tmdbId === null) change.tmdbId = null;
+    else if (Number.isSafeInteger(input.tmdbId) && input.tmdbId > 0) change.tmdbId = input.tmdbId;
+    else throw new Error("Unknown movie.");
+    const poster = input.poster === undefined || input.poster === null ? "" : input.poster;
+    if (typeof poster !== "string" || (poster !== "" && !POSTER_PATH.test(poster))) throw new Error("That poster isn't valid.");
+    change.poster = poster;
+    if (input.overview !== undefined && input.overview !== null && typeof input.overview !== "string") throw new Error("That summary isn't valid.");
+    // TMDB summaries can run long: keep the first 400 characters.
+    change.overview = shorten(input.overview || "", 400);
+  }
+  if (["heart", "watched", "remove"].includes(change.action)) change.id = itemId(input.id, "That movie is gone.");
+  if (change.action === "heart") {
+    if (typeof input.on !== "boolean") throw new Error("Choose heart or no heart.");
+    change.on = input.on;
+  }
+  if (change.action === "watched") {
+    if (typeof input.watched !== "boolean") throw new Error("Choose watched or not.");
+    change.watched = input.watched;
+  }
+  if (change.action === "spin") {
+    if (!["all", "both"].includes(input.mode)) throw new Error("Choose which movies to spin.");
+    change.mode = input.mode;
+  }
+  return change;
+}
+
+// Changes doc ({ movies, pick }) in place. Removing a movie that is already gone is a quiet no-op.
+function applyMovieAction(doc, change) {
+  const now = new Date().toISOString();
+  const movie = change.id ? doc.movies.find((item) => item.id === change.id) : null;
+  if (change.action === "add") {
+    const title = change.title.toLowerCase();
+    const existing = doc.movies.find((item) => (
+      (change.tmdbId !== null && item.tmdbId === change.tmdbId) || (String(item.title).toLowerCase() === title && item.year === change.year)
+    ));
+    if (existing) return { duplicate: existing.id };
+    if (doc.movies.length >= MAX_MOVIES) return { status: 400, error: "The movie list is full. Remove a few first." };
+    const { title: cleanTitle, year, tmdbId, poster, overview, author } = change;
+    doc.movies.push({ id: crypto.randomUUID(), title: cleanTitle, year, tmdbId, poster, overview, author, at: now, hearts: {}, watched: false, watchedAt: null });
+    return { changed: true };
+  }
+  if (change.action === "spin") {
+    // The server spins, so both phones land on the same movie.
+    const candidates = doc.movies.filter((item) => !item.watched && (change.mode === "all" || (item.hearts?.her && item.hearts?.sender)));
+    if (!candidates.length) {
+      return change.mode === "both"
+        ? { status: 400, error: "There's no movie you both hearted yet. Heart a few first." }
+        : { status: 400, error: "Add a movie you haven't watched yet first." };
+    }
+    doc.pick = { id: candidates[randomIndex(candidates.length)].id, by: change.author, at: now };
+    return { changed: true, candidates: candidates.map((item) => item.id) };
+  }
+  if (change.action === "clearPick") {
+    if (!doc.pick) return {};
+    doc.pick = null;
+    return { changed: true };
+  }
+  if (change.action === "remove") {
+    if (!movie) return {};
+    doc.movies = doc.movies.filter((item) => item !== movie);
+    if (doc.pick?.id === movie.id) doc.pick = null;
+    return { changed: true };
+  }
+  if (!movie) return { status: 404, error: "That movie is gone." };
+  if (change.action === "heart") {
+    const hearts = { ...movie.hearts };
+    if (change.on) hearts[change.author] = true;
+    else delete hearts[change.author];
+    movie.hearts = hearts;
+    return { changed: true };
+  }
+  if (Boolean(movie.watched) === change.watched) return {};
+  Object.assign(movie, change.watched
+    ? { watched: true, watchedAt: now, watchedBy: change.author }
+    : { watched: false, watchedAt: null, watchedBy: null });
+  // Tonight's pick is done once we've watched it.
+  if (change.watched && doc.pick?.id === movie.id) doc.pick = null;
+  return { changed: true };
+}
+
+// ---------- Movie search (TMDB posters) ----------
+
+// Recent searches per query, kept in memory for a few minutes.
+const searchCache = new Map();
+
+function tmdbMovie(result) {
+  if (!result || typeof result !== "object" || !Number.isSafeInteger(result.id) || result.id <= 0) return null;
+  const title = typeof result.title === "string" ? shorten(result.title, 120) : "";
+  if (!title) return null;
+  const released = typeof result.release_date === "string" ? result.release_date : "";
+  return {
+    tmdbId: result.id,
+    title,
+    year: /^\d{4}/.test(released) ? released.slice(0, 4) : "",
+    poster: typeof result.poster_path === "string" && POSTER_PATH.test(result.poster_path) ? result.poster_path : "",
+    overview: typeof result.overview === "string" ? shorten(result.overview, 400) : ""
+  };
+}
+
+async function searchMovies(url, env, origin) {
+  const query = (url.searchParams.get("q") || "").replace(/\s+/g, " ").trim();
+  if (!query || query.length > 80) return json({ error: "Type a movie title (up to 80 characters)." }, 400, origin);
+  const token = typeof env.TMDB_TOKEN === "string" ? env.TMDB_TOKEN.trim() : "";
+  if (!token) return json({ error: "Movie posters aren't set up yet.", postersOff: true }, 503, origin);
+
+  const cacheKey = query.toLowerCase();
+  const cached = searchCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < SEARCH_CACHE_TTL) return json({ results: cached.results }, 200, origin);
+
+  const search = new URL(TMDB_SEARCH_URL);
+  search.search = new URLSearchParams({ query, include_adult: "false", language: "en-US", page: "1" }).toString();
+  const headers = { Accept: "application/json" };
+  // A v4 read access token is a JWT; anything else is a v3 API key.
+  if (token.startsWith("eyJ")) headers.Authorization = `Bearer ${token}`;
+  else search.searchParams.set("api_key", token);
+  let data;
+  try {
+    const response = await fetch(search.toString(), { headers, signal: timeoutSignal(SEARCH_TIMEOUT) });
+    if (!response.ok) throw new Error(`TMDB answered ${response.status}.`);
+    data = await response.json();
+  } catch {
+    return json({ error: "Movie search isn't working right now. Type the title instead." }, 502, origin);
+  }
+  const results = (Array.isArray(data?.results) ? data.results : []).map(tmdbMovie).filter(Boolean).slice(0, 8);
+  searchCache.delete(cacheKey);
+  searchCache.set(cacheKey, { at: Date.now(), results });
+  while (searchCache.size > MAX_CACHED_SEARCHES) searchCache.delete(searchCache.keys().next().value);
+  return json({ results }, 200, origin);
+}
+
+// ---------- Ideas jar ----------
+
+// Ideas we haven't used yet first (oldest first), then the used ones, latest first.
+function sortIdeas(ideas) {
+  const open = ideas.filter((idea) => !idea.usedAt).sort(byAt);
+  const used = ideas.filter((idea) => idea.usedAt).sort((a, b) => String(b.usedAt).localeCompare(String(a.usedAt)));
+  return [...open, ...used];
+}
+
+function normalizeIdeaAction(input) {
+  if (!input || typeof input !== "object" || !IDEA_ACTIONS.includes(input.action)) throw new Error("Unknown idea action.");
+  const change = { action: input.action };
+  if (["add", "use"].includes(change.action)) {
+    if (!AUTHORS.includes(input.author)) throw new Error("Choose who is writing.");
+    change.author = input.author;
+  }
+  if (change.action === "add") change.text = cleanLabel(input.text, 120, "Write an idea (up to 120 characters).");
+  else change.id = itemId(input.id, "That idea is gone.");
+  return change;
+}
+
+function applyIdeaAction(ideas, change) {
+  const now = new Date().toISOString();
+  if (change.action === "add") {
+    const text = change.text.toLowerCase();
+    const existing = ideas.find((idea) => !idea.usedAt && String(idea.text).toLowerCase() === text);
+    if (existing) return { ideas, duplicate: existing.id };
+    if (ideas.length >= MAX_IDEAS) return { status: 400, error: "The jar is full. Take a few ideas out first.", ideas };
+    ideas.push({ id: crypto.randomUUID(), text: change.text, author: change.author, at: now, usedAt: null, usedBy: null });
+    return { ideas, changed: true };
+  }
+  const idea = ideas.find((item) => item.id === change.id);
+  if (change.action === "remove") return idea ? { ideas: ideas.filter((item) => item !== idea), changed: true } : { ideas };
+  if (!idea) return { status: 404, error: "That idea is gone.", ideas };
+  if (change.action === "use") {
+    if (idea.usedAt) return { ideas };
+    Object.assign(idea, { usedAt: now, usedBy: change.author });
+  } else {
+    if (!idea.usedAt) return { ideas };
+    Object.assign(idea, { usedAt: null, usedBy: null });
+  }
+  return { ideas, changed: true };
+}
+
+// ---------- Daily question ----------
+
+// A fixed, mixed order: playful, nostalgic, dreamy and deep questions take turns.
+const BUILTIN_QUESTIONS = [
+  "What was your very first impression of me, honestly?",
+  "If we had a whole free day with no plans at all, how would you want to spend it with me?",
+  "What is your favorite memory from a summer when you were a kid?",
+  "Where in the world would you love to wake up with me one day?",
+  "What makes you feel truly cared for?",
+  "Mountains or the sea for a weekend away, and why?",
+  "When did you first feel like a grown-up?",
+  "What would you love to celebrate together one day?",
+  "What are you grateful for this week?",
+  "What would your perfect pizza have on it?",
+  "What was the first song or album you were completely obsessed with?",
+  "What do you hope your life looks like five years from now?",
+  "What is a lesson you learned the hard way?",
+  "What is your go-to karaoke song, or the one you would secretly love to sing?",
+  "If you could relive one day of your life, which would it be?",
+  "If you wrote a book, what would it be about?",
+  "How do you like to be comforted when you are sad?",
+  "If you had to describe me as a dessert, which one would I be?",
+  "What did your bedroom look like when you were a teenager?",
+  "What is an adventure you would love for us to have together?",
+  "Who has shaped who you are the most?",
+  "What is a small thing that instantly puts you in a good mood?",
+  "What was your favorite cartoon or TV show growing up?",
+  "What would you do with a whole month off?",
+  "What is a quality you admire in other people?",
+  "What is the silliest thing that ever made you laugh until you cried?",
+  "What is the funniest thing that happened to you at school?",
+  "If money were no object, how would you spend a year?",
+  "What have you been curious about lately?",
+  "Which board game or card game brings out your competitive side?",
+  "What toy or object did you take everywhere as a kid?",
+  "What is something you want to learn in the next few years?",
+  "Is there something you have always wanted to ask me?",
+  "What is a guilty pleasure you are not even a little sorry about?",
+  "What is a childhood snack you still crave?",
+  "What is a place you have only seen in photos and keep dreaming about?",
+  "What is something new you would like to try, even if it makes you a little nervous?",
+  "What is the best thing you have ever found by accident?",
+  "What were you scared of as a child that seems funny now?",
+  "If you could live in any decade, which one would you choose?",
+  "When was the last time you felt really at peace?",
+  "Sweet or savory breakfast, and what exactly is on the plate?",
+  "Who was your best friend in school, and what did you two get up to?",
+  "Which city would you like to live in for a few months?",
+  "What kind of person do you want to be for the people you love?",
+  "Which movie can you watch again and again without getting bored?",
+  "What is a family tradition you would love to keep someday?",
+  "What would you plant if you had a garden with all the space in the world?",
+  "What is a compliment that stuck with you?",
+  "If you could instantly master one skill, what would you pick?",
+  "What is a holiday memory that still makes you smile?",
+  "If you could have dinner with anyone, living or not, who would it be?",
+  "What is your favorite way to show love without words?",
+  "What is the most useless talent you have?",
+  "What is the best trip you have ever taken?",
+  "What would your perfect rainy day look like?",
+  "What makes a place feel like home to you?",
+  "Which fictional world would you most like to live in for a week?",
+  "Which song takes you straight back to being a teenager?",
+  "What would you cook for me if you wanted to impress me?",
+  "What is the best advice anyone has ever given you?",
+  "What would your superhero name be, and what would your power be?",
+  "When did you first notice you liked me?",
+  "What tradition would you like the two of us to start?",
+  "What is a value you never want to compromise on?",
+  "What is the strangest food you have ever tried?",
+  "Which smell instantly takes you back to your childhood?",
+  "What is a skill you would love for us to learn together?",
+  "What is something about us that you never want to change?",
+  "If we opened a tiny cafe together, what would be on the menu?",
+  "What is a place from your past you would love to show me?",
+  "What does a cozy evening at home with me look like to you?",
+  "What would your friends say is your best quality?",
+  "If you could have any animal as a pet, no matter how impractical, what would it be?",
+  "What was the first thing you ever bought with your own money?",
+  "What would your perfect date with me look like, from morning to night?",
+  "What is a moment when you felt really brave?",
+  "If you could swap lives with anyone for a day, who would it be?",
+  "What was a rule at home growing up that you thought was unfair?",
+  "What is one thing on your bucket list that would surprise people?",
+  "What is a kindness from a stranger you still remember?",
+  "If our story were a movie, who would play us?",
+  "Which teacher made a real difference in your life?",
+  "If we could spend a week anywhere in Switzerland, where would you pick?",
+  "When do you feel most like yourself?",
+  "Which snack would you bring to a desert island?",
+  "What is the best birthday you have ever had?",
+  "What is a small dream you have never told anyone?",
+  "How do you recharge after a long week?",
+  "If you had a free plane ticket for tomorrow, where would you go?",
+  "What did you want to be when you grew up, back when you were seven?",
+  "What does your dream home look like, room by room?",
+  "What is something you are looking forward to right now?",
+  "What is a word or phrase you catch yourself saying all the time?",
+  "What is a moment from our dates so far that you keep thinking about?",
+  "Where would we go if we could take a road trip anywhere?",
+  "What made you smile today?",
+  "What would we name our boat if we had one?",
+  "What is a concert or event you would love to go to together?",
+  "What is one small thing I do that makes you happy?",
+  "What is a food you could happily eat every single day?",
+  "What is something you changed your mind about in the last few years?",
+  "Which song would you pick as the theme song for the two of us?",
+  "What is one thing you would like us to do more often?",
+  "Which season suits you best, and what do you love about it?",
+  "What is something you would like me to understand about you better?",
+  "What is the most spontaneous thing you have ever done?",
+  "What is something you are proud of that you rarely talk about?",
+  "What would you tell your younger self if you could?",
+  "What is a book, film or song that changed how you see things?",
+  "What is one thing you wish more people knew about you?",
+  "What is a fear you would like to grow out of?",
+  "What does a good relationship mean to you?",
+  "What does a really good day look like for you, from start to finish?",
+  "What do you think we are really good at together?",
+  "What helps you most when you have a bad day?",
+  "What is one way I could make your week a little easier?"
+];
+
+function todayInBern() {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Zurich", year: "numeric", month: "2-digit", day: "2-digit"
+  }).formatToParts(new Date()).map(({ type, value }) => [type, value]));
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function questionDay(value) {
+  if (typeof value !== "string" || !isValidDate(value) || value < FIRST_QUESTION_DAY || value > todayInBern()) {
+    throw new Error("Choose a day between January 1, 2026 and today.");
+  }
+  return value;
+}
+
+function normalizeQuestions(value) {
+  return {
+    days: { ...(value?.days || {}) },
+    custom: Array.isArray(value?.custom) ? value.custom : [],
+    next: Number.isInteger(value?.next) && value.next >= 0 ? value.next : 0
+  };
+}
+
+// Gives a day its question the first time anyone opens it: our own questions first (oldest
+// first), then the next built-in one. Assigned questions never change. True when it assigned one.
+function assignQuestion(doc, day) {
+  if (doc.days[day]) return false;
+  const custom = doc.custom.filter((item) => !item.usedOn).sort(byAt)[0];
+  if (custom) {
+    custom.usedOn = day;
+    doc.days[day] = { question: custom.text, source: "custom", customId: custom.id, answers: {} };
+  } else {
+    const index = doc.next % BUILTIN_QUESTIONS.length;
+    doc.days[day] = { question: BUILTIN_QUESTIONS[index], source: "builtin", answers: {} };
+    doc.next = (index + 1) % BUILTIN_QUESTIONS.length;
+  }
+  // Keep the newest days, and always the one just opened.
+  const others = Object.keys(doc.days).filter((key) => key !== day).sort();
+  for (const old of others.slice(0, Math.max(0, others.length + 1 - MAX_QUESTION_DAYS))) delete doc.days[old];
+  return true;
+}
+
+// Their answer only shows once I've answered too.
+function answerView(entry, author) {
+  const other = author === "her" ? "sender" : "her";
+  const mine = entry.answers?.[author] || null;
+  const theirs = entry.answers?.[other] || null;
+  return { question: entry.question, mine, theirs: mine ? theirs : null, theirsAnswered: Boolean(theirs) };
+}
+
+function questionView(doc, day, author) {
+  const entry = doc.days[day];
+  const history = Object.keys(doc.days)
+    .filter((key) => key < day)
+    .sort()
+    .reverse()
+    .slice(0, QUESTION_HISTORY)
+    .map((key) => ({ day: key, ...answerView(doc.days[key], author) }));
+  const { question, mine, theirs, theirsAnswered } = answerView(entry, author);
+  return { day, question, source: entry.source, mine, theirs, theirsAnswered, history };
+}
+
+// Questions still waiting first (in the order they come up), then the asked ones, latest first.
+function sortCustom(custom) {
+  const waiting = custom.filter((item) => !item.usedOn).sort(byAt);
+  const asked = custom.filter((item) => item.usedOn).sort((a, b) => String(b.usedOn).localeCompare(String(a.usedOn)) || byAt(b, a));
+  return [...waiting, ...asked];
+}
+
+function normalizeQuestionAction(input) {
+  if (!input || typeof input !== "object" || !QUESTION_ACTIONS.includes(input.action)) throw new Error("Unknown question action.");
+  const change = { action: input.action };
+  if (change.action !== "uncustom") {
+    if (!AUTHORS.includes(input.author)) throw new Error("Choose who is writing.");
+    change.author = input.author;
+  }
+  if (change.action === "answer") {
+    change.day = questionDay(input.day);
+    const text = typeof input.text === "string" ? input.text.replace(/\r\n?/g, "\n").trim() : "";
+    if (!text || text.length > 500) throw new Error("Write an answer (up to 500 characters).");
+    change.text = text;
+  }
+  if (change.action === "custom") change.text = cleanLabel(input.text, 200, "Write a question (up to 200 characters).");
+  if (change.action === "uncustom") change.id = itemId(input.id, "That question is gone.");
+  return change;
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -657,6 +1298,13 @@ export default {
       return withOrigin(json({ error: "Method not allowed." }, 405, origin));
     }
 
+    // Movie search only talks to TMDB (with the Worker's secret token), so it needs no store.
+    if (path === "/movies/search") {
+      return withOrigin(request.method === "GET"
+        ? await searchMovies(url, env, origin)
+        : json({ error: "Method not allowed." }, 405, origin));
+    }
+
     const store = url.searchParams.get("store") === "preview" ? "preview" : "live";
     if (path === "/reset" && (store !== "preview" || request.method !== "POST")) {
       return withOrigin(json({ error: "Not found." }, 404, origin));
@@ -673,6 +1321,8 @@ export class PlanStore {
     this.ctx = ctx;
     // Media ids with an upload in progress, so the same file isn't written twice at once.
     this.uploads = new Set();
+    // The VAPID keys, once loaded from storage (or made).
+    this.vapidKeys = null;
   }
 
   async fetch(request) {
@@ -681,13 +1331,22 @@ export class PlanStore {
     const path = url.pathname;
 
     if (path === "/reset" && request.method === "POST") {
+      // The sandbox's notification key and the phones subscribed to it survive a reset:
+      // a new key would silently break every subscription made with the old one.
+      const kept = await this.ctx.storage.get([VAPID_KEY, PUSH_KEY]);
       await this.ctx.storage.deleteAll();
+      if (kept.size) await this.ctx.storage.put(Object.fromEntries(kept));
       return json({ reset: true }, 200, origin);
     }
 
     if (path === "/media" || path.startsWith("/media/")) return this.media(request, url, origin);
     if (path === "/outfits") return this.outfits(request, url, origin);
     if (path === "/snacks") return this.snacks(request, origin);
+    if (path === "/activity") return this.activity(request, url, origin);
+    if (path.startsWith("/push/")) return this.push(request, path, origin);
+    if (path === "/movies") return this.movies(request, origin);
+    if (path === "/ideas") return this.ideas(request, origin);
+    if (path === "/question" || path === "/question/custom") return this.question(request, url, origin);
 
     if (path === "/coupons" && request.method === "GET") {
       return json({ coupons: normalizeCoupons(await this.ctx.storage.get(COUPONS_KEY)) }, 200, origin);
@@ -1083,5 +1742,252 @@ export class PlanStore {
     });
     const snacks = sortSnacks(result.snacks);
     return result.error ? json({ error: result.error, snacks }, result.status, origin) : json({ snacks }, 200, origin);
+  }
+
+  // What each of us did lately, for the bell, plus a phone notification for the other person.
+  async activity(request, url, origin) {
+    const storage = this.ctx.storage;
+    if (request.method === "GET") {
+      const since = url.searchParams.get("since") || "";
+      const sinceTime = since ? Date.parse(since) : -Infinity;
+      if (Number.isNaN(sinceTime)) return json({ error: "Unknown time." }, 400, origin);
+      const activity = ((await storage.get(ACTIVITY_KEY)) || [])
+        .filter((item) => Date.parse(item.at) > sinceTime)
+        .slice(0, MAX_ACTIVITY_RESPONSE);
+      return json({ activity }, 200, origin);
+    }
+    if (request.method !== "POST") return json({ error: "Method not allowed." }, 405, origin);
+
+    let change;
+    try { change = normalizeActivity(await request.json()); } catch (error) {
+      return json({ error: error instanceof SyntaxError ? "Invalid request body." : error.message }, 400, origin);
+    }
+    await storage.transaction(async (txn) => {
+      const list = (await txn.get(ACTIVITY_KEY)) || [];
+      list.unshift(change.item);
+      await txn.put(ACTIVITY_KEY, list.slice(0, MAX_ACTIVITY));
+    });
+    // A notification that can't be delivered never fails the activity itself.
+    if (change.push) await this.background(this.notifyOthers(change.item));
+    return json({ item: change.item }, 201, origin);
+  }
+
+  // Lets a task finish after the response when the runtime supports that; otherwise waits a little for it.
+  async background(task) {
+    const settled = Promise.resolve(task).catch(() => {});
+    if (typeof this.ctx.waitUntil === "function") {
+      this.ctx.waitUntil(settled);
+      return;
+    }
+    let timer;
+    await Promise.race([settled, new Promise((resolve) => { timer = setTimeout(resolve, PUSH_WAIT); })]);
+    clearTimeout(timer);
+  }
+
+  async notifyOthers(item) {
+    const subscriptions = ((await this.ctx.storage.get(PUSH_KEY)) || []).filter((subscription) => subscription.author !== item.author);
+    return this.pushTo(subscriptions, activityPush(item));
+  }
+
+  // The Worker's own VAPID key pair: made on first need, then kept in storage.
+  async vapid() {
+    if (this.vapidKeys) return this.vapidKeys;
+    let stored = await this.ctx.storage.get(VAPID_KEY);
+    if (!stored) {
+      const pair = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+      const fresh = {
+        privateJwk: await crypto.subtle.exportKey("jwk", pair.privateKey),
+        publicKey: toBase64url(new Uint8Array(await crypto.subtle.exportKey("raw", pair.publicKey))),
+        at: new Date().toISOString()
+      };
+      // When two first requests race, both keep the key that was saved first.
+      stored = await this.ctx.storage.transaction(async (txn) => {
+        const existing = await txn.get(VAPID_KEY);
+        if (existing) return existing;
+        await txn.put(VAPID_KEY, fresh);
+        return fresh;
+      });
+    }
+    const privateKey = await crypto.subtle.importKey("jwk", stored.privateJwk, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+    this.vapidKeys = { publicKey: stored.publicKey, privateKey };
+    return this.vapidKeys;
+  }
+
+  // Sends one notification to each subscription and forgets the phones that unsubscribed.
+  async pushTo(subscriptions, payload) {
+    if (!subscriptions.length) return { sent: 0, failed: 0 };
+    let vapid;
+    try { vapid = await this.vapid(); } catch { return { sent: 0, failed: subscriptions.length }; }
+    const outcomes = await Promise.all(subscriptions.map((subscription) => sendPush(subscription, payload, vapid)));
+    const gone = subscriptions.filter((_, index) => outcomes[index] === "gone");
+    if (gone.length) {
+      await this.ctx.storage.transaction(async (txn) => {
+        const list = (await txn.get(PUSH_KEY)) || [];
+        // Only the exact subscriptions we tried: a phone may have subscribed again meanwhile.
+        const kept = list.filter((item) => !gone.some((dead) => dead.endpoint === item.endpoint && dead.at === item.at));
+        if (kept.length !== list.length) await txn.put(PUSH_KEY, kept);
+      });
+    }
+    const sent = outcomes.filter((outcome) => outcome === "sent").length;
+    return { sent, failed: outcomes.length - sent };
+  }
+
+  // Phone notifications: the Worker's public key, each phone's subscription, and a test.
+  async push(request, path, origin) {
+    const storage = this.ctx.storage;
+    if (path === "/push/key") {
+      if (request.method !== "GET") return json({ error: "Method not allowed." }, 405, origin);
+      try {
+        return json({ publicKey: (await this.vapid()).publicKey }, 200, origin);
+      } catch {
+        return json({ error: "Notifications aren't available right now." }, 500, origin);
+      }
+    }
+    if (request.method !== "POST") return json({ error: "Method not allowed." }, 405, origin);
+    let input;
+    try { input = await request.json(); } catch { return json({ error: "Invalid request body." }, 400, origin); }
+
+    if (path === "/push/subscribe") {
+      let subscription;
+      try { subscription = await normalizeSubscription(input); } catch (error) { return json({ error: error.message }, 400, origin); }
+      await storage.transaction(async (txn) => {
+        // One entry per phone: subscribing again updates whose phone it is.
+        const list = ((await txn.get(PUSH_KEY)) || []).filter((item) => item.endpoint !== subscription.endpoint);
+        list.push(subscription);
+        // The oldest subscriptions make room; they are the likeliest to be gone.
+        await txn.put(PUSH_KEY, list.sort(byAt).slice(-MAX_PUSH_SUBSCRIPTIONS));
+      });
+      return json({ subscribed: true }, 201, origin);
+    }
+
+    if (path === "/push/unsubscribe") {
+      const endpoint = input?.endpoint;
+      if (typeof endpoint !== "string" || !endpoint || endpoint.length > 600) {
+        return json({ error: "That notification address isn't valid." }, 400, origin);
+      }
+      await storage.transaction(async (txn) => {
+        const list = (await txn.get(PUSH_KEY)) || [];
+        const kept = list.filter((item) => item.endpoint !== endpoint);
+        if (kept.length !== list.length) await txn.put(PUSH_KEY, kept);
+      });
+      return json({ unsubscribed: true }, 200, origin);
+    }
+
+    if (path === "/push/test") {
+      if (!AUTHORS.includes(input?.author)) return json({ error: "Choose whose phone this is." }, 400, origin);
+      const own = ((await storage.get(PUSH_KEY)) || []).filter((item) => item.author === input.author);
+      return json(await this.pushTo(own, TEST_PUSH), 200, origin);
+    }
+    return json({ error: "Not found." }, 404, origin);
+  }
+
+  // Our movie list, the hearts on it and the movie the wheel picked.
+  async movies(request, origin) {
+    if (request.method === "GET") return json(movieState(await this.ctx.storage.get(MOVIES_KEY)), 200, origin);
+    if (request.method !== "POST") return json({ error: "Method not allowed." }, 405, origin);
+
+    let change;
+    try { change = normalizeMovieAction(await request.json()); } catch (error) {
+      return json({ error: error instanceof SyntaxError ? "Invalid request body." : error.message }, 400, origin);
+    }
+    const result = await this.ctx.storage.transaction(async (txn) => {
+      const doc = normalizeMovies(await txn.get(MOVIES_KEY));
+      const outcome = applyMovieAction(doc, change);
+      if (outcome.changed) await txn.put(MOVIES_KEY, doc);
+      return { ...outcome, doc };
+    });
+    const state = movieState(result.doc);
+    if (result.error) return json({ error: result.error, ...state }, result.status, origin);
+    // Extras for the page: the movie that was already on the list, or the wheel's candidates.
+    if (result.duplicate) state.duplicate = result.duplicate;
+    if (result.candidates) state.candidates = result.candidates;
+    return json(state, 200, origin);
+  }
+
+  // Date ideas we drop in the jar and pull out later.
+  async ideas(request, origin) {
+    if (request.method === "GET") {
+      return json({ ideas: sortIdeas((await this.ctx.storage.get(IDEAS_KEY)) || []) }, 200, origin);
+    }
+    if (request.method !== "POST") return json({ error: "Method not allowed." }, 405, origin);
+
+    let change;
+    try { change = normalizeIdeaAction(await request.json()); } catch (error) {
+      return json({ error: error instanceof SyntaxError ? "Invalid request body." : error.message }, 400, origin);
+    }
+    const result = await this.ctx.storage.transaction(async (txn) => {
+      const outcome = applyIdeaAction((await txn.get(IDEAS_KEY)) || [], change);
+      if (outcome.changed) await txn.put(IDEAS_KEY, outcome.ideas);
+      return outcome;
+    });
+    const ideas = sortIdeas(result.ideas);
+    if (result.error) return json({ error: result.error, ideas }, result.status, origin);
+    return json(result.duplicate ? { ideas, duplicate: result.duplicate } : { ideas }, 200, origin);
+  }
+
+  // One question a day for both of us; each answer shows to the other once they answered too.
+  async question(request, url, origin) {
+    const storage = this.ctx.storage;
+    const path = url.pathname;
+    if (path === "/question/custom") {
+      if (request.method !== "GET") return json({ error: "Method not allowed." }, 405, origin);
+      return json({ custom: sortCustom(normalizeQuestions(await storage.get(QUESTIONS_KEY)).custom) }, 200, origin);
+    }
+
+    if (request.method === "GET") {
+      const author = url.searchParams.get("author") || "";
+      if (!AUTHORS.includes(author)) return json({ error: "Choose who is answering." }, 400, origin);
+      let day;
+      try { day = questionDay(url.searchParams.get("day") || todayInBern()); } catch (error) {
+        return json({ error: error.message }, 400, origin);
+      }
+      const doc = await storage.transaction(async (txn) => {
+        const value = normalizeQuestions(await txn.get(QUESTIONS_KEY));
+        if (assignQuestion(value, day)) await txn.put(QUESTIONS_KEY, value);
+        return value;
+      });
+      return json(questionView(doc, day, author), 200, origin);
+    }
+    if (request.method !== "POST") return json({ error: "Method not allowed." }, 405, origin);
+
+    let change;
+    try { change = normalizeQuestionAction(await request.json()); } catch (error) {
+      return json({ error: error instanceof SyntaxError ? "Invalid request body." : error.message }, 400, origin);
+    }
+    const result = await storage.transaction(async (txn) => {
+      const doc = normalizeQuestions(await txn.get(QUESTIONS_KEY));
+      const now = new Date().toISOString();
+      if (change.action === "answer") {
+        const entry = doc.days[change.day];
+        if (!entry) return { status: 409, error: "Open that day's question first.", doc };
+        // Answering again edits the answer.
+        entry.answers = { ...entry.answers, [change.author]: { text: change.text, at: now } };
+      } else if (change.action === "custom") {
+        const text = change.text.toLowerCase();
+        if (doc.custom.some((item) => !item.usedOn && String(item.text).toLowerCase() === text)) return { doc };
+        if (doc.custom.length >= MAX_CUSTOM_QUESTIONS) {
+          // Questions that were already asked make room (their day keeps the text).
+          const asked = doc.custom.filter((item) => item.usedOn).sort((a, b) => String(a.usedOn).localeCompare(String(b.usedOn)))[0];
+          if (!asked) return { status: 400, error: `There are already ${MAX_CUSTOM_QUESTIONS} questions waiting.`, doc };
+          doc.custom = doc.custom.filter((item) => item !== asked);
+        }
+        doc.custom.push({ id: crypto.randomUUID(), text: change.text, author: change.author, at: now, usedOn: null });
+      } else {
+        const item = doc.custom.find((entry) => entry.id === change.id);
+        if (!item) return { doc };
+        if (item.usedOn) return { status: 409, error: "That question was already asked.", doc };
+        doc.custom = doc.custom.filter((entry) => entry !== item);
+      }
+      await txn.put(QUESTIONS_KEY, doc);
+      return { doc };
+    });
+
+    if (change.action === "answer") {
+      return result.error
+        ? json({ error: result.error }, result.status, origin)
+        : json(questionView(result.doc, change.day, change.author), 200, origin);
+    }
+    const custom = sortCustom(result.doc.custom);
+    return result.error ? json({ error: result.error, custom }, result.status, origin) : json({ custom }, 200, origin);
   }
 }

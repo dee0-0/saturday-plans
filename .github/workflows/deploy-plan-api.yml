@@ -16,6 +16,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Optional: a TMDB API read access token (or v3 API key) for movie posters.
+      # Empty when the repository secret doesn't exist; the movie page then lets you type titles.
+      TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - name: Deploy Cloudflare Worker
@@ -26,6 +30,8 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: worker
           command: deploy
+          # Uploads TMDB_TOKEN as a Worker secret only when it is set, so the deploy works without it.
+          secrets: ${{ env.TMDB_TOKEN != '' && 'TMDB_TOKEN' || '' }}
       - name: Show Worker URL
         if: steps.deploy.outputs.deployment-url != ''
         run: 'echo "Shared plan API: ${{ steps.deploy.outputs.deployment-url }}"'
