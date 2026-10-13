@@ -387,6 +387,9 @@
           <button class="extra-tile" data-action="goto" data-target="journal" type="button"><span class="extra-icon"><i class="icon" data-lucide="book-heart" aria-hidden="true"></i></span><strong>Our journal</strong><small>Rate our dates</small></button>
           <button class="extra-tile" data-action="goto" data-target="outfits" type="button"><span class="extra-icon"><i class="icon" data-lucide="shirt" aria-hidden="true"></i></span><strong>Outfits</strong><small>Vote together</small></button>
           <button class="extra-tile" data-action="goto" data-target="snacks" type="button"><span class="extra-icon"><i class="icon" data-lucide="popcorn" aria-hidden="true"></i></span><strong>Snacks</strong><small>Our wishlist</small></button>
+          <button class="extra-tile" data-action="goto" data-target="movies" type="button"><span class="extra-icon"><i class="icon" data-lucide="clapperboard" aria-hidden="true"></i></span><strong>Movies</strong><small>Spin the wheel</small></button>
+          <button class="extra-tile" data-action="goto" data-target="ideas" type="button"><span class="extra-icon"><i class="icon" data-lucide="lightbulb" aria-hidden="true"></i></span><strong>Ideas jar</strong><small>Drop an idea</small></button>
+          <button class="extra-tile" id="question-tile" data-action="goto" data-target="question" type="button"><span class="extra-icon"><i class="icon" data-lucide="message-circle-heart" aria-hidden="true"></i></span><strong>Question</strong><small id="question-tile-note">Answer today’s</small></button>
         </div>
       </div>
 
@@ -705,11 +708,92 @@
 
     <!-- ===== IDEAS JAR (ideas.js, together.css) ===== -->
     <section class="step" data-step="ideas">
+      <p class="eyebrow">For our next dates</p>
+      <h2>Our ideas jar</h2>
+      <p class="question-hint">Drop in anything we could do together. When we can’t decide, pull one out.</p>
+      <div class="jar-stage">
+        <div class="jar" id="jar" aria-hidden="true">
+          <span class="jar-lid"></span>
+          <span class="jar-body">
+            <span class="jar-notes" id="jar-notes"></span>
+            <span class="jar-tag">our ideas</span>
+          </span>
+        </div>
+        <p class="jar-count" id="jar-count" aria-live="polite"></p>
+        <button class="btn btn-primary jar-pull" id="jar-pull" type="button" disabled><i class="icon" data-lucide="sparkles" aria-hidden="true"></i> Pull one out</button>
+      </div>
+      <div class="jar-reveal" id="jar-reveal" hidden>
+        <div class="jar-slip" id="jar-slip" role="group" aria-labelledby="jar-slip-label jar-slip-text" tabindex="-1">
+          <button class="planner-icon-btn jar-slip-close" id="jar-slip-close" type="button" aria-label="Fold the note back in"><i class="icon" data-lucide="x" aria-hidden="true"></i></button>
+          <p class="jar-slip-label" id="jar-slip-label">Pulled from the jar</p>
+          <p class="jar-slip-text" id="jar-slip-text"></p>
+          <p class="jar-slip-by" id="jar-slip-by"></p>
+          <div class="jar-slip-actions">
+            <button class="btn btn-primary jar-plan" id="jar-plan" type="button" hidden>Plan it <i class="icon" data-lucide="arrow-right" aria-hidden="true"></i></button>
+            <p class="jar-later" id="jar-later" hidden><i class="icon" data-lucide="bookmark" aria-hidden="true"></i><span>Save it for after our next date</span></p>
+            <button class="btn btn-ghost jar-again" id="jar-again" type="button"><i class="icon" data-lucide="shuffle" aria-hidden="true"></i> Another one</button>
+          </div>
+        </div>
+      </div>
+      <form class="together-form jar-form" id="jar-form" novalidate>
+        <label class="visually-hidden" for="jar-input">A date idea</label>
+        <input type="text" id="jar-input" maxlength="120" placeholder="A date idea…" autocomplete="off" enterkeyhint="done">
+        <button class="btn btn-primary" type="submit"><i class="icon" data-lucide="plus" aria-hidden="true"></i> Drop it in</button>
+      </form>
+      <p class="error" id="jar-error" role="alert" hidden></p>
+      <ul class="jar-list" id="jar-list" aria-label="Ideas in the jar"></ul>
+      <p class="together-note jar-empty" id="jar-empty">Loading our jar…</p>
+      <details class="jar-used" id="jar-used" hidden>
+        <summary><span class="together-label">Used <span class="together-count" id="jar-used-count">0</span></span><i class="icon jar-used-chevron" data-lucide="chevron-down" aria-hidden="true"></i></summary>
+        <ul class="jar-list is-used" id="jar-used-list" aria-label="Used ideas"></ul>
+      </details>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="planned" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Our plan</button>
+        <button class="btn btn-secondary" data-action="goto" data-target="question" type="button"><i class="icon" data-lucide="message-circle-heart" aria-hidden="true"></i> Question</button>
+      </div>
     </section>
     <!-- ===== END IDEAS JAR ===== -->
 
     <!-- ===== DAILY QUESTION (question.js, together.css) ===== -->
     <section class="step" data-step="question">
+      <p class="eyebrow">Question of the day</p>
+      <h2 class="question-heading" id="question-heading">Today’s question</h2>
+      <p class="question-day" id="question-day"></p>
+      <p class="together-note" id="question-status">Loading today’s question…</p>
+      <div class="question-today" id="question-today" hidden>
+        <p class="question-lock" id="question-lock" hidden></p>
+        <form class="question-form" id="question-form" novalidate>
+          <label for="question-answer">Your answer</label>
+          <textarea id="question-answer" rows="3" maxlength="500" placeholder="Take your time…"></textarea>
+          <div class="question-form-foot">
+            <span class="question-count" id="question-count">0 / 500</span>
+            <button class="btn btn-ghost" id="question-cancel" type="button" hidden>Cancel</button>
+            <button class="btn btn-primary" id="question-submit" type="submit">Answer <i class="icon" data-lucide="send" aria-hidden="true"></i></button>
+          </div>
+        </form>
+        <p class="error" id="question-error" role="alert" hidden></p>
+        <div class="answer-pair" id="question-answers" aria-live="polite"></div>
+      </div>
+      <div class="question-history" id="question-history" hidden>
+        <p class="together-label">Earlier questions</p>
+        <div class="question-history-list" id="question-history-list"></div>
+      </div>
+      <div class="question-custom">
+        <p class="together-label">Add your own question</p>
+        <form class="together-form" id="question-custom-form" novalidate>
+          <label class="visually-hidden" for="question-custom-input">Your own question</label>
+          <input type="text" id="question-custom-input" maxlength="200" placeholder="Something you’ve always wanted to ask…" autocomplete="off" enterkeyhint="done">
+          <button class="btn btn-secondary" type="submit"><i class="icon" data-lucide="plus" aria-hidden="true"></i> Add</button>
+        </form>
+        <p class="question-custom-hint">Your questions come up before the built-in ones.</p>
+        <p class="error" id="question-custom-error" role="alert" hidden></p>
+        <ul class="question-custom-list" id="question-custom-list" aria-label="Your questions waiting their turn"></ul>
+        <p class="question-custom-theirs" id="question-custom-theirs" hidden></p>
+      </div>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="planned" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Our plan</button>
+        <button class="btn btn-secondary" data-action="goto" data-target="ideas" type="button"><i class="icon" data-lucide="lightbulb" aria-hidden="true"></i> Ideas jar</button>
+      </div>
     </section>
     <!-- ===== END DAILY QUESTION ===== -->
   </main>
