@@ -35,6 +35,10 @@
   let isRescheduling = false;
   // True while the questions are planning a new date after the current one happened.
   let planningNext = false;
+  // The idea pulled from the ideas jar for the next date: { id, activity } or null.
+  let jarIdea = null;
+  // Where "Back" on the next-date page leads: the journal, or the jar when "Plan it" opened it.
+  let nextBackStep = "journal";
   let countdownTimer = null;
 
   function iconMarkup(name) {
@@ -470,7 +474,8 @@
     }
     if (currentStepName() === "next") {
       planningNext = false;
-      showStep("journal", { forward: false });
+      jarIdea = null;
+      showStep(nextBackStep, { forward: false });
       return;
     }
     if (!isRescheduling && currentStepName() === "ask") {
@@ -631,6 +636,7 @@
       const data = await requestLateStatus("POST", minutes);
       activePlan = data.plan;
       renderPlan();
+      postPlanActivity("plan.late", `is running about ${minutes} minutes late`, activePlan, { icon: "clock" });
       const delivered = await notifyOwner(`running about ${minutes} minutes late`, activePlan);
       if (!delivered) {
         errorElement.textContent = "The update is saved for both of you, but the notification didn’t go through.";
@@ -657,6 +663,7 @@
       const data = await requestLateStatus("DELETE");
       activePlan = data.plan;
       renderPlan();
+      postPlanActivity("plan.here", "is here", activePlan, { detail: activePlan.place, icon: "map-pin" });
       const delivered = await notifyOwner("is here now", activePlan);
       if (!delivered) {
         errorElement.textContent = "The arrival update is saved, but the notification didn’t go through.";
@@ -688,6 +695,16 @@
       `${CONFIG.herName || "Date plan"}: ${action}`,
       `${action.toUpperCase()}\n${formatDate(plan.date)} · ${formatTime(plan.time)} · Bern\n${plan.activity}\nMeet at: ${plan.place}${plan.note ? `\nNote: ${plan.note}` : ""}`
     );
+  }
+
+  // Shows a plan change in the other phone's activity bell (and as a push), for both of us.
+  // activity.js owns DateActivity; it never throws, but the plan is saved either way.
+  function postPlanActivity(kind, text, plan, { detail, icon = "calendar-heart" } = {}) {
+    const clip = (words, length) => (words.length > length ? `${words.slice(0, length - 1).trimEnd()}…` : words);
+    const when = plan ? `${formatDate(plan.date)} · ${formatTime(plan.time)}` : "";
+    try {
+      window.DateActivity?.post?.({ kind, text: clip(text, 140), detail: clip(detail ?? when, 200), step: "planned", icon })?.catch?.(() => {});
+    } catch { /* The bell is a bonus. */ }
   }
 
   function displayPlanError(message) {
@@ -772,6 +789,18 @@
       setReviewCopy("invite");
       showStep("planned");
       window.LetterFX?.celebrate();
+      if (mode === "next") {
+        const fromJar = markJarIdeaUsed(activePlan);
+        postPlanActivity("plan.next", `planned our next date: ${activePlan.activity}`, activePlan, {
+          detail: fromJar ? `${formatDate(activePlan.date)} · ${formatTime(activePlan.time)} · from our ideas jar` : undefined
+        });
+      } else if (mode === "reschedule") {
+        postPlanActivity("plan.reschedule", `moved our date to ${formatDate(activePlan.date)}`, activePlan, {
+          detail: `${formatTime(activePlan.time)} · ${activePlan.activity}`, icon: "calendar-clock"
+        });
+      } else {
+        postPlanActivity("plan.set", `set our date: ${activePlan.activity}`, activePlan);
+      }
       // Dee only wants to hear about her planning the next date, not about himself.
       if (mode === "next" && me() !== "her") return;
       const delivered = await notifyOwner(action, activePlan);
@@ -816,6 +845,9 @@
       const data = await requestPlan("DELETE");
       activePlan = data.plan;
       renderPlan();
+      postPlanActivity("plan.cancel", "cancelled our date", activePlan, {
+        detail: `${activePlan.activity} · ${formatDate(activePlan.date)}`, icon: "calendar-x"
+      });
       const delivered = await notifyOwner("date cancelled", activePlan);
       if (!delivered) displayPlanError("The date is cancelled, but the notification didn’t go through.");
     } catch (error) {
@@ -828,6 +860,7 @@
     if (!activePlan) return;
     isRescheduling = true;
     planningNext = false;
+    jarIdea = null;
     if (datePicker) datePicker.setDate(activePlan.date, false, "Y-m-d");
     else dateInput.value = activePlan.date;
     timeInput.value = activePlan.time;
@@ -864,14 +897,114 @@
   }
 
   // The journal's "What's next?" button: a fresh next-date page, nothing picked yet.
-  function startNextPlan() {
+  // The ideas jar's "Plan it" passes `{ idea: { id, text } }` to start with that idea picked.
+  function startNextPlan({ idea } = {}) {
     isRescheduling = false;
     planningNext = false;
+    jarIdea = null;
+    nextBackStep = "journal";
     clearChoice("next-activity");
     resetChoiceMessage("next-activity");
     clearQuestions();
+    if (idea && typeof idea.text === "string" && idea.text.trim()) {
+      useJarIdea({ id: idea.id, text: idea.text.trim() });
+      showChoiceMessage("next-activity", "Straight from our ideas jar.");
+      nextBackStep = "ideas";
+    }
     showStep("next", { forward: true });
   }
+
+  /* ---------- Ideas jar on the next-date page ---------- */
+  const jarButton = document.createElement("button");
+  jarButton.type = "button";
+  jarButton.className = "btn btn-secondary jar-pull-next";
+  jarButton.hidden = true;
+  jarButton.innerHTML = '<i class="icon" data-lucide="lightbulb" aria-hidden="true"></i><span>Pull from the jar</span>';
+  stepEls.next.querySelector(".choices").before(jarButton);
+
+  // The idea card with the same wording, if there is one ("Movie night", "Cook dinner together"…).
+  function jarIdeaCard(text) {
+    const wanted = text.trim().toLowerCase();
+    return [...document.querySelectorAll('.choices[data-field="next-activity"] .choice')].find((choice) => choice.dataset.value !== "other"
+      && [choice.dataset.value, choice.querySelector("strong")?.textContent].some((label) => (label || "").trim().toLowerCase() === wanted));
+  }
+
+  // Picks the matching card, or "Something else" with the idea typed in.
+  function useJarIdea(idea) {
+    const card = jarIdeaCard(idea.text);
+    if (card) {
+      setChoice("next-activity", card.dataset.value);
+    } else {
+      setChoice("next-activity", idea.text, idea.text);
+      document.getElementById("nextCustomActivity").value = idea.text;
+    }
+    jarIdea = { id: idea.id, activity: card ? card.dataset.value : idea.text };
+    validateStep(stepEls.next);
+  }
+
+  async function unusedJarIdeas() {
+    const data = await apiRequest("/ideas");
+    return (Array.isArray(data.ideas) ? data.ideas : []).filter((idea) => idea && !idea.usedAt && typeof idea.text === "string" && idea.text.trim());
+  }
+
+  async function refreshJarButton() {
+    try {
+      const ideas = await unusedJarIdeas();
+      jarButton.hidden = !ideas.length;
+    } catch {
+      jarButton.hidden = true;
+    }
+  }
+
+  async function pullFromJar() {
+    if (jarButton.disabled) return;
+    jarButton.disabled = true;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    jarButton.classList.remove("is-shaking");
+    void jarButton.offsetWidth;
+    if (!reduced) jarButton.classList.add("is-shaking");
+    try {
+      const [ideas] = await Promise.all([unusedJarIdeas(), new Promise((resolve) => window.setTimeout(resolve, reduced ? 0 : 600))]);
+      if (currentStepName() !== "next") return;
+      // Don't hand back the same idea twice in a row when there's a choice.
+      const pool = ideas.length > 1 ? ideas.filter((idea) => idea.id !== jarIdea?.id) : ideas;
+      if (!pool.length) {
+        jarButton.hidden = true;
+        return;
+      }
+      const idea = pool[Math.floor(Math.random() * pool.length)];
+      useJarIdea({ id: idea.id, text: idea.text.trim() });
+      const author = window.DateApp?.names?.[idea.author];
+      showChoiceMessage("next-activity", author ? `From our ideas jar, dropped in by ${author}.` : "From our ideas jar.");
+      window.LetterFX?.burstFrom?.(jarButton, 14);
+      // Show what came out, even when it landed below the fold ("Something else" sits at the bottom).
+      const picked = state["next-activity"] === "other"
+        ? stepEls.next.querySelector('[data-reveal-for="other"]')
+        : stepEls.next.querySelector(".choice.selected");
+      picked?.scrollIntoView({ block: "nearest", behavior: reduced ? "auto" : "smooth" });
+    } catch {
+      showChoiceMessage("next-activity", "Couldn’t reach the jar. Check your connection and try again.");
+    } finally {
+      jarButton.disabled = false;
+      jarButton.classList.remove("is-shaking");
+    }
+  }
+
+  // Once the next date is saved with the jar's idea (still unchanged), it leaves the jar.
+  // Returns whether the saved plan came from the jar.
+  function markJarIdeaUsed(plan) {
+    const idea = jarIdea;
+    jarIdea = null;
+    const same = (text) => String(text || "").trim().replace(/\s+/g, " ").toLowerCase();
+    if (!idea?.id || !plan || same(plan.activity) !== same(idea.activity)) return false;
+    apiRequest("/ideas", "POST", { action: "use", id: idea.id, author: me() }).catch(() => { /* It can be marked by hand in the jar. */ });
+    return true;
+  }
+
+  jarButton.addEventListener("click", pullFromJar);
+  document.addEventListener("date:step", (event) => {
+    if (event.detail.name === "next") refreshJarButton();
+  });
 
   // "Next" on the next-date page: carry the idea into the normal questions, starting at the date.
   function beginNextPlan() {

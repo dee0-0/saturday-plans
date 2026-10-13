@@ -77,6 +77,13 @@ body.petals-in-front .petal-canvas { z-index: 2; opacity: 1; }
 .extras-grid > .extra-tile { grid-column: span 2; }
 .extras-grid > .extra-tile:nth-child(3n + 1):nth-last-child(2) { grid-column: 2 / span 2; }
 .extras-grid > .extra-tile:nth-child(3n + 1):last-child { grid-column: 3 / span 2; }
+/* Live notes like "<name> answered" may wrap to a second line instead of overflowing. */
+.extras-grid > .extra-tile small { line-height: 1.3; overflow-wrap: anywhere; }
+/* 320px phones: a little more room inside each of the eight tiles. */
+@media (max-width: 340px) {
+  .extras-grid { gap: 6px; }
+  .extras-grid > .extra-tile { padding-inline: 4px; }
+}
 .extra-tile {
   display: flex;
   min-width: 0;
