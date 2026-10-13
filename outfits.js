@@ -318,7 +318,8 @@
   }
 
   function failed(error, fallback) {
-    showError(error?.message || fallback);
+    // Offline the browser only says "Failed to fetch" / "Load failed"; show a plain message then.
+    showError(error?.status ? error.message : fallback);
   }
 
   function startPolling() {
@@ -519,7 +520,8 @@
       }
     } catch (error) {
       setUploading(false);
-      showError(error?.message || "Couldn’t post that outfit. Please try again.");
+      // A network failure only says "Failed to fetch" / "Load failed"; upload errors are already worded.
+      showError(error instanceof TypeError || !error?.message ? "Couldn’t post that outfit. Check your connection and try again." : error.message);
       // The photo made it but the outfit didn't: don't leave it lying around.
       if (uploaded) window.DateMedia.remove?.(uploaded.id).catch(() => {});
     }

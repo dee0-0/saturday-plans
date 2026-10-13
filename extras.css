@@ -484,11 +484,7 @@ body.has-preview-bar .page-note { margin-bottom: 44px; }
 .heart-infinity { margin-left: 4px; color: var(--rose-deep); font-size: 15px; font-weight: 800; white-space: nowrap; animation: secret-pop 600ms cubic-bezier(.2,.8,.25,1.2) both; }
 .heart-hint { margin: -8px 0 12px; color: var(--rose-deep); font-size: 11px; font-weight: 700; }
 .heart-hint:empty { display: none; }
-.heart-rating button:focus-visible, .segmented button:focus-visible, .photo-pick:focus-within { outline: 3px solid rgba(220,79,131,.34); outline-offset: 2px; }
-.journal-photo { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0 14px; }
-.photo-pick { display: inline-flex; min-height: 42px; align-items: center; gap: 8px; margin: 0; padding: 8px 13px; border: 1px dashed #e2a4ba; border-radius: 12px; background: #fff8fb; color: var(--rose-deep); font-size: 12px; font-weight: 800; cursor: pointer; }
-.journal-photo-preview { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; box-shadow: 0 3px 10px rgba(80,30,50,.15); }
-.journal-photo-remove { min-height: 34px; padding: 6px 8px; font-size: 11px; }
+.heart-rating button:focus-visible, .segmented button:focus-visible { outline: 3px solid rgba(220,79,131,.34); outline-offset: 2px; }
 .journal-save { margin-left: 0; }
 .journal-waiting { margin: 0 0 14px; padding: 12px 14px; border: 1px solid #f1dbe3; border-radius: 14px; background: #fff7fa; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .journal-list { display: grid; gap: 12px; margin-top: 14px; }

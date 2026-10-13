@@ -777,8 +777,15 @@
       const delivered = await notifyOwner(action, activePlan);
       if (!delivered) displayPlanError("The plan is saved across devices, but the notification didn’t go through.");
     } catch (saveError) {
-      if (mode === "next") {
-        // 409: the current date hasn't happened yet. Stay on the review step and say so.
+      if (mode === "next" && saveError.status === 409 && saveError.plan) {
+        // The other phone planned the next date first (that one hasn't happened yet): show it.
+        activePlan = saveError.plan;
+        planningNext = false;
+        button.disabled = false;
+        setReviewCopy("invite");
+        showStep("planned");
+        displayPlanError("Our next date was already planned on the other phone, so here it is.");
+      } else if (mode === "next") {
         if (saveError.plan) activePlan = saveError.plan;
         error.textContent = saveError.message || "Couldn’t plan our next date. Please try again.";
         error.hidden = false;

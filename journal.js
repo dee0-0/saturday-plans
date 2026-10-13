@@ -48,6 +48,8 @@
   let loading = null;
   let listSignature = "";
   let formKey = "";
+  let formTarget = null; // the date the form rates: { key, date, time, activity, place }
+  let chosenKey = ""; // a date picked with "Write my review" on its card
   let formDirty = false; // she's mid-review: polling must not reset the form
   let pollTimer = null;
   // Uploads in progress, shown as chips on their date's card.
@@ -138,10 +140,27 @@
     window.LetterSecrets?.found("hearts", { toast: { text: "∞ / 5. I'm taking that as a compliment." } });
   }
 
-  // Fill the form with what this person already wrote for the current date.
-  function prefill() {
+  // Which date the form rates: a half-written review stays put; then a date picked on its card;
+  // then the current date once it started; otherwise the latest date this person hasn't rated yet
+  // (so the date that just happened can still be rated after the next one is planned).
+  function pickTarget() {
+    const find = (key) => entries.find((entry) => entry.key === key);
+    if (formDirty && formTarget && find(formTarget.key)) return formTarget;
+    if (chosenKey && find(chosenKey)) return find(chosenKey);
+    chosenKey = "";
     const plan = window.DateApp.plan;
-    const review = plan && author ? entries.find((entry) => entry.key === window.DateApp.entryKey(plan))?.reviews?.[author] : null;
+    if (window.DateApp.planStarted(plan)) {
+      const key = window.DateApp.entryKey(plan);
+      return find(key) || { key, date: plan.date, time: plan.time, activity: plan.activity, place: plan.place };
+    }
+    const who = author || window.DateApp.me();
+    const latest = entries[0];
+    return latest && !latest.reviews?.[who] ? latest : null;
+  }
+
+  // Fill the form with what this person already wrote for the date it rates.
+  function prefill() {
+    const review = formTarget && author ? entries.find((entry) => entry.key === formTarget.key)?.reviews?.[author] : null;
     resetHeartTaps();
     setStars(review?.stars || 0, Boolean(review?.overflow));
     noteEl.value = review?.note || "";
@@ -244,7 +263,10 @@
       ${outfitHtml(entry.outfit)}
       ${gallery}
       <ul class="scrap-uploads" data-uploads-for="${escape(entry.key)}" aria-live="polite">${chipsHtml(entry.key)}</ul>
-      <button class="scrap-add" type="button" data-add-media="${escape(entry.key)}"><i class="icon" data-lucide="image-plus" aria-hidden="true"></i><span>Add photos &amp; videos</span></button>
+      <div class="scrap-actions">
+        <button class="scrap-add" type="button" data-add-media="${escape(entry.key)}"><i class="icon" data-lucide="image-plus" aria-hidden="true"></i><span>Add photos &amp; videos</span></button>
+        <button class="scrap-add scrap-rate" type="button" data-review-key="${escape(entry.key)}"><i class="icon" data-lucide="heart" aria-hidden="true"></i><span>${entry.reviews?.[author || window.DateApp.me()] ? "Edit my review" : "Write my review"}</span></button>
+      </div>
     </article>`;
   }
 
@@ -267,7 +289,7 @@
 
   function renderList(force = false) {
     const waiting = Boolean(upcomingPlan());
-    const signature = JSON.stringify([waiting, entries]);
+    const signature = JSON.stringify([waiting, author, entries]);
     if (!force && signature === listSignature) return;
     listSignature = signature;
     const focus = focusedSelector();
@@ -311,15 +333,15 @@
   }
 
   function renderForm(full) {
-    const plan = window.DateApp.plan;
-    const started = window.DateApp.planStarted(plan);
-    form.hidden = !started || !loaded;
-    if (!started) return;
-    const key = window.DateApp.entryKey(plan);
-    forEl.textContent = `${plan.activity} · ${window.DateApp.formatDate(plan.date)}`;
+    const target = loaded ? pickTarget() : null;
+    form.hidden = !target;
+    if (!target) return;
+    const changed = target.key !== formKey;
+    formTarget = target;
+    forEl.textContent = `${target.activity} · ${window.DateApp.formatDate(target.date)}`;
     authorButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.author === author)));
-    if (full || key !== formKey || !formDirty) prefill();
-    formKey = key;
+    if (full || changed || !formDirty) prefill();
+    formKey = target.key;
   }
 
   let arriveTimer = null;
@@ -509,14 +531,14 @@
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const plan = window.DateApp.plan;
-    if (!window.DateApp.planStarted(plan)) return;
+    const plan = formTarget;
+    if (!plan) return;
     if (!author) { showError("Tap who's writing first."); return; }
     if (!stars) { showError("Pick 1 to 5 hearts."); return; }
     showError("");
     saveButton.disabled = true;
     const body = {
-      key: window.DateApp.entryKey(plan),
+      key: plan.key,
       date: plan.date,
       time: plan.time,
       activity: plan.activity,
@@ -534,9 +556,10 @@
       if (review && mine) mine.reviews = review;
       else if (review) {
         const { key, date, time, activity, place } = body;
-        entries = normalize([{ key, date, time, activity, place, current: true, reviews: review }, ...entries]);
+        entries = normalize([{ key, date, time, activity, place, current: key === window.DateApp.entryKey(window.DateApp.plan), reviews: review }, ...entries]);
       }
       formDirty = false;
+      chosenKey = "";
       render(true);
       load({ fresh: true });
       savedEl.hidden = !canPlanNext();
@@ -569,6 +592,16 @@
     if (add) {
       pickKey = add.dataset.addMedia;
       mediaInput.click();
+      return;
+    }
+    const rate = event.target.closest("[data-review-key]");
+    if (rate) {
+      // Rate (or re-rate) this date: unsaved changes to another date's review are dropped on purpose.
+      chosenKey = rate.dataset.reviewKey;
+      formDirty = false;
+      savedEl.hidden = true;
+      renderForm(true);
+      form.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
       return;
     }
     const outfit = event.target.closest("[data-outfit-media]");

@@ -347,7 +347,7 @@
   .outfit-pick-photo:hover { border-color: var(--rose); background: #fff0f5; transform: translateY(-1px); }
   .outfit-photo:hover img { transform: scale(1.02); }
   .outfit-rate button:hover { transform: translateY(-1px) scale(1.04); }
-  .outfit-pick:hover { border-color: #e2a4ba; background: #fff8fb; }
+  .outfit-pick:hover:not([aria-pressed="true"]) { border-color: #e2a4ba; background: #fff8fb; }
   .outfit-more:hover { text-decoration: underline; }
   .outfit-comment-send:hover { background: var(--rose-deep); }
   .snack-chip:hover:not(:disabled) { border-color: #e2a4ba; background: #fff0f5; transform: translateY(-1px); }

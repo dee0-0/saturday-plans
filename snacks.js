@@ -165,7 +165,8 @@
       }
     });
     queue = run.catch(() => {});
-    run.catch((error) => showError(error.message || "Couldn’t save that. Please try again."));
+    // Offline the browser only says "Failed to fetch" / "Load failed", so say it in plain words.
+    run.catch((error) => showError(error.status ? error.message : "Couldn’t save that. Check your connection and try again."));
     return run;
   }
 
@@ -210,7 +211,10 @@
     const temp = { id: `temp-${tempCount += 1}`, name, author, done: false, doneBy: null, at: new Date().toISOString(), doneAt: null, pending: true };
     send({ action: "add", name, author }, (list) => {
       if (!list.some((snack) => !snack.done && sameName(snack.name, name))) list.push(temp);
-    }).catch(() => {});
+    }).catch(() => {
+      // Give her the text back so she doesn't have to type it again.
+      if (!input.value) input.value = name;
+    });
     return true;
   }
 
@@ -221,7 +225,7 @@
     const done = !snack.done;
     const at = new Date().toISOString();
     showError("");
-    send({ action: "toggle", id, author }, (list) => {
+    send({ action: "toggle", id, author, done }, (list) => {
       const target = list.find((item) => item.id === id);
       if (target) Object.assign(target, { done, doneBy: done ? author : null, doneAt: done ? at : null });
     }).catch(() => {});

@@ -175,6 +175,11 @@
 }
 .scrap-add:hover { border-color: var(--rose); background: #fff0f5; }
 .scrap-add .icon, .scrap-add .lucide { width: 17px; height: 17px; }
+/* "Add photos & videos" and "Write my review" side by side. */
+.scrap-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0 0; }
+.scrap-actions .scrap-add { margin: 0; }
+.scrap-rate { border-style: solid; border-color: #f0d5df; background: #fff; }
+@media (max-width: 360px) { .scrap-actions { grid-template-columns: 1fr; } }
 
 /* Upload progress chips. */
 .scrap-uploads { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }

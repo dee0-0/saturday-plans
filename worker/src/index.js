@@ -165,6 +165,18 @@ function planDetails(plan) {
   return { date: plan.date, time: plan.time, activity: plan.activity, place: plan.place, note: plan.note || "" };
 }
 
+// A date that already happened stays in the journal (with its photos, videos and outfit
+// pick) whenever its plan gets replaced, rescheduled or cancelled.
+async function archivePlan(txn, plan) {
+  if (!planStarted(plan)) return;
+  const key = entryKey(plan);
+  const history = (await txn.get(HISTORY_KEY)) || [];
+  if (history.some((item) => item.key === key)) return;
+  history.push({ key, id: plan.id, ...planDetails(plan) });
+  history.sort((a, b) => b.key.localeCompare(a.key));
+  await txn.put(HISTORY_KEY, history.slice(0, MAX_HISTORY));
+}
+
 function normalizePlan(input, previous) {
   if (!input || typeof input !== "object") throw new Error("Plan details are required.");
   const date = cleanText(input.date, "Date");
@@ -465,6 +477,24 @@ function outfitState(value) {
   return { outfits: [...outfits].sort(byAt), favorites };
 }
 
+// Rescheduling an upcoming date keeps its outfit vote: outfits and their photos move to the new key.
+async function moveOutfits(txn, fromKey, toKey) {
+  const from = await txn.get(outfitsKey(fromKey));
+  if (!from) return;
+  const moved = normalizeOutfits(from);
+  const target = normalizeOutfits(await txn.get(outfitsKey(toKey)));
+  target.outfits.push(...moved.outfits.map((outfit) => ({ ...outfit, key: toKey })));
+  target.favorites = { ...moved.favorites, ...target.favorites };
+  await txn.put(outfitsKey(toKey), target);
+  await txn.delete(outfitsKey(fromKey));
+  const media = (await txn.get(MEDIA_KEY)) || [];
+  let changed = false;
+  for (const item of media) {
+    if (item.scope === "outfit" && item.key === fromKey) { item.key = toKey; changed = true; }
+  }
+  if (changed) await txn.put(MEDIA_KEY, media);
+}
+
 async function saveOutfits(storage, key, doc) {
   if (doc.outfits.length || Object.keys(doc.favorites).length) await storage.put(outfitsKey(key), doc);
   else await storage.delete(outfitsKey(key));
@@ -579,6 +609,7 @@ function normalizeSnackAction(input) {
     change.author = input.author;
   }
   if (["toggle", "remove"].includes(change.action)) change.id = itemId(input.id, "That snack is gone.");
+  if (change.action === "toggle" && typeof input.done === "boolean") change.done = input.done;
   return change;
 }
 
@@ -594,7 +625,10 @@ function applySnackAction(snacks, change) {
   if (change.action === "toggle") {
     const snack = snacks.find((item) => item.id === change.id);
     if (!snack) return { status: 404, error: "That snack is gone.", snacks };
-    Object.assign(snack, snack.done ? { done: false, doneBy: null, doneAt: null } : { done: true, doneBy: change.author, doneAt: now });
+    // The phone sends the state it wants ("done" true/false), so both ticking the same snack keeps it ticked.
+    const done = typeof change.done === "boolean" ? change.done : !snack.done;
+    if (done === snack.done) return { snacks };
+    Object.assign(snack, done ? { done: true, doneBy: change.author, doneAt: now } : { done: false, doneBy: null, doneAt: null });
     return { snacks, changed: true };
   }
   const kept = snacks.filter((snack) => (change.action === "remove" ? snack.id !== change.id : !snack.done));
@@ -812,15 +846,7 @@ export class PlanStore {
           const existing = await txn.get(PLAN_KEY);
           if (existing?.status === "confirmed" && !planStarted(existing)) return { conflict: true, plan: existing };
           const plan = normalizePlan(input, null);
-          if (planStarted(existing)) {
-            const key = entryKey(existing);
-            const history = (await txn.get(HISTORY_KEY)) || [];
-            if (!history.some((item) => item.key === key)) {
-              history.push({ key, id: existing.id, ...planDetails(existing) });
-              history.sort((a, b) => b.key.localeCompare(a.key));
-              await txn.put(HISTORY_KEY, history.slice(0, MAX_HISTORY));
-            }
-          }
+          await archivePlan(txn, existing);
           await txn.put(PLAN_KEY, plan);
           return { plan };
         });
@@ -840,6 +866,8 @@ export class PlanStore {
           const existing = await txn.get(PLAN_KEY);
           if (!existing) return { missing: true };
           const plan = normalizePlan(input, existing);
+          if (planStarted(existing)) await archivePlan(txn, existing);
+          else if (entryKey(existing) !== entryKey(plan)) await moveOutfits(txn, entryKey(existing), entryKey(plan));
           await txn.put(PLAN_KEY, plan);
           return { plan };
         });
@@ -854,6 +882,7 @@ export class PlanStore {
     const result = await this.ctx.storage.transaction(async (txn) => {
       const existing = await txn.get(PLAN_KEY);
       if (!existing) return { missing: true };
+      await archivePlan(txn, existing);
       const plan = { ...existing, status: "cancelled", lateByMinutes: null, lateAt: null, updatedAt: new Date().toISOString() };
       await txn.put(PLAN_KEY, plan);
       return { plan };
