@@ -613,6 +613,67 @@
 
     <!-- ===== MOVIES (movies.js, movies.css) ===== -->
     <section class="step" data-step="movies">
+      <p class="eyebrow">Movie night</p>
+      <h2>What should we watch?</h2>
+      <p class="question-hint">Add the movies you want to see, heart your favorites, then let the wheel decide.</p>
+
+      <div class="movie-add">
+        <label for="movie-query" id="movie-query-label">Add a movie</label>
+        <form class="movie-form" id="movie-form" novalidate>
+          <div class="movie-query-wrap">
+            <i class="icon movie-query-icon" data-lucide="search" aria-hidden="true"></i>
+            <input type="text" id="movie-query" maxlength="120" placeholder="Search for a movie…" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-describedby="movie-search-note" aria-controls="movie-hits">
+            <span class="movie-query-busy" id="movie-query-busy" aria-hidden="true" hidden></span>
+            <button class="movie-query-clear" id="movie-query-clear" type="button" aria-label="Clear" hidden><i class="icon" data-lucide="x" aria-hidden="true"></i></button>
+          </div>
+          <label class="visually-hidden" for="movie-year">Year (optional)</label>
+          <input class="movie-year" type="text" id="movie-year" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="Year" autocomplete="off" enterkeyhint="done" hidden>
+          <button class="btn btn-primary movie-add-button" id="movie-add-button" type="submit" hidden><i class="icon" data-lucide="plus" aria-hidden="true"></i> Add</button>
+        </form>
+        <p class="movie-search-note" id="movie-search-note" hidden></p>
+        <div class="movie-hits" id="movie-hits" aria-label="Search results" hidden></div>
+        <p class="visually-hidden" id="movie-hits-status" role="status" aria-live="polite"></p>
+        <p class="error" id="movie-add-error" role="alert" hidden></p>
+      </div>
+
+      <div class="movie-spin" id="movie-spin">
+        <p class="movie-section-label">Spin the wheel</p>
+        <div class="segmented movie-mode" id="movie-mode" role="group" aria-label="Which movies go on the wheel">
+          <button type="button" data-mode="all" aria-pressed="true">All movies <span class="movie-mode-count" id="movie-count-all">0</span></button>
+          <button type="button" data-mode="both" aria-pressed="false">Both hearted <span class="movie-mode-count" id="movie-count-both">0</span></button>
+        </div>
+        <p class="movie-mode-hint" id="movie-mode-hint" hidden>Both hearted opens up once you both heart the same movie.</p>
+        <div class="movie-wheel" id="movie-wheel" role="img" aria-label="The movie wheel">
+          <div class="movie-wheel-disc" id="movie-wheel-disc"><svg class="movie-wheel-svg" id="movie-wheel-svg" viewBox="-100 -100 200 200" aria-hidden="true"></svg></div>
+          <span class="movie-wheel-hub" aria-hidden="true"><i class="icon" data-lucide="clapperboard"></i></span>
+          <span class="movie-wheel-pointer" id="movie-wheel-pointer" aria-hidden="true"></span>
+        </div>
+        <p class="movie-spin-status" id="movie-spin-status" role="status" aria-live="polite"></p>
+        <button class="btn btn-primary movie-spin-button" id="movie-spin-button" type="button" disabled><i class="icon" data-lucide="dices" aria-hidden="true"></i> Spin the wheel</button>
+        <div class="movie-pick" id="movie-pick" hidden></div>
+      </div>
+
+      <div class="movie-list-head">
+        <p class="movie-section-label">Our list <span class="movie-count-pill" id="movie-list-count">0</span></p>
+      </div>
+      <p class="error movie-error" id="movie-error" role="alert" hidden></p>
+      <ul class="movie-grid" id="movie-list" aria-label="Movies we want to watch"></ul>
+      <p class="planner-note movie-empty" id="movie-empty">Loading our list…</p>
+
+      <details class="movie-watched" id="movie-watched" hidden>
+        <summary>
+          <span class="movie-section-label">Watched <span class="movie-count-pill" id="movie-watched-count">0</span></span>
+          <i class="icon movie-watched-chevron" data-lucide="chevron-down" aria-hidden="true"></i>
+        </summary>
+        <ul class="movie-grid is-watched" id="movie-watched-list" aria-label="Movies we've watched"></ul>
+      </details>
+
+      <p class="movie-credit" id="movie-credit" hidden>Posters from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="planned" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Our plan</button>
+        <button class="btn btn-secondary" data-action="goto" data-target="ideas" type="button"><i class="icon" data-lucide="lightbulb" aria-hidden="true"></i> Ideas jar</button>
+      </div>
     </section>
     <!-- ===== END MOVIES ===== -->
 
