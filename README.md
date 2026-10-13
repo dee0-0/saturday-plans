@@ -20,7 +20,12 @@ A mobile-friendly, one-question-at-a-time date invitation in a soft rose envelop
 - "What's next?": after a date, either of you can pick the next activity and plan the next date. The date that just happened moves into the journal with everything on it, and the new plan starts. Rescheduling or cancelling a date that already happened keeps it in the journal too.
 - Outfit vote: either of you posts outfit photos for the upcoming date, you both rate them with hearts, comment, and tap "My pick". You get a notification when she posts one or picks her favorite. Rescheduling the date keeps its outfits.
 - Snack wishlist: one shared list. Add snacks (or tap a quick-add chip), tick them off when you have them, clear the done ones.
-- Everything is shared through the Worker, and open pages refresh by themselves (journal every 20 s, outfits every 10 s, snacks every 8 s).
+- Movie night: one shared movie list. Search for a movie and tap it to add it with its poster (or just type a title if posters are off), heart the ones you want to see, and "Spin the wheel" over all movies or only the ones you both hearted. The wheel lands on the same movie on both phones, and either of you can mark it watched.
+- Ideas jar: drop date ideas into a shared jar. "Pull one out" picks a random one, and once a date has happened, "Plan it" opens "What's next?" with that idea filled in. The next-date page also has its own "Pull from the jar" button. Used ideas move to their own list and can be put back.
+- Question of the day: you both get the same question each day and only see each other's answer after answering it yourself. Earlier questions stay in a history below. You can also add your own questions; they come up before the built-in ones (there are 117 built in).
+- An activity bell at the top right shows what the other one did (rated a date, posted an outfit, spun the wheel, answered the question, planned or moved the date…), with a red badge for new things and a small pop-up while the letter is open. Tap an item to jump to that page.
+- Phone notifications: in the bell's panel, "Turn on" sends a real notification to the other phone whenever one of you does something. On an iPhone this needs iOS 16.4 or later and the letter added to the Home Screen: open it from the Home Screen icon, tap the bell, then "Turn on". Each phone turns it on once. The existing ntfy notifications to you keep working as before.
+- Everything is shared through the Worker, and open pages refresh by themselves (journal every 20 s, outfits, movies and ideas every 10 s, snacks every 8 s, the question and the activity bell every 15 s).
 - A secret hunt with 16 easter eggs hidden around the letter, like tapping the wax seal or the big heart, holding the signature, shaking the phone, tapping the weather card or countdown, a secret fry-game score, catching broccoli, and opening the letter after midnight. After her first find, a "Secret hunt" tracker on the plan page shows a progress bar, how many are left, and a hint for any secret she taps "Hint" on. Only finding all 16 unlocks the hidden prize coupon. You get a notification for each find.
 - Can be added to the home screen like an app, with its own icon. Sending the link in Snapchat, WhatsApp or iMessage shows a pink envelope preview card.
 
@@ -35,7 +40,11 @@ The static GitHub Pages site stores the shared plan and late updates in a Cloudf
 3. If the Worker URL changes, update `planApiUrl` in `config.js` with only the origin; do not add `/plan`.
 4. Push the change to `master` so GitHub Pages republishes the connected site.
 
-Keep the Cloudflare API token in GitHub Secrets; do not put it in `config.js` or commit it. The storage service uses a single SQLite-backed Durable Object, so creation of the first plan is atomic and subsequent submissions cannot create another record.
+Movie posters come from TMDB. To turn them on, add a free TMDB "API Read Access Token" as the repository secret `TMDB_TOKEN`; the deploy workflow passes it to the Worker. Without it, the movie list still works and you just type titles.
+
+Phone notifications need no setup: the Worker creates its own push keys the first time someone turns them on.
+
+Keep the Cloudflare API token and the TMDB token in GitHub Secrets; do not put them in `config.js` or commit them. The storage service uses a single SQLite-backed Durable Object, so creation of the first plan is atomic and subsequent submissions cannot create another record.
 
 ## Personalize
 
@@ -49,7 +58,7 @@ The link-preview image (`assets/og-preview.jpg`) and app icons (`assets/icon-*.p
 
 Background music: leave `musicUrl` empty for the built-in music-box melody, or drop an `.mp3` into `assets/` and set e.g. `"assets/our-song.mp3"` to loop your own song. It starts on her first tap (browsers block sound before that), and the speaker button in the top-right corner turns it off.
 
-The repository and GitHub Pages site are public. Anyone who has the site URL can read or change the shared plan, the coupons, the journal, the outfit vote and the snack list, and photos and videos can be opened by anyone who has their link, so only add photos and videos you'd be fine with someone else seeing. They are stored in the Worker's Durable Object storage (Cloudflare's free plan allows 5 GB in total). The existing ntfy topic is also in the public client config; rotate it if you want to stop unsolicited notifications.
+The repository and GitHub Pages site are public. Anyone who has the site URL can read or change the shared plan, the coupons, the journal, the outfit vote, the snack list, the movie list, the ideas jar, the activity list and the daily question answers (the letter hides the other one's answer until you've answered, but the server doesn't check who is asking), and photos and videos can be opened by anyone who has their link, so only add photos and videos you'd be fine with someone else seeing. They are stored in the Worker's Durable Object storage (Cloudflare's free plan allows 5 GB in total). The existing ntfy topic is also in the public client config; rotate it if you want to stop unsolicited notifications.
 
 ## Try it without touching her letter
 
