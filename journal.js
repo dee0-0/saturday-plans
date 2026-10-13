@@ -332,7 +332,7 @@
     }
   }
 
-  function renderForm(full) {
+  function renderForm() {
     const target = loaded ? pickTarget() : null;
     form.hidden = !target;
     if (!target) return;
@@ -340,14 +340,15 @@
     formTarget = target;
     forEl.textContent = `${target.activity} · ${window.DateApp.formatDate(target.date)}`;
     authorButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.author === author)));
-    if (full || changed || !formDirty) prefill();
+    // An unsaved review survives refreshes and leaving the journal; it resets only for another date.
+    if (changed || !formDirty) prefill();
     formKey = target.key;
   }
 
   let arriveTimer = null;
   function render(full = false) {
     renderTop();
-    renderForm(full);
+    renderForm();
     if (full) {
       // Cards drift in when the journal opens, not on every background refresh.
       listEl.classList.add("is-arriving");
@@ -600,7 +601,7 @@
       chosenKey = rate.dataset.reviewKey;
       formDirty = false;
       savedEl.hidden = true;
-      renderForm(true);
+      renderForm();
       form.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
       return;
     }
