@@ -71,6 +71,7 @@
   let tempCount = 0;
   const rendered = new WeakMap();
   const flashTimers = new WeakMap();
+  const heartsPosted = new Set(); // movies this visit already told the other phone about
 
   let mode = readMode();     // "all" | "both": which movies this phone wants on the wheel
   let postersOff = readPostersOff(); // the Worker has no TMDB key: typing titles only (for this session)
@@ -891,7 +892,11 @@
       if (on) target.hearts[author] = true;
       else delete target.hearts[author];
     }).then(() => {
-      if (on) activity("movies.heart", `hearted ${clip(movie.title, 110)}`, { icon: "heart", push: false });
+      // One bell item per movie per visit, even when the heart is tapped off and on again.
+      if (on && !heartsPosted.has(id)) {
+        heartsPosted.add(id);
+        activity("movies.heart", `hearted ${clip(movie.title, 110)}`, { icon: "heart", push: false });
+      }
     }).catch((error) => failed(error, "Couldn’t save your heart."));
   }
 
@@ -899,7 +904,6 @@
     const state = current();
     const movie = state.movies.find((item) => item.id === id);
     if (!movie || movie.pending || movie.watched === watched) return;
-    const wasPick = state.pick?.id === id;
     const at = new Date().toISOString();
     showError("");
     send({ action: "watched", id, watched, author: me() }, (draft) => {
@@ -909,8 +913,6 @@
     }).then(() => {
       if (!watched) return;
       activity("movies.watched", `marked ${clip(movie.title, 100)} as watched`, { icon: "check", push: false });
-      // Tonight's movie is done: clear it on both phones.
-      if (wasPick) send({ action: "clearPick" }, (draft) => { if (draft.pick?.id === id) draft.pick = null; }).catch(() => {});
     }).catch((error) => failed(error, "Couldn’t save that."));
   }
 
@@ -919,13 +921,12 @@
     const movie = state.movies.find((item) => item.id === id);
     if (!movie || movie.pending) return;
     if (!window.confirm(`Remove “${movie.title}” from our list?`)) return;
-    const wasPick = state.pick?.id === id;
     showError("");
+    // The Worker clears tonight's pick itself when it's this movie (and only then, so a
+    // newer spin from the other phone is never wiped).
     send({ action: "remove", id }, (draft) => {
       draft.movies = draft.movies.filter((item) => item.id !== id);
       if (draft.pick?.id === id) draft.pick = null;
-    }).then(() => {
-      if (wasPick) send({ action: "clearPick" }, (draft) => { if (draft.pick?.id === id) draft.pick = null; }).catch(() => {});
     }).catch((error) => failed(error, "Couldn’t remove that movie."));
   }
 
