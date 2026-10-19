@@ -770,15 +770,23 @@
         <p class="question-lock" id="question-lock" hidden></p>
         <form class="question-form" id="question-form" novalidate>
           <label for="question-answer">Your answer</label>
-          <textarea id="question-answer" rows="3" maxlength="500" placeholder="Take your time…"></textarea>
+          <div class="question-answer-wrap">
+            <textarea id="question-answer" rows="3" maxlength="500" placeholder="Take your time…"></textarea>
+            <span class="question-count" id="question-count" aria-hidden="true">0 / 500</span>
+          </div>
+          <div class="question-guess-field" id="question-guess-field">
+            <label for="question-guess"><i class="icon" data-lucide="target" aria-hidden="true"></i><span id="question-guess-label">Guess their answer</span><small>optional</small></label>
+            <input type="text" id="question-guess" maxlength="200" placeholder="I bet the answer is…" autocomplete="off" enterkeyhint="done" aria-describedby="question-guess-hint">
+            <p class="question-guess-hint" id="question-guess-hint">Spot on earns you 3 hearts once you’ve both answered.</p>
+          </div>
           <div class="question-form-foot">
-            <span class="question-count" id="question-count">0 / 500</span>
             <button class="btn btn-ghost" id="question-cancel" type="button" hidden>Cancel</button>
             <button class="btn btn-primary" id="question-submit" type="submit">Answer <i class="icon" data-lucide="send" aria-hidden="true"></i></button>
           </div>
         </form>
         <p class="error" id="question-error" role="alert" hidden></p>
         <div class="answer-pair" id="question-answers" aria-live="polite"></div>
+        <div class="question-guesses" id="question-guesses" aria-live="polite"></div>
       </div>
       <div class="question-history" id="question-history" hidden>
         <p class="together-label">Earlier questions</p>
@@ -798,7 +806,7 @@
       </div>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="planned" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Our plan</button>
-        <button class="btn btn-secondary" data-action="goto" data-target="ideas" type="button"><i class="icon" data-lucide="lightbulb" aria-hidden="true"></i> Ideas jar</button>
+        <button class="btn btn-secondary" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="gamepad-2" aria-hidden="true"></i> Games</button>
       </div>
     </section>
     <!-- ===== END DAILY QUESTION ===== -->
@@ -817,6 +825,30 @@
     <section class="step" data-step="match">
       <p class="eyebrow">Daily match</p>
       <h2>This or that?</h2>
+      <p class="match-lede" id="match-lede">Five quick picks. Then see how alike you are today.</p>
+      <p class="together-note" id="match-status">Loading today’s pairs…</p>
+      <div class="match-play" id="match-play" hidden>
+        <div class="match-progress" id="match-progress" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+        <p class="match-count" id="match-count"></p>
+        <p class="match-prompt" id="match-prompt" aria-live="polite"></p>
+        <div class="match-cards" id="match-cards" role="group" aria-labelledby="match-prompt">
+          <button class="match-card" type="button" data-pick="0"><span class="match-card-art"><i class="icon" data-lucide="heart" aria-hidden="true"></i></span><span class="match-card-label"></span></button>
+          <span class="match-or" aria-hidden="true">or</span>
+          <button class="match-card" type="button" data-pick="1"><span class="match-card-art"><i class="icon" data-lucide="heart" aria-hidden="true"></i></span><span class="match-card-label"></span></button>
+        </div>
+        <button class="btn btn-ghost match-back" id="match-back" type="button" hidden><i class="icon" data-lucide="undo-2" aria-hidden="true"></i> Change the last one</button>
+      </div>
+      <div class="match-result" id="match-result" hidden>
+        <div class="match-headline" id="match-headline" tabindex="-1" aria-live="polite"></div>
+        <ol class="match-rows" id="match-rows" aria-label="Today’s picks"></ol>
+      </div>
+      <p class="error" id="match-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="match-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="match-stats" hidden></dl>
+      <div class="match-history" id="match-history" hidden>
+        <p class="together-label">Earlier days</p>
+        <div class="match-history-list" id="match-history-list"></div>
+      </div>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>

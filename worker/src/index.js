@@ -1,5 +1,5 @@
 import { GAME_ROUTES, handleGame } from "./games/router.js";
-import { award, markActive } from "./games/common.js";
+import { award, awardTotals, markActive } from "./games/common.js";
 
 const ALLOWED_ORIGIN = "https://dee0-0.github.io";
 const PLAN_KEY = "current-plan";
@@ -59,7 +59,7 @@ const OUTFIT_ACTIONS = ["add", "rate", "comment", "uncomment", "favorite", "remo
 const SNACK_ACTIONS = ["add", "toggle", "remove", "clearDone"];
 const MOVIE_ACTIONS = ["add", "heart", "watched", "remove", "spin", "clearPick"];
 const IDEA_ACTIONS = ["add", "remove", "use", "unuse"];
-const QUESTION_ACTIONS = ["answer", "custom", "uncustom"];
+const QUESTION_ACTIONS = ["answer", "judge", "custom", "uncustom"];
 const ACTIVITY_KEY = "activity";
 const PUSH_KEY = "push";
 const VAPID_KEY = "vapid";
@@ -1258,12 +1258,36 @@ function assignQuestion(doc, day) {
   return true;
 }
 
-// Their answer only shows once I've answered too.
+// Guess my answer: with your answer you can guess what the other one says. Once you both
+// answered, each of you judges the other's guess; the guesser gets this many hearts.
+const GUESS_HEARTS = { spot: 3, close: 1, miss: 0 };
+const MAX_GUESS = 200;
+
+const questionPartner = (author) => (author === "her" ? "sender" : "her");
+
+// An answer as the pages see it (answers saved before guesses existed have none).
+function answerOut(answer) {
+  if (!answer) return null;
+  return { text: answer.text, at: answer.at, guess: typeof answer.guess === "string" && answer.guess ? answer.guess : null };
+}
+
+// Their answer (and their guess about mine) only shows once I've answered too.
+// Verdicts only exist once we both answered: `mine` is theirs on my guess, `theirs` mine on theirs.
 function answerView(entry, author) {
-  const other = author === "her" ? "sender" : "her";
+  const other = questionPartner(author);
   const mine = entry.answers?.[author] || null;
   const theirs = entry.answers?.[other] || null;
-  return { question: entry.question, mine, theirs: mine ? theirs : null, theirsAnswered: Boolean(theirs) };
+  const verdictOn = (guesser) => {
+    const verdict = entry.verdicts?.[guesser]?.verdict;
+    return mine && theirs && Object.hasOwn(GUESS_HEARTS, verdict) ? verdict : null;
+  };
+  return {
+    question: entry.question,
+    mine: answerOut(mine),
+    theirs: mine ? answerOut(theirs) : null,
+    theirsAnswered: Boolean(theirs),
+    verdicts: { mine: verdictOn(author), theirs: verdictOn(other) }
+  };
 }
 
 function questionView(doc, day, author) {
@@ -1274,8 +1298,14 @@ function questionView(doc, day, author) {
     .reverse()
     .slice(0, QUESTION_HISTORY)
     .map((key) => ({ day: key, ...answerView(doc.days[key], author) }));
-  const { question, mine, theirs, theirsAnswered } = answerView(entry, author);
-  return { day, question, source: entry.source, mine, theirs, theirsAnswered, history };
+  const { question, mine, theirs, theirsAnswered, verdicts } = answerView(entry, author);
+  return { day, question, source: entry.source, mine, theirs, theirsAnswered, verdicts, history };
+}
+
+// Hearts each of us earned from guesses judged right (the running guess score).
+async function guessScore(txn) {
+  const totals = (await awardTotals(txn)).guess || {};
+  return { her: totals.her || 0, sender: totals.sender || 0 };
 }
 
 // Questions still waiting first (in the order they come up), then the asked ones, latest first.
@@ -1307,6 +1337,15 @@ function normalizeQuestionAction(input) {
     const text = typeof input.text === "string" ? input.text.replace(/\r\n?/g, "\n").trim() : "";
     if (!text || text.length > 500) throw new Error("Write an answer (up to 500 characters).");
     change.text = text;
+    // Optional; left out keeps the guess as it is, "" removes it.
+    if (input.guess !== undefined && input.guess !== null) {
+      change.guess = cleanLabel(input.guess, MAX_GUESS, `Keep your guess under ${MAX_GUESS} characters.`, true);
+    }
+  }
+  if (change.action === "judge") {
+    change.day = questionDay(input.day);
+    if (!Object.hasOwn(GUESS_HEARTS, input.verdict)) throw new Error("Choose how close the guess was.");
+    change.verdict = input.verdict;
   }
   if (change.action === "custom") change.text = cleanLabel(input.text, 200, "Write a question (up to 200 characters).");
   if (change.action === "uncustom") change.id = itemId(input.id, "That question is gone.");
@@ -1994,12 +2033,12 @@ export class PlanStore {
       try { day = questionDay(url.searchParams.get("day") || todayInBern()); } catch (error) {
         return json({ error: error.message }, 400, origin);
       }
-      const doc = await storage.transaction(async (txn) => {
+      const { doc, score } = await storage.transaction(async (txn) => {
         const value = normalizeQuestions(await txn.get(QUESTIONS_KEY));
         if (assignQuestion(value, day)) await txn.put(QUESTIONS_KEY, value);
-        return value;
+        return { doc: value, score: await guessScore(txn) };
       });
-      return json(questionView(doc, day, author), 200, origin);
+      return json({ ...questionView(doc, day, author), guessScore: score }, 200, origin);
     }
     if (request.method !== "POST") return json({ error: "Method not allowed." }, 405, origin);
 
@@ -2010,14 +2049,31 @@ export class PlanStore {
     const result = await storage.transaction(async (txn) => {
       const doc = normalizeQuestions(await txn.get(QUESTIONS_KEY));
       const now = new Date().toISOString();
+      let awarded = 0;
       if (change.action === "answer") {
         const entry = doc.days[change.day];
         if (!entry) return { status: 409, error: "Open that day's question first.", doc };
-        // Answering again edits the answer.
-        entry.answers = { ...entry.answers, [change.author]: { text: change.text, at: now } };
+        // Answering again edits the answer. The guess can only change while their answer
+        // is still hidden from me (I hadn't answered yet, or they haven't); else it stays.
+        const previous = entry.answers?.[change.author] || null;
+        const theirs = entry.answers?.[questionPartner(change.author)] || null;
+        let guess = typeof previous?.guess === "string" ? previous.guess : "";
+        if (change.guess !== undefined && (!previous || !theirs)) guess = change.guess;
+        entry.answers = { ...entry.answers, [change.author]: { text: change.text, at: now, ...(guess ? { guess } : {}) } };
         // A heart for answering (once per day's question) and today counts for our streak.
-        await award(txn, `question:${change.day}:${change.author}`, change.author, 1);
-        await markActive(txn, change.author);
+        awarded += await award(txn, `question:${change.day}:${change.author}`, change.author, 1);
+        awarded += await markActive(txn, change.author);
+      } else if (change.action === "judge") {
+        // I judge their guess about my answer: hearts go to them (changing it replaces them).
+        const entry = doc.days[change.day];
+        const guesser = questionPartner(change.author);
+        if (!entry?.answers?.[change.author] || !entry?.answers?.[guesser]) {
+          return { status: 409, error: "You can judge once you've both answered.", doc };
+        }
+        if (!entry.answers[guesser].guess) return { status: 409, error: "There's no guess to judge for that day.", doc };
+        entry.verdicts = { ...(entry.verdicts || {}), [guesser]: { verdict: change.verdict, at: now } };
+        await award(txn, `guess:${change.day}:${guesser}`, guesser, GUESS_HEARTS[change.verdict]);
+        awarded += await markActive(txn, change.author);
       } else if (change.action === "custom") {
         const text = change.text.toLowerCase();
         if (doc.custom.some((item) => !item.usedOn && String(item.text).toLowerCase() === text)) return { doc };
@@ -2036,13 +2092,14 @@ export class PlanStore {
         doc.custom = doc.custom.filter((entry) => entry !== item);
       }
       await txn.put(QUESTIONS_KEY, doc);
+      if (change.action === "answer" || change.action === "judge") return { doc, awarded, score: await guessScore(txn) };
       return { doc };
     });
 
-    if (change.action === "answer") {
+    if (change.action === "answer" || change.action === "judge") {
       return result.error
         ? json({ error: result.error }, result.status, origin)
-        : json(questionView(result.doc, change.day, change.author), 200, origin);
+        : json({ ...questionView(result.doc, change.day, change.author), guessScore: result.score, awarded: result.awarded }, 200, origin);
     }
     const view = customQuestionView(result.doc, change.author);
     return result.error ? json({ error: result.error, ...view }, result.status, origin) : json(view, 200, origin);
