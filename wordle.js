@@ -31,7 +31,6 @@
   const FLIP_STEP = 260;   // ms between the tiles of a row turning over
   const FLIP_MS = 520;     // one tile's turn
   const MARK_WORDS = { g: "right spot", y: "in the word", b: "not in the word" };
-  const RANK = { b: 1, y: 2, g: 3 };
   const PRAISE = ["Genius!", "Magnificent!", "Impressive!", "Splendid!", "Great!", "Phew!"];
   // The same cache-busting version as this script, for the word list.
   const VERSION = (document.currentScript?.src.match(/[?&]v=([^&#]+)/) || [])[1] || "";
@@ -230,22 +229,34 @@
     }
   }
 
-  function verdictHtml() {
-    const them = escape(nameOf(other()));
+  // The duel line under my result: waiting for the other one, or who won.
+  function verdict() {
+    const them = nameOf(other());
     if (!state.result) {
       const playing = state.theirs.marks.length;
       const so = playing ? ` (${plural(playing, "try")} so far)` : "";
-      return `<p class="wordle-verdict is-waiting"><i class="icon" data-lucide="hourglass" aria-hidden="true"></i>
-        <span>${state.mine.solved ? `Waiting for ${them}${so}. Fewer tries wins.` : `Waiting for ${them} to finish${so}.`}</span></p>`;
+      const text = state.mine.solved ? `Waiting for ${them}${so}. Fewer tries wins.` : `Waiting for ${them} to finish${so}.`;
+      return { icon: "hourglass", tone: "is-waiting", text };
     }
     const winner = state.result.winner;
-    if (winner === me()) return `<p class="wordle-verdict is-win"><i class="icon" data-lucide="crown" aria-hidden="true"></i><span>You won today! +2 hearts</span></p>`;
+    if (winner === me()) return { icon: "crown", tone: "is-win", text: "You won today! +2 hearts" };
     if (winner === other()) {
       const how = state.theirs.solved ? ` in ${state.theirs.tries}` : "";
-      return `<p class="wordle-verdict"><i class="icon" data-lucide="trophy" aria-hidden="true"></i><span>${them} won today${escape(how)}. Rematch tomorrow!</span></p>`;
+      return { icon: "trophy", tone: "", text: `${them} won today${how}. Rematch tomorrow!` };
     }
-    if (winner === "tie") return `<p class="wordle-verdict is-win"><i class="icon" data-lucide="handshake" aria-hidden="true"></i><span>It’s a tie! +1 heart each</span></p>`;
-    return `<p class="wordle-verdict"><i class="icon" data-lucide="sunrise" aria-hidden="true"></i><span>Neither of us got it. New word tomorrow!</span></p>`;
+    if (winner === "tie") return { icon: "handshake", tone: "is-win", text: "It’s a tie! +1 heart each" };
+    return { icon: "sunrise", tone: "", text: "Neither of us got it. New word tomorrow!" };
+  }
+
+  function verdictHtml() {
+    const { icon, tone, text } = verdict();
+    return `<p class="wordle-verdict ${tone}"><i class="icon" data-lucide="${icon}" aria-hidden="true"></i><span>${escape(text)}</span></p>`;
+  }
+
+  // Screen readers hear results once, not every time the card redraws.
+  function announce(text) {
+    liveEl.textContent = "";
+    window.setTimeout(() => { liveEl.textContent = text; }, 60);
   }
 
   // Their guesses with letters: the Worker only sends them once I'm done.
@@ -342,16 +353,17 @@
     paintStats();
   }
 
-  // On short screens the keyboard starts below the fold: bring the board and keys into view once a day.
+  // On short screens the keyboard starts below the fold: each time the page opens, scroll so
+  // the keys are on screen (keeping the other one's progress in view when there's room).
   function revealKeyboard() {
     if (!state || state.mine.done || scrolledDay === state.day || app()?.step !== "wordle") return;
     scrolledDay = state.day;
     window.setTimeout(() => {
       const keys = keyboardEl.getBoundingClientRect();
-      const top = duelEl.getBoundingClientRect().top;
+      const top = duelEl.getBoundingClientRect().top - 8;
       const overflow = keys.bottom + 12 - window.innerHeight;
-      if (overflow <= 0) return;
-      window.scrollBy({ top: Math.min(overflow, top - 8), behavior: reduced() ? "auto" : "smooth" });
+      if (overflow <= 0 || keyboardEl.hidden) return;
+      window.scrollBy({ top: top > 0 ? Math.min(overflow, top) : overflow, behavior: reduced() ? "auto" : "smooth" });
     }, 420);
   }
 
@@ -453,6 +465,8 @@
         else if (winner === "tie") reward(1, "It’s a tie");
         if (winner === me() || winner === "tie") window.LetterFX?.chime?.();
         refreshHub();
+        render();
+        announce(verdict().text);
       }
       render();
       revealKeyboard();
@@ -563,9 +577,15 @@
       revealRow(row, () => {
         revealing = false;
         shownKeys = { ...(data.keyboard || {}) };
-        liveEl.textContent = newest ? rowLabel(row, newest, false) : "";
         render();
-        if (data.mine.done) finished(before, data, row);
+        const said = newest ? `${rowLabel(row, newest, false)}.` : "";
+        if (!data.mine.done) {
+          announce(said);
+          return;
+        }
+        const outcome = data.mine.solved ? `Solved in ${data.mine.tries}!` : `The word was ${String(data.answer || "").toUpperCase()}.`;
+        announce(`${said} ${outcome} ${verdict().text}`);
+        finished(before, data, row);
       });
     } catch (error) {
       if (identity !== identitySeq) return;
