@@ -116,11 +116,13 @@
     return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", ...options }).format(new Date(Date.UTC(year, month - 1, date, 12)));
   }
 
-  function clockTime(iso) {
+  // "14:05" or "16 Oct" for a timestamp, in our time zone.
+  function zurich(iso, options) {
     const at = new Date(iso);
-    if (!Number.isFinite(at.getTime())) return "";
-    return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Zurich", hour: "2-digit", minute: "2-digit" }).format(at);
+    if (typeof iso !== "string" || !Number.isFinite(at.getTime())) return "";
+    return new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Zurich", ...options }).format(at);
   }
+  const clockTime = (iso) => zurich(iso, { hour: "2-digit", minute: "2-digit" });
 
   // Anything the page reads from the answer, with safe defaults (an older Worker, a module mid-rollout).
   function tidyStreak(value) {
@@ -289,7 +291,9 @@
       }
       const lead = leaderOf(row);
       if (lead) crowns[lead] += 1;
-      const cell = (who) => `<span class="games-board-cell${who === mine ? " is-me" : ""}${lead === who ? " is-lead" : ""}" role="cell">${escape(shown(row[who]))}${lead === who ? crown : ""}</span>`;
+      // In a lower-wins row (average tries) 0 means no games yet.
+      const value = (who) => (row.lowerWins && numberOf(row[who]) !== null && numberOf(row[who]) <= 0 ? null : row[who]);
+      const cell = (who) => `<span class="games-board-cell${who === mine ? " is-me" : ""}${lead === who ? " is-lead" : ""}" role="cell">${escape(shown(value(who)))}${lead === who ? crown : ""}</span>`;
       return `<div class="games-board-row${row.lowerWins ? " is-lower" : ""}" role="row">${label}${cell("her")}${cell("sender")}</div>`;
     }).join("");
 
@@ -324,7 +328,7 @@
     const list = badgesOpen ? data.badges : data.badges.slice(0, BADGES_SHOWN);
     const more = data.badges.length - list.length;
     return `<ul class="games-badge-grid">${list.map((badge) => {
-      const when = typeof badge.at === "string" ? shortDay(badge.at, { day: "numeric", month: "short" }) : "";
+      const when = zurich(badge.at, { day: "numeric", month: "short" });
       return `<li class="games-badge">
           <span class="games-badge-icon"><i class="icon" data-lucide="${iconName(badge.icon, "award")}" aria-hidden="true"></i></span>
           <strong>${escape(badge.name)}</strong>${when ? `<small>${escape(when)}</small>` : ""}
