@@ -807,6 +807,40 @@
     <section class="step" data-step="games">
       <p class="eyebrow">Play together</p>
       <h2>Games</h2>
+      <p class="together-note games-status" id="games-status" role="status">Loading our games…</p>
+      <div class="games-hub" id="games-hub" hidden>
+        <section class="games-card games-streak" id="games-streak" aria-label="Our streak"></section>
+
+        <section class="games-card games-hearts" aria-labelledby="games-hearts-title">
+          <div class="games-card-head">
+            <p class="games-card-label" id="games-hearts-title">Hearts to spend</p>
+            <button class="games-shop-button" data-action="goto" data-target="shop" type="button"><i class="icon" data-lucide="shopping-bag" aria-hidden="true"></i><span>Love shop</span><i class="icon" data-lucide="chevron-right" aria-hidden="true"></i></button>
+          </div>
+          <div class="games-balances" id="games-balances"></div>
+          <details class="games-earn" id="games-earn">
+            <summary>How to earn hearts <i class="icon games-earn-chevron" data-lucide="chevron-down" aria-hidden="true"></i></summary>
+            <ul class="games-earn-list">
+              <li><i class="icon" data-lucide="message-circle-heart" aria-hidden="true"></i><span><strong>Daily question</strong><small>Answer today’s question</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="target" aria-hidden="true"></i><span><strong>Guess my answer</strong><small>Spot on: 3, close: 1</small></span><b>+3</b></li>
+              <li><i class="icon" data-lucide="split" aria-hidden="true"></i><span><strong>Daily match</strong><small>Play today’s. All 5 the same: +2 each</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="grid-3x3" aria-hidden="true"></i><span><strong>Wordle for two</strong><small>Solve it. Fewer tries: +2 (a tie: +1 each)</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="brush" aria-hidden="true"></i><span><strong>Daily doodle</strong><small>Draw today’s word</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="shapes" aria-hidden="true"></i><span><strong>Icon story</strong><small>Guess one right. The storyteller gets 1</small></span><b>+2</b></li>
+              <li><i class="icon" data-lucide="badge-check" aria-hidden="true"></i><span><strong>Weekly challenges</strong><small>Done by both of us. All 3: +5 each</small></span><b>+3</b></li>
+              <li><i class="icon" data-lucide="flame" aria-hidden="true"></i><span><strong>Couple streak</strong><small>Every 7 days in a row we both play</small></span><b>+5</b></li>
+            </ul>
+          </details>
+        </section>
+
+        <p class="games-label" id="games-today-label">Today</p>
+        <ul class="games-today" id="games-today" aria-labelledby="games-today-label"></ul>
+
+        <p class="games-label" id="games-board-label">Leaderboard</p>
+        <div class="games-board" id="games-board"></div>
+
+        <p class="games-label" id="games-badges-label">Our badges</p>
+        <div class="games-badges" id="games-badges"></div>
+      </div>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="planned" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Our plan</button>
       </div>
