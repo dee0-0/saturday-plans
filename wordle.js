@@ -20,6 +20,7 @@
   const toastEl = $("#wordle-toast");
   const liveEl = $("#wordle-live");
   const keyboardEl = $("#wordle-keyboard");
+  const legendEl = $("#wordle-legend");
   const errorEl = $("#wordle-error");
   const resultEl = $("#wordle-result");
   const statsEl = $("#wordle-stats");
@@ -318,7 +319,8 @@
           <span class="wordle-bar-track"><span class="wordle-bar-fill" style="width:${width}%">${count}</span></span>
         </li>`;
     }).join("");
-    const ties = mine.ties ? ` · ${plural(mine.ties, "tie")}` : "";
+    // Non-breaking spaces keep "1 tie" and "You 3" together when the line wraps.
+    const ties = mine.ties ? ` · ${plural(mine.ties, "tie").replace(" ", " ")}` : "";
     const html = `<p class="wordle-label">Your stats</p>
       <dl class="wordle-numbers">
         <div><dt>Played</dt><dd>${mine.played}</dd></div>
@@ -326,7 +328,7 @@
         <div><dt>Streak</dt><dd>${mine.streak}</dd></div>
         <div><dt>Best</dt><dd>${mine.maxStreak}</dd></div>
       </dl>
-      <p class="wordle-duels"><i class="icon" data-lucide="crown" aria-hidden="true"></i><span>Days won: You ${mine.wins} · ${escape(nameOf(other()))} ${theirs?.wins ?? 0}${escape(ties)}</span></p>
+      <p class="wordle-duels"><i class="icon" data-lucide="crown" aria-hidden="true"></i><span>Days won: You&nbsp;${mine.wins} · ${escape(nameOf(other()))}&nbsp;${theirs?.wins ?? 0}${escape(ties)}</span></p>
       <p class="wordle-label">Guess distribution</p>
       <ol class="wordle-dist" aria-label="How many tries your solved words took">${bars}</ol>`;
     if (html === statsDrawn) return;
@@ -348,6 +350,7 @@
     paintBoard();
     paintDuel();
     keyboardEl.hidden = state.mine.done && !revealing;
+    legendEl.hidden = keyboardEl.hidden;
     paintKeyboard();
     paintResult();
     paintStats();

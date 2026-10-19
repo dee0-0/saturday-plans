@@ -137,6 +137,12 @@
 .wordle-keyboard.is-busy .wordle-key { cursor: progress; }
 .wordle-key:focus-visible { outline: 3px solid rgba(220,79,131,.34); outline-offset: 1px; }
 
+.wordle-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin: 0; color: var(--muted); font-size: 11px; font-weight: 700; }
+.wordle-legend span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.wordle-legend span::before { width: 10px; height: 10px; border-radius: 3px; background: var(--wordle-b); content: ""; }
+.wordle-legend [data-mark="g"]::before { background: var(--wordle-g); }
+.wordle-legend [data-mark="y"]::before { background: var(--wordle-y); }
+
 /* ---------- Result ---------- */
 .wordle-result-card {
   padding: 18px 16px 15px;
