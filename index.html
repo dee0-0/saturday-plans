@@ -916,8 +916,39 @@
 
     <!-- ===== DOODLE (doodle.js, doodle.css) ===== -->
     <section class="step" data-step="doodle">
-      <p class="eyebrow">Daily doodle</p>
-      <h2>Draw it!</h2>
+      <p class="eyebrow" id="doodle-eyebrow">Today’s doodle</p>
+      <h2 class="doodle-prompt" id="doodle-prompt">Draw it!</h2>
+      <p class="together-note" id="doodle-status" role="status">Loading today’s doodle…</p>
+      <p class="doodle-nudge" id="doodle-nudge" hidden></p>
+      <div class="doodle-board" id="doodle-board" hidden>
+        <div class="doodle-pad">
+          <canvas class="doodle-canvas" id="doodle-canvas" role="img" aria-label="Drawing pad. Draw with your finger, a pen or the mouse."></canvas>
+          <p class="doodle-pad-hint" id="doodle-pad-hint" aria-hidden="true">Draw here with your finger</p>
+        </div>
+        <div class="doodle-tools">
+          <div class="doodle-colors" id="doodle-colors" role="radiogroup" aria-label="Colour"></div>
+          <div class="doodle-tool-row">
+            <div class="doodle-sizes" id="doodle-sizes" role="radiogroup" aria-label="Pen size">
+              <button class="doodle-size" type="button" role="radio" aria-checked="true" aria-label="Thin pen" data-width="0"><span class="doodle-size-dot is-thin"></span></button>
+              <button class="doodle-size" type="button" role="radio" aria-checked="false" aria-label="Thick pen" data-width="1"><span class="doodle-size-dot is-thick"></span></button>
+            </div>
+            <button class="doodle-tool" id="doodle-undo" type="button" disabled><i class="icon" data-lucide="undo-2" aria-hidden="true"></i><span>Undo</span></button>
+            <button class="doodle-tool" id="doodle-clear" type="button" disabled><i class="icon" data-lucide="trash-2" aria-hidden="true"></i><span>Clear</span></button>
+          </div>
+        </div>
+        <p class="error" id="doodle-error" role="alert" hidden></p>
+        <button class="btn btn-primary doodle-submit" id="doodle-submit" type="button" disabled>Done drawing <i class="icon" data-lucide="check" aria-hidden="true"></i></button>
+      </div>
+      <div class="doodle-result" id="doodle-result" hidden>
+        <p class="doodle-result-line" id="doodle-result-line" role="status" aria-live="polite"></p>
+        <div class="doodle-pair" id="doodle-pair"></div>
+        <button class="btn btn-secondary doodle-replay" id="doodle-replay" type="button" hidden><i class="icon" data-lucide="play" aria-hidden="true"></i> Replay</button>
+      </div>
+      <div class="doodle-gallery" id="doodle-gallery" hidden>
+        <p class="together-label">Earlier doodles</p>
+        <ul class="doodle-days" id="doodle-days" aria-label="Earlier doodles"></ul>
+        <button class="btn btn-secondary doodle-more" id="doodle-more" type="button" hidden>Show more</button>
+      </div>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>
@@ -928,6 +959,52 @@
     <section class="step" data-step="icons">
       <p class="eyebrow">Icon story</p>
       <h2>Guess my story</h2>
+      <p class="question-hint">A movie, a song or a memory, told in 3 to 5 icons. The other one gets 3 tries to guess it.</p>
+      <div class="segmented icons-switch" id="icons-switch" role="group" aria-label="Icon story">
+        <button type="button" data-tab="guess" aria-pressed="false">To guess <span class="icons-badge" id="icons-guess-count" hidden>0</span></button>
+        <button type="button" data-tab="send" aria-pressed="false">Send one</button>
+      </div>
+      <p class="together-note" id="icons-status" role="status">Loading our stories…</p>
+      <div class="icons-panel" id="icons-guess" hidden>
+        <div class="icons-open" id="icons-open"></div>
+        <div class="icons-empty" id="icons-empty" hidden>
+          <span class="icons-empty-icon" aria-hidden="true"><i class="icon" data-lucide="shapes" aria-hidden="true"></i></span>
+          <p id="icons-empty-text">Nothing to guess yet.</p>
+          <button class="btn btn-secondary" type="button" data-go-send><i class="icon" data-lucide="send" aria-hidden="true"></i> Send one</button>
+        </div>
+        <details class="icons-earlier" id="icons-earlier" hidden>
+          <summary><span class="together-label">Earlier stories <span class="together-count" id="icons-earlier-count">0</span></span><i class="icon icons-earlier-chevron" data-lucide="chevron-down" aria-hidden="true"></i></summary>
+          <ul class="icons-earlier-list" id="icons-earlier-list"></ul>
+        </details>
+      </div>
+      <div class="icons-panel" id="icons-send" hidden>
+        <form class="icons-compose" id="icons-form" novalidate>
+          <p class="field-label" id="icons-category-label">What is it?</p>
+          <div class="icons-categories" id="icons-categories" role="radiogroup" aria-labelledby="icons-category-label">
+            <button class="icons-category" type="button" role="radio" aria-checked="false" data-category="movie"><i class="icon" data-lucide="film" aria-hidden="true"></i><span>Movie</span></button>
+            <button class="icons-category" type="button" role="radio" aria-checked="false" data-category="song"><i class="icon" data-lucide="music" aria-hidden="true"></i><span>Song</span></button>
+            <button class="icons-category" type="button" role="radio" aria-checked="false" data-category="memory"><i class="icon" data-lucide="camera" aria-hidden="true"></i><span>Memory</span></button>
+            <button class="icons-category" type="button" role="radio" aria-checked="false" data-category="other"><i class="icon" data-lucide="sparkles" aria-hidden="true"></i><span>Something else</span></button>
+          </div>
+          <p class="field-label icons-chosen-label" id="icons-chosen-label"><span>Tell it in 3 to 5 icons</span><span class="icons-chosen-count" id="icons-chosen-count">0 / 5</span></p>
+          <div class="icons-chosen" id="icons-chosen" role="group" aria-labelledby="icons-chosen-label"></div>
+          <div class="icons-picker">
+            <div class="icons-tabs" id="icons-tabs" role="tablist" aria-label="Icon groups"></div>
+            <div class="icons-grid" id="icons-grid" role="tabpanel"></div>
+          </div>
+          <label for="icons-answer">The answer <span class="icons-label-note">(secret until it’s guessed)</span></label>
+          <input type="text" id="icons-answer" maxlength="80" placeholder="The Lion King" autocomplete="off" enterkeyhint="next">
+          <label class="icons-hint-label" for="icons-hint">A hint <span class="icons-label-note">(optional)</span></label>
+          <input type="text" id="icons-hint" maxlength="80" placeholder="We saw it twice" autocomplete="off" enterkeyhint="send">
+          <p class="icons-limit" id="icons-limit" hidden></p>
+          <p class="error" id="icons-error" role="alert" hidden></p>
+          <button class="btn btn-primary icons-send-button" id="icons-send-button" type="submit">Send <i class="icon" data-lucide="send" aria-hidden="true"></i></button>
+        </form>
+        <div class="icons-sent-wrap" id="icons-sent-wrap" hidden>
+          <p class="together-label">Sent by you</p>
+          <ul class="icons-sent" id="icons-sent" aria-label="Stories you sent"></ul>
+        </div>
+      </div>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>
