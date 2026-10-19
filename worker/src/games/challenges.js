@@ -178,7 +178,9 @@ function perfectBadge(monday, at) {
   return { id: `${monday}:perfect`, name: PERFECT_BADGE.name, icon: PERFECT_BADGE.icon, at, week: monday, challenge: "All three challenges of a week" };
 }
 
-// Every badge we unlocked, newest first.
+const isPerfectBadge = (badge) => badge.id.endsWith(":perfect");
+
+// Every badge we unlocked, newest first (a perfect week before the challenge that made it).
 function badgesOf(doc) {
   const badges = [];
   for (const [monday, week] of Object.entries(doc.weeks)) {
@@ -186,7 +188,9 @@ function badgesOf(doc) {
     for (const challenge of view.challenges) if (challenge.complete) badges.push(challengeBadge(monday, challenge));
     if (view.perfect) badges.push(perfectBadge(monday, view.perfectAt));
   }
-  return badges.sort((a, b) => String(b.at).localeCompare(String(a.at)) || b.id.localeCompare(a.id));
+  return badges.sort((a, b) => String(b.at).localeCompare(String(a.at))
+    || Number(isPerfectBadge(b)) - Number(isPerfectBadge(a))
+    || b.id.localeCompare(a.id));
 }
 
 function view(doc, ctx) {
@@ -218,8 +222,8 @@ function view(doc, ctx) {
     past,
     badges,
     stats: {
-      completed: badges.filter((badge) => !badge.id.endsWith(":perfect")).length,
-      perfectWeeks: badges.filter((badge) => badge.id.endsWith(":perfect")).length
+      completed: badges.filter((badge) => !isPerfectBadge(badge)).length,
+      perfectWeeks: badges.filter(isPerfectBadge).length
     }
   };
 }
@@ -309,7 +313,7 @@ export async function summary(ctx) {
     line: current.perfect
       ? "Perfect week! All 3 done"
       : `${completed} of ${current.challenges.length} done this week · ${daysLeftText(daysLeft(ctx.today, ctx.week))}`,
-    board: [{ label: "Challenges done", value: String(badges.filter((badge) => !badge.id.endsWith(":perfect")).length) }],
+    board: [{ label: "Challenges done", value: String(badges.filter((badge) => !isPerfectBadge(badge)).length) }],
     badges
   };
 }

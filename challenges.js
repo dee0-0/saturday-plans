@@ -160,14 +160,12 @@
   function cardHtml(item) {
     const mine = me();
     const badgeIcon = iconName(item.badge?.icon, "award");
-    let action;
-    if (item.complete) {
-      action = '<span class="challenges-together"><i class="icon" data-lucide="check-check" aria-hidden="true"></i>Done together</span>';
-    } else if (item.done[mine]) {
-      action = `<button class="btn btn-ghost challenges-undo" type="button" data-undo data-focus="undo" aria-label="Undo your part of ${escape(item.title)}"${busy ? " disabled" : ""}><i class="icon" data-lucide="undo-2" aria-hidden="true"></i> Undo</button>`;
-    } else {
-      action = `<button class="btn btn-primary challenges-mark" type="button" data-mark data-focus="mark" aria-expanded="${sheet?.id === item.id}" aria-label="Mark ${escape(item.title)} done"${busy ? " disabled" : ""}><i class="icon" data-lucide="check" aria-hidden="true"></i> Mark done</button>`;
-    }
+    // Without notes or photos, both of us fit side by side.
+    const pair = ["her", "sender"].every((who) => !item.done[who]?.note && !item.done[who]?.mediaId);
+    // Nothing to do on a complete card: the unlocked badge says it all.
+    const undo = `<button class="btn btn-ghost challenges-undo" type="button" data-undo data-focus="undo" aria-label="Undo your part of ${escape(item.title)}"${busy ? " disabled" : ""}><i class="icon" data-lucide="undo-2" aria-hidden="true"></i> Undo</button>`;
+    const mark = `<button class="btn btn-primary challenges-mark" type="button" data-mark data-focus="mark" aria-expanded="${sheet?.id === item.id}" aria-label="Mark ${escape(item.title)} done"${busy ? " disabled" : ""}><i class="icon" data-lucide="check" aria-hidden="true"></i> Mark done</button>`;
+    const action = item.complete ? "" : item.done[mine] ? undo : mark;
     return `<div class="challenges-card-head">
         <span class="challenges-card-icon" aria-hidden="true"><i class="icon" data-lucide="${iconName(item.icon, "badge-check")}"></i></span>
         <span class="challenges-card-copy">
@@ -175,11 +173,11 @@
           ${item.detail ? `<span class="challenges-card-detail">${escape(item.detail)}</span>` : ""}
         </span>
       </div>
-      <ul class="challenges-people" aria-label="Who did it">${[mine, other(mine)].map((who) => personHtml(item, who)).join("")}</ul>
+      <ul class="challenges-people${pair ? " is-pair" : ""}" aria-label="Who did it">${[mine, other(mine)].map((who) => personHtml(item, who)).join("")}</ul>
       <div class="challenges-card-foot">
         <span class="challenges-badge-chip${item.complete ? " is-unlocked" : ""}">
           <span class="challenges-badge-icon" aria-hidden="true"><i class="icon" data-lucide="${badgeIcon}"></i></span>
-          <span class="challenges-badge-copy"><small>${item.complete ? "Badge unlocked" : "Unlocks a badge"}</small><strong>${escape(item.badge?.name || "Badge")}</strong></span>
+          <span class="challenges-badge-copy"><small>${item.complete ? "Done together · badge unlocked" : "Unlocks a badge"}</small><strong>${escape(item.badge?.name || "Badge")}</strong></span>
         </span>
         ${action}
       </div>`;
