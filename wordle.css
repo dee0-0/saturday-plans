@@ -43,6 +43,7 @@
 .wordle-board-wrap { position: relative; display: grid; justify-items: center; }
 .wordle-board { display: grid; width: min(100%, 300px, calc((100svh - 300px) * .82)); min-width: 220px; gap: 5px; }
 .wordle-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.wordle-row.is-unused { display: none; }
 .wordle-tile {
   display: grid;
   aspect-ratio: 1;

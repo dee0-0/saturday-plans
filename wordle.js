@@ -45,6 +45,7 @@
   let identitySeq = 0;
   let pollTimer = null;
   let toastTimer = null;
+  let shakeTimer = null;
   let clockTimer = null;
   let words = null;        // Set of allowed guesses once wordle-words.js is in
   let wordsPromise = null;
@@ -166,7 +167,11 @@
         tile.dataset.state = guess ? guess.marks[i] : letter ? "filled" : "empty";
       });
       row.classList.toggle("is-current", Boolean(current));
-      row.setAttribute("aria-label", rowLabel(index, guess, current));
+      // Once I'm done, the empty rows fold away so the result sits right under my guesses.
+      const unused = Boolean(state?.mine?.done && !revealing && !guess);
+      row.classList.toggle("is-unused", unused);
+      if (unused) row.removeAttribute("aria-label");
+      else row.setAttribute("aria-label", rowLabel(index, guess, current));
     });
   }
 
@@ -229,8 +234,9 @@
     const them = escape(nameOf(other()));
     if (!state.result) {
       const playing = state.theirs.marks.length;
+      const so = playing ? ` (${plural(playing, "try")} so far)` : "";
       return `<p class="wordle-verdict is-waiting"><i class="icon" data-lucide="hourglass" aria-hidden="true"></i>
-        <span>Waiting for ${them}${playing ? ` (${plural(playing, "try")} so far)` : ""}. Fewer tries wins.</span></p>`;
+        <span>${state.mine.solved ? `Waiting for ${them}${so}. Fewer tries wins.` : `Waiting for ${them} to finish${so}.`}</span></p>`;
     }
     const winner = state.result.winner;
     if (winner === me()) return `<p class="wordle-verdict is-win"><i class="icon" data-lucide="crown" aria-hidden="true"></i><span>You won today! +2 hearts</span></p>`;
@@ -363,10 +369,11 @@
   function shake() {
     const row = rowEls[state?.mine?.guesses?.length ?? 0];
     if (!row) return;
+    window.clearTimeout(shakeTimer);
     row.classList.remove("is-shake");
     void row.offsetWidth;
     row.classList.add("is-shake");
-    window.setTimeout(() => row.classList.remove("is-shake"), 650);
+    shakeTimer = window.setTimeout(() => row.classList.remove("is-shake"), 650);
   }
 
   function popTile(index) {
@@ -549,7 +556,8 @@
       paintBoard();
       paintDuel();
       paintKeyboard();
-      reward(data.awarded, data.mine.done && data.mine.solved ? "Solved!" : "");
+      const won = data.result?.winner === me();
+      reward(data.awarded, won ? "You won today" : data.mine.solved ? "Solved!" : "");
       refreshHub();
       const newest = data.mine.guesses[data.mine.guesses.length - 1];
       revealRow(row, () => {
