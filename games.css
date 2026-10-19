@@ -262,7 +262,10 @@
 .games-badges-empty .games-row-icon { background: #fff6e2; color: #c98612; }
 
 /* ---------- Plan page tile ---------- */
-.games-tile-flame { width: 11px; height: 11px; margin: -2px 2px 0 0; vertical-align: middle; color: #f2577f; }
+.games-tile-flame { width: 10px; height: 10px; margin: -2px 2px 0 0; vertical-align: middle; color: #f2577f; }
+@media (max-width: 340px) {
+  .games-tile-flame { display: none; }
+}
 
 /* ---------- "+2 hearts" pop (any game page) ---------- */
 .games-reward-layer { position: fixed; z-index: 70; inset: 0; pointer-events: none; }
@@ -315,6 +318,7 @@
   .games-row { gap: 9px; padding-right: 8px; padding-left: 9px; }
   .games-row-icon { width: 36px; height: 36px; }
   .games-row-copy strong { font-size: 13px; }
+  .games-row-chevron { display: none; }
   .games-board-row { grid-template-columns: minmax(0, 1fr) 62px 62px; }
   .games-board-label { padding-left: 10px; font-size: 12px; }
   .games-board-cell { font-size: 14px; }

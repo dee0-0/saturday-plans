@@ -172,7 +172,7 @@
     const them = nameOf(theirs);
     const head = streak.count > 0
       ? `<p class="games-streak-count"><strong>${streak.count}</strong> ${streak.count === 1 ? "day" : "days"}</p>
-         <p class="games-streak-sub">in a row${streak.atRisk ? " · play today to keep it" : ""}</p>`
+         <p class="games-streak-sub">in a row</p>`
       : `<p class="games-streak-count is-start">Start a streak today</p>
          <p class="games-streak-sub">A day counts when we both play</p>`;
     const best = streak.best > 0 ? `<p class="games-streak-best"><small>Best</small><strong>${streak.best}</strong></p>` : "";
@@ -438,6 +438,10 @@
         nudging = false;
         render();
         updateTile();
+        // The disabled button dropped focus; put it on the note (or the button again).
+        if (onHub() && (!document.activeElement || document.activeElement === document.body)) {
+          streakEl.querySelector('[data-focus="nudge"]')?.focus({ preventScroll: true });
+        }
       }
     }
   }
