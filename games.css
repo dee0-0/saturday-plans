@@ -49,7 +49,7 @@
 .games-day { display: grid; justify-items: center; gap: 5px; }
 .games-day-dot { width: 18px; height: 18px; border: 2px solid #ecd0da; border-radius: 50%; background: #fff; }
 .games-day.is-one .games-day-dot { border-color: #f08aa8; background: linear-gradient(90deg, #f2577f 0 50%, #fff 50% 100%); }
-.games-day.is-both .games-day-dot { border-color: transparent; background: linear-gradient(150deg, #ffb067, #f2577f); box-shadow: 0 2px 6px rgba(242,87,127,.28); }
+.games-day.is-both .games-day-dot { border-color: transparent; background: linear-gradient(150deg, #ffb067, #f2577f) border-box; box-shadow: 0 2px 6px rgba(242,87,127,.28); }
 .games-day.is-today .games-day-dot { box-shadow: 0 0 0 3px rgba(220,79,131,.16); }
 .games-day-name { color: #a39aa0; font-size: 10px; font-weight: 800; line-height: 1; }
 .games-day.is-today .games-day-name { color: var(--rose-deep); }
@@ -138,7 +138,7 @@
   list-style: none;
 }
 .games-earn summary::-webkit-details-marker { display: none; }
-.games-earn-chevron { width: 16px; height: 16px; transition: transform 200ms ease; }
+.games-earn .games-earn-chevron { width: 16px; height: 16px; transition: transform 200ms ease; }
 .games-earn[open] .games-earn-chevron { transform: rotate(180deg); }
 .games-earn-list { display: grid; gap: 4px; margin: 10px 0 2px; padding: 0; list-style: none; animation: reveal-in 220ms ease both; }
 .games-earn-list li { display: flex; align-items: center; gap: 10px; padding: 7px 4px; border-top: 1px solid #f6ecf0; }
@@ -183,7 +183,7 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
-.games-row-chevron { width: 16px; height: 16px; color: #cfb1bd; }
+.games-row .games-row-chevron, .games-badges-empty .games-row-chevron { width: 16px; height: 16px; color: #cfb1bd; }
 .games-row.is-todo, .games-row.is-new { border-color: #efbdd0; background: #fffafc; box-shadow: 0 4px 12px rgba(220,79,131,.08); }
 .games-row.is-todo .games-row-icon, .games-row.is-new .games-row-icon { background: var(--rose); color: #fff; }
 .games-row.is-done .games-row-icon { background: #edf8f2; color: #2f8a63; }
@@ -223,7 +223,7 @@
 .games-board-shared { grid-column: span 2; color: var(--rose-deep); }
 .games-board-cell.is-me { background: rgba(255,240,245,.7); }
 .games-board-cell.is-lead { color: var(--rose-deep); }
-.games-crown { width: 14px; height: 14px; margin-top: -2px; color: #d99a0b; fill: #ffd76a; }
+.games-board .games-crown { width: 14px; height: 14px; margin-top: -2px; color: #d99a0b; fill: #ffd76a; }
 .games-board-row.is-head .games-board-cell {
   display: block;
   overflow: hidden;
@@ -262,9 +262,9 @@
 .games-badges-empty .games-row-icon { background: #fff6e2; color: #c98612; }
 
 /* ---------- Plan page tile ---------- */
-.games-tile-flame { width: 10px; height: 10px; margin: -2px 2px 0 0; vertical-align: middle; color: #f2577f; }
+.extra-tile .games-tile-flame { width: 10px; height: 10px; margin: -2px 2px 0 0; vertical-align: middle; color: #f2577f; }
 @media (max-width: 340px) {
-  .games-tile-flame { display: none; }
+  .extra-tile .games-tile-flame { display: none; }
 }
 
 /* ---------- "+2 hearts" pop (any game page) ---------- */
@@ -318,7 +318,7 @@
   .games-row { gap: 9px; padding-right: 8px; padding-left: 9px; }
   .games-row-icon { width: 36px; height: 36px; }
   .games-row-copy strong { font-size: 13px; }
-  .games-row-chevron { display: none; }
+  .games-row .games-row-chevron { display: none; }
   .games-board-row { grid-template-columns: minmax(0, 1fr) 62px 62px; }
   .games-board-label { padding-left: 10px; font-size: 12px; }
   .games-board-cell { font-size: 14px; }
