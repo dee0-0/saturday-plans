@@ -827,6 +827,20 @@
     <section class="step" data-step="wordle">
       <p class="eyebrow">Word of the day</p>
       <h2>Wordle for two</h2>
+      <p class="wordle-lede" id="wordle-lede">The same word for both of us. Six tries each.</p>
+      <p class="wordle-note" id="wordle-status">Loading today’s word…</p>
+      <div class="wordle-game" id="wordle-game" hidden>
+        <div class="wordle-duel" id="wordle-duel"></div>
+        <div class="wordle-board-wrap">
+          <div class="wordle-board" id="wordle-board" role="group" aria-label="Your guesses"></div>
+          <p class="wordle-toast" id="wordle-toast" role="alert" hidden></p>
+        </div>
+        <p class="visually-hidden" id="wordle-live" aria-live="polite"></p>
+        <div class="wordle-keyboard" id="wordle-keyboard" role="group" aria-label="Keyboard"></div>
+        <p class="error" id="wordle-error" role="alert" hidden></p>
+        <div class="wordle-result" id="wordle-result" aria-live="polite" hidden></div>
+        <div class="wordle-stats" id="wordle-stats" hidden></div>
+      </div>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>
