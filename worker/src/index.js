@@ -1,3 +1,6 @@
+import { GAME_ROUTES, handleGame } from "./games/router.js";
+import { award, markActive } from "./games/common.js";
+
 const ALLOWED_ORIGIN = "https://dee0-0.github.io";
 const PLAN_KEY = "current-plan";
 const HISTORY_KEY = "history";
@@ -25,7 +28,9 @@ const ROUTES = [
   "/plan", "/plan/late", "/plan/next", "/coupons", "/journal", "/journal/photo", "/secrets",
   "/media", "/media/file", "/media/thumb", "/outfits", "/snacks", "/reset",
   "/activity", "/push/key", "/push/subscribe", "/push/unsubscribe", "/push/test",
-  "/movies", "/movies/search", "/ideas", "/question", "/question/custom"
+  "/movies", "/movies/search", "/ideas", "/question", "/question/custom",
+  // The games (worker/src/games/): /games, /games/match, /games/wordle, …
+  ...GAME_ROUTES
 ];
 // <img> and <video> load these directly, without an Origin header, so they are public.
 const PUBLIC_ROUTES = ["/media/file", "/media/thumb"];
@@ -35,7 +40,7 @@ const CHUNK_SIZE = 1024 * 1024;
 const MAX_THUMB_LENGTH = 300 * 1024;
 // Uploads that never finished are dropped after a day.
 const PENDING_MEDIA_TTL = 24 * 60 * 60 * 1000;
-const MEDIA_SCOPES = ["journal", "outfit"];
+const MEDIA_SCOPES = ["journal", "outfit", "challenge"];
 const MEDIA_KINDS = {
   photo: {
     types: ["image/jpeg", "image/png", "image/webp"],
@@ -77,7 +82,8 @@ const FIRST_QUESTION_DAY = "2026-01-01";
 // Pages of the letter an activity can open (the steps in app.js).
 const STEPS = [
   "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game",
-  "journal", "next", "outfits", "snacks", "movies", "ideas", "question"
+  "journal", "next", "outfits", "snacks", "movies", "ideas", "question",
+  "games", "match", "wordle", "doodle", "icons", "challenges", "shop"
 ];
 const ACTIVITY_KIND = /^[a-z.]{1,40}$/;
 const ICON_NAME = /^[a-z0-9-]{0,40}$/;
@@ -1385,6 +1391,7 @@ export class PlanStore {
     if (path === "/movies") return this.movies(request, origin);
     if (path === "/ideas") return this.ideas(request, origin);
     if (path === "/question" || path === "/question/custom") return this.question(request, url, origin);
+    if (path === "/games" || path.startsWith("/games/")) return this.games(request, url, origin);
 
     if (path === "/coupons" && request.method === "GET") {
       return json({ coupons: normalizeCoupons(await this.ctx.storage.get(COUPONS_KEY)) }, 200, origin);
@@ -2008,6 +2015,9 @@ export class PlanStore {
         if (!entry) return { status: 409, error: "Open that day's question first.", doc };
         // Answering again edits the answer.
         entry.answers = { ...entry.answers, [change.author]: { text: change.text, at: now } };
+        // A heart for answering (once per day's question) and today counts for our streak.
+        await award(txn, `question:${change.day}:${change.author}`, change.author, 1);
+        await markActive(txn, change.author);
       } else if (change.action === "custom") {
         const text = change.text.toLowerCase();
         if (doc.custom.some((item) => !item.usedOn && String(item.text).toLowerCase() === text)) return { doc };
@@ -2036,5 +2046,11 @@ export class PlanStore {
     }
     const view = customQuestionView(result.doc, change.author);
     return result.error ? json({ error: result.error, ...view }, result.status, origin) : json(view, 200, origin);
+  }
+
+  // The games (worker/src/games/router.js routes them to their modules).
+  async games(request, url, origin) {
+    const { status, body } = await handleGame(this.ctx.storage, request, url);
+    return json(body, status, origin);
   }
 }

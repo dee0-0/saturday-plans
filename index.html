@@ -30,13 +30,18 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <link rel="preload" as="image" href="assets/letter-bg-mobile.jpg" media="(max-aspect-ratio: 1/1)">
 <link rel="preload" as="image" href="assets/letter-bg-desktop.jpg" media="(min-aspect-ratio: 1/1)">
-<link rel="stylesheet" href="style.css?v=letter-18">
-<link rel="stylesheet" href="extras.css?v=letter-18">
-<link rel="stylesheet" href="journal.css?v=letter-18">
-<link rel="stylesheet" href="planner.css?v=letter-18">
-<link rel="stylesheet" href="activity.css?v=letter-18">
-<link rel="stylesheet" href="movies.css?v=letter-18">
-<link rel="stylesheet" href="together.css?v=letter-18">
+<link rel="stylesheet" href="style.css?v=letter-19">
+<link rel="stylesheet" href="extras.css?v=letter-19">
+<link rel="stylesheet" href="journal.css?v=letter-19">
+<link rel="stylesheet" href="planner.css?v=letter-19">
+<link rel="stylesheet" href="activity.css?v=letter-19">
+<link rel="stylesheet" href="movies.css?v=letter-19">
+<link rel="stylesheet" href="together.css?v=letter-19">
+<link rel="stylesheet" href="games.css?v=letter-19">
+<link rel="stylesheet" href="match.css?v=letter-19">
+<link rel="stylesheet" href="wordle.css?v=letter-19">
+<link rel="stylesheet" href="doodle.css?v=letter-19">
+<link rel="stylesheet" href="rewards.css?v=letter-19">
 <script>document.documentElement.classList.add("intro-pending");setTimeout(function(){document.documentElement.classList.remove("intro-pending");},3000);</script>
 </head>
 <body class="is-envelope-landing">
@@ -382,6 +387,7 @@
       <div class="extras">
         <p class="extras-label">Little extras</p>
         <div class="extras-grid">
+          <button class="extra-tile" id="games-tile" data-action="goto" data-target="games" type="button"><span class="extra-icon"><i class="icon" data-lucide="trophy" aria-hidden="true"></i></span><strong>Games</strong><small id="games-tile-note">Play together</small></button>
           <button class="extra-tile" data-action="goto" data-target="coupons" type="button"><span class="extra-icon"><i class="icon" data-lucide="ticket" aria-hidden="true"></i></span><strong>Coupons</strong><small id="coupon-tile-note">Just for you</small></button>
           <button class="extra-tile" data-action="goto" data-target="game" type="button"><span class="extra-icon"><i class="icon" data-lucide="gamepad-2" aria-hidden="true"></i></span><strong>Fry game</strong><small>Win a prize</small></button>
           <button class="extra-tile" data-action="goto" data-target="journal" type="button"><span class="extra-icon"><i class="icon" data-lucide="book-heart" aria-hidden="true"></i></span><strong>Our journal</strong><small>Rate our dates</small></button>
@@ -796,30 +802,107 @@
       </div>
     </section>
     <!-- ===== END DAILY QUESTION ===== -->
+
+    <!-- ===== GAMES HUB (games.js, games.css) ===== -->
+    <section class="step" data-step="games">
+      <p class="eyebrow">Play together</p>
+      <h2>Games</h2>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="planned" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Our plan</button>
+      </div>
+    </section>
+    <!-- ===== END GAMES HUB ===== -->
+
+    <!-- ===== DAILY MATCH (match.js, match.css) ===== -->
+    <section class="step" data-step="match">
+      <p class="eyebrow">Daily match</p>
+      <h2>This or that?</h2>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END DAILY MATCH ===== -->
+
+    <!-- ===== WORDLE (wordle.js, wordle-words.js, wordle.css) ===== -->
+    <section class="step" data-step="wordle">
+      <p class="eyebrow">Word of the day</p>
+      <h2>Wordle for two</h2>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END WORDLE ===== -->
+
+    <!-- ===== DOODLE (doodle.js, doodle.css) ===== -->
+    <section class="step" data-step="doodle">
+      <p class="eyebrow">Daily doodle</p>
+      <h2>Draw it!</h2>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END DOODLE ===== -->
+
+    <!-- ===== ICON STORY (icons.js, doodle.css) ===== -->
+    <section class="step" data-step="icons">
+      <p class="eyebrow">Icon story</p>
+      <h2>Guess my story</h2>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END ICON STORY ===== -->
+
+    <!-- ===== CHALLENGES (challenges.js, rewards.css) ===== -->
+    <section class="step" data-step="challenges">
+      <p class="eyebrow">This week</p>
+      <h2>Our challenges</h2>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END CHALLENGES ===== -->
+
+    <!-- ===== LOVE SHOP (shop.js, rewards.css) ===== -->
+    <section class="step" data-step="shop">
+      <p class="eyebrow">Spend your hearts</p>
+      <h2>Love shop</h2>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END LOVE SHOP ===== -->
   </main>
 
   <footer class="page-note"><span>MADE WITH INTENTION</span><span class="page-note-dot"></span><span id="footer-name">FOR ℬ𝓁ℴ𝓃𝒹𝒾ℯ🥐</span></footer>
 </div>
 
-<script src="config.js?v=letter-18"></script>
+<script src="config.js?v=letter-19"></script>
 <script src="https://unpkg.com/lucide@1.55.0/dist/umd/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Observer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-<script src="music.js?v=letter-18"></script>
-<script src="effects.js?v=letter-18"></script>
-<script src="ask.js?v=letter-18"></script>
-<script src="secrets.js?v=letter-18"></script>
-<script src="extras.js?v=letter-18"></script>
-<script src="coupons.js?v=letter-18"></script>
-<script src="media.js?v=letter-18"></script>
-<script src="activity.js?v=letter-18"></script>
-<script src="journal.js?v=letter-18"></script>
-<script src="outfits.js?v=letter-18"></script>
-<script src="snacks.js?v=letter-18"></script>
-<script src="movies.js?v=letter-18"></script>
-<script src="ideas.js?v=letter-18"></script>
-<script src="question.js?v=letter-18"></script>
-<script src="app.js?v=letter-18"></script>
+<script src="music.js?v=letter-19"></script>
+<script src="effects.js?v=letter-19"></script>
+<script src="ask.js?v=letter-19"></script>
+<script src="secrets.js?v=letter-19"></script>
+<script src="extras.js?v=letter-19"></script>
+<script src="coupons.js?v=letter-19"></script>
+<script src="media.js?v=letter-19"></script>
+<script src="activity.js?v=letter-19"></script>
+<script src="journal.js?v=letter-19"></script>
+<script src="outfits.js?v=letter-19"></script>
+<script src="snacks.js?v=letter-19"></script>
+<script src="movies.js?v=letter-19"></script>
+<script src="ideas.js?v=letter-19"></script>
+<script src="question.js?v=letter-19"></script>
+<script src="games.js?v=letter-19"></script>
+<script src="match.js?v=letter-19"></script>
+<script src="wordle.js?v=letter-19"></script>
+<script src="doodle.js?v=letter-19"></script>
+<script src="icons.js?v=letter-19"></script>
+<script src="challenges.js?v=letter-19"></script>
+<script src="shop.js?v=letter-19"></script>
+<script src="app.js?v=letter-19"></script>
 </body>
 </html>
