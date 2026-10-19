@@ -17,6 +17,7 @@
   const perfectEl = $("#challenges-perfect");
   const listEl = $("#challenges-list");
   const errorEl = $("#challenges-error");
+  const liveEl = $("#challenges-live");
   const badgesWrap = $("#challenges-badges-wrap");
   const badgesEl = $("#challenges-badges");
   const badgeCount = $("#challenges-badge-count");
@@ -162,9 +163,9 @@
     const badgeIcon = iconName(item.badge?.icon, "award");
     // Without notes or photos, both of us fit side by side.
     const pair = ["her", "sender"].every((who) => !item.done[who]?.note && !item.done[who]?.mediaId);
-    // Nothing to do on a complete card: the unlocked badge says it all.
     const undo = `<button class="btn btn-ghost challenges-undo" type="button" data-undo data-focus="undo" aria-label="Undo your part of ${escape(item.title)}"${busy ? " disabled" : ""}><i class="icon" data-lucide="undo-2" aria-hidden="true"></i> Undo</button>`;
     const mark = `<button class="btn btn-primary challenges-mark" type="button" data-mark data-focus="mark" aria-expanded="${sheet?.id === item.id}" aria-label="Mark ${escape(item.title)} done"${busy ? " disabled" : ""}><i class="icon" data-lucide="check" aria-hidden="true"></i> Mark done</button>`;
+    // Nothing to do on a complete card: the unlocked badge says it all.
     const action = item.complete ? "" : item.done[mine] ? undo : mark;
     return `<div class="challenges-card-head">
         <span class="challenges-card-icon" aria-hidden="true"><i class="icon" data-lucide="${iconName(item.icon, "badge-check")}"></i></span>
@@ -211,7 +212,6 @@
       }
       card.classList.toggle("is-complete", item.complete);
       card.classList.toggle("is-open", sheet?.id === item.id);
-      card.setAttribute("aria-label", `${item.title}${item.complete ? ", done together" : ""}`);
       put(card.firstElementChild, cardHtml(item));
       // A badge the other one just unlocked pops in.
       if (item.complete && completeSeen && !completeSeen.has(item.id)) celebrate(card, false);
@@ -507,6 +507,7 @@
     games()?.reward?.(result.awarded, perfect ? "Perfect week" : badge ? `Badge: ${badge.name}` : "");
     games()?.refresh?.();
     const detail = badge ? `Badge unlocked: ${badge.name}${perfect ? " · Perfect week!" : ""}` : note;
+    liveEl.textContent = badge ? `Done together! Badge unlocked: ${badge.name}.${perfect ? " Perfect week!" : ""}` : `Marked done: ${item.title}.`;
     postActivity({ kind: "challenges.done", text: `did this week’s challenge: ${item.title}`, detail, step: "challenges", icon: "badge-check", push: true });
     (card?.querySelector("[data-undo]") || card)?.focus({ preventScroll: true });
   }
@@ -519,6 +520,7 @@
     showError("");
     try {
       await send({ action: "undo", id });
+      liveEl.textContent = `Undone: ${item.title}.`;
       if (part.mediaId) window.DateMedia?.remove?.(part.mediaId).catch(() => {});
       games()?.refresh?.();
       [...listEl.children].find((element) => element.dataset.id === id)?.querySelector("[data-mark]")?.focus({ preventScroll: true });
