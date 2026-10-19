@@ -1015,8 +1015,28 @@
     <section class="step" data-step="challenges">
       <p class="eyebrow">This week</p>
       <h2>Our challenges</h2>
+      <p class="challenges-week" id="challenges-week"></p>
+      <p class="rewards-note" id="challenges-status">Loading this week’s challenges…</p>
+      <div class="challenges-perfect" id="challenges-perfect" role="status" hidden>
+        <span class="challenges-perfect-icon"><i class="icon" data-lucide="crown" aria-hidden="true"></i></span>
+        <span class="challenges-perfect-copy"><strong>Perfect week!</strong><small>All three done together. That’s 5 extra hearts each.</small></span>
+      </div>
+      <ul class="challenges-list" id="challenges-list" aria-label="This week’s challenges"></ul>
+      <p class="error" id="challenges-error" role="alert" hidden></p>
+      <p class="visually-hidden" id="challenges-live" role="status" aria-live="polite"></p>
+      <div class="challenges-section" id="challenges-badges-wrap" hidden>
+        <p class="rewards-label">Our badges <span class="rewards-count" id="challenges-badge-count">0</span></p>
+        <ul class="challenges-badges" id="challenges-badges" aria-label="Our badges"></ul>
+        <p class="challenges-empty" id="challenges-badges-empty">Finish a challenge together to unlock its badge.</p>
+      </div>
+      <div class="challenges-section" id="challenges-past-wrap" hidden>
+        <p class="rewards-label">Past weeks</p>
+        <ul class="challenges-past" id="challenges-past" aria-label="Past weeks"></ul>
+      </div>
+      <input class="visually-hidden" type="file" id="challenges-photo-input" accept="image/*" tabindex="-1" aria-hidden="true">
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+        <button class="btn btn-secondary" data-action="goto" data-target="shop" type="button"><i class="icon" data-lucide="shopping-bag" aria-hidden="true"></i> Love shop</button>
       </div>
     </section>
     <!-- ===== END CHALLENGES ===== -->
@@ -1025,8 +1045,47 @@
     <section class="step" data-step="shop">
       <p class="eyebrow">Spend your hearts</p>
       <h2>Love shop</h2>
+      <div class="shop-balance" id="shop-balance">
+        <span class="shop-balance-icon"><i class="icon" data-lucide="heart" aria-hidden="true"></i></span>
+        <span class="shop-balance-copy" aria-live="polite"><strong id="shop-balance-mine">You have … hearts</strong><small id="shop-balance-theirs"></small></span>
+      </div>
+      <p class="rewards-note" id="shop-status">Opening the shop…</p>
+      <div class="shop-section" id="shop-waiting-wrap" hidden>
+        <p class="rewards-label">Waiting to happen <span class="rewards-count" id="shop-waiting-count">0</span></p>
+        <ul class="shop-list" id="shop-waiting" aria-label="Waiting to happen"></ul>
+      </div>
+      <div class="shop-section" id="shop-items-wrap" hidden>
+        <p class="rewards-label">Rewards</p>
+        <ul class="shop-grid" id="shop-grid" aria-label="Rewards in the shop"></ul>
+        <div class="shop-quick" id="shop-quick" hidden>
+          <p class="shop-quick-hint">The shop is empty. Tap an idea to add it, or make your own below.</p>
+          <div class="shop-chips" id="shop-chips" role="group" aria-label="Quick add"></div>
+        </div>
+      </div>
+      <p class="error" id="shop-error" role="alert" hidden></p>
+      <details class="shop-add" id="shop-add">
+        <summary><span class="shop-add-icon"><i class="icon" data-lucide="plus" aria-hidden="true"></i></span><span>Add a reward</span><i class="icon shop-chevron" data-lucide="chevron-down" aria-hidden="true"></i></summary>
+        <form class="shop-form" id="shop-form" novalidate>
+          <label for="shop-title">What is it?</label>
+          <input type="text" id="shop-title" maxlength="60" placeholder="A back rub, a picnic, a cozy night…" autocomplete="off" enterkeyhint="done">
+          <p class="field-label" id="shop-cost-label">Price</p>
+          <div class="shop-stepper" role="group" aria-labelledby="shop-cost-label">
+            <button class="shop-stepper-btn" type="button" data-delta="-5" aria-label="5 hearts less"><i class="icon" data-lucide="minus" aria-hidden="true"></i></button>
+            <span class="shop-stepper-value"><input type="text" id="shop-cost" inputmode="numeric" pattern="[0-9]*" maxlength="3" value="10" aria-label="Price in hearts" autocomplete="off"><i class="icon" data-lucide="heart" aria-hidden="true"></i></span>
+            <button class="shop-stepper-btn" type="button" data-delta="5" aria-label="5 hearts more"><i class="icon" data-lucide="plus" aria-hidden="true"></i></button>
+          </div>
+          <p class="field-label" id="shop-icon-label">Icon</p>
+          <div class="shop-icons" id="shop-icons" role="radiogroup" aria-labelledby="shop-icon-label"></div>
+          <button class="btn btn-primary shop-submit" id="shop-submit" type="submit"><i class="icon" data-lucide="plus" aria-hidden="true"></i> Add to the shop</button>
+        </form>
+      </details>
+      <details class="shop-history" id="shop-history" hidden>
+        <summary><span class="rewards-label">Done <span class="rewards-count" id="shop-history-count">0</span></span><i class="icon shop-chevron" data-lucide="chevron-down" aria-hidden="true"></i></summary>
+        <ul class="shop-list is-done" id="shop-history-list" aria-label="Rewards that happened"></ul>
+      </details>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+        <button class="btn btn-secondary" data-action="goto" data-target="challenges" type="button"><i class="icon" data-lucide="badge-check" aria-hidden="true"></i> Challenges</button>
       </div>
     </section>
     <!-- ===== END LOVE SHOP ===== -->
