@@ -10,7 +10,7 @@
 .step[data-step="shop"] .nav .btn-secondary .lucide { width: 16px; height: 16px; }
 .challenges-card:focus { outline: none; }
 .challenges-card:focus-visible, .challenges-photo-pick:focus-visible, .challenges-past summary:focus-visible,
-.shop-earn:focus-visible, .shop-row-btn:focus-visible, .shop-buy:focus-visible, .shop-chip:focus-visible,
+.shop-row-btn:focus-visible, .shop-buy:focus-visible, .shop-chip:focus-visible,
 .shop-add summary:focus-visible, .shop-history summary:focus-visible, .shop-stepper-btn:focus-visible, .shop-icon-choice:focus-visible {
   outline: 3px solid rgba(220,79,131,.34);
   outline-offset: 2px;
@@ -261,19 +261,6 @@
 .shop-balance-copy strong { color: var(--ink); font-size: 17px; font-weight: 800; letter-spacing: -.02em; line-height: 1.25; font-variant-numeric: tabular-nums; }
 .shop-balance-copy small { color: var(--muted); font-size: 12px; font-weight: 700; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .shop-balance-copy small:empty { display: none; }
-.shop-earn {
-  min-height: 36px;
-  flex: 0 0 auto;
-  padding: 6px 11px;
-  border: 1px solid var(--rose-border);
-  border-radius: 11px;
-  background: #fff;
-  color: var(--rose-deep);
-  font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background 160ms ease, border-color 160ms ease;
-}
 
 /* ---------- Love shop: lists ---------- */
 .shop-section { margin: 0 0 18px; }
@@ -454,7 +441,7 @@
   .challenges-photo-pick:hover { border-color: var(--rose); background: #fff0f5; }
   .challenges-past summary:hover .challenges-chevron { transform: translateY(1px); }
   .challenges-past details[open] summary:hover .challenges-chevron { transform: rotate(180deg) translateY(1px); }
-  .shop-earn:hover, .shop-row-btn:not(.is-primary):hover:not(:disabled), .shop-chip:hover:not(:disabled), .shop-stepper-btn:hover { border-color: #e2a4ba; background: #fff0f5; }
+  .shop-row-btn:not(.is-primary):hover:not(:disabled), .shop-chip:hover:not(:disabled), .shop-stepper-btn:hover { border-color: #e2a4ba; background: #fff0f5; }
   .shop-row-btn.is-primary:hover:not(:disabled), .shop-item:not(.is-short) .shop-buy:hover:not(:disabled) { background: var(--rose-deep); }
   .shop-icon-choice:hover:not([aria-checked="true"]) { border-color: #e2a4ba; color: var(--rose-deep); }
   .shop-add summary:hover, .shop-history summary:hover { background: #fffafc; }

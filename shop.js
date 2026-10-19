@@ -72,6 +72,7 @@
   const escape = (text) => app().escapeHtml(text ?? "");
   const nameOf = (who) => app()?.names?.[who] || (who === "her" ? "Her" : "Your date");
   const hearts = (count) => `${count} ${Math.abs(count) === 1 ? "heart" : "hearts"}`;
+  const moreHearts = (count) => `${count} more ${count === 1 ? "heart" : "hearts"}`;
   const iconOf = (name) => (ICON_NAMES.includes(name) ? name : "gift");
   const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const sameTitle = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
@@ -94,7 +95,7 @@
   function friendly(error) {
     if (!error?.status) return `Couldn’t save that. ${OFFLINE}`;
     if (error.status === 409 && Number.isFinite(error.data?.cost) && Number.isFinite(error.data?.balance)) {
-      return `Not enough hearts yet. You need ${hearts(error.data.cost - error.data.balance)} more.`;
+      return `Not enough hearts yet. You need ${moreHearts(error.data.cost - error.data.balance)}.`;
     }
     return error.message;
   }
@@ -125,7 +126,7 @@
     const need = item.cost - balanceOf(me());
     const title = escape(item.title);
     const buy = need > 0
-      ? `<button class="shop-buy" type="button" disabled aria-label="${escape(hearts(need))} more needed for ${title}">${escape(hearts(need))} more</button>`
+      ? `<button class="shop-buy" type="button" disabled aria-label="${escape(moreHearts(need))} needed for ${title}">${escape(moreHearts(need))}</button>`
       : `<button class="shop-buy" type="button" data-buy data-focus="buy-${escape(item.id)}" aria-label="Buy ${title} for ${escape(hearts(item.cost))}"${busy ? " disabled" : ""}>Buy</button>`;
     return `<li class="shop-item${need > 0 ? " is-short" : ""}" data-id="${escape(item.id)}">
         <button class="planner-icon-btn shop-remove" type="button" data-remove data-focus="remove-${escape(item.id)}" aria-label="Remove ${title} from the shop"${busy ? " disabled" : ""}><i class="icon" data-lucide="x" aria-hidden="true"></i></button>
