@@ -273,12 +273,81 @@
 .question-lock.is-nudge { padding: 9px 12px; border-radius: 12px; background: #fff0f5; color: var(--rose-deep); font-weight: 800; }
 .question-lock.is-nudge .lucide { color: var(--rose-deep); }
 .question-form { margin: 0 0 4px; }
-.question-form textarea { min-height: 112px; font-size: 16px; }
-.question-form-foot { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-.question-count { margin-right: auto; color: #a59aa1; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.question-answer-wrap { position: relative; }
+.question-form textarea { display: block; min-height: 112px; padding-bottom: 28px; font-size: 16px; }
+.question-count { position: absolute; right: 12px; bottom: 8px; color: #a59aa1; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; pointer-events: none; }
 .question-count.is-near { color: var(--rose-deep); }
+.question-form-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; }
 .question-form-foot .btn { margin-left: 0; }
 .question-form-foot .btn-primary:disabled { opacity: .7; cursor: progress; }
+
+/* Guess my answer: the optional guess with your answer. */
+.question-guess-field { margin-top: 12px; padding: 11px 12px 12px; border: 1px dashed #e8bccd; border-radius: 15px; background: #fffafc; }
+.question-guess-field label { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; color: var(--rose-deep); font-size: 12px; font-weight: 800; line-height: 1.35; }
+.question-guess-field label .icon, .question-guess-field label .lucide { width: 15px; height: 15px; flex: 0 0 auto; }
+.question-guess-field label span { min-width: 0; overflow-wrap: anywhere; }
+.question-guess-field label small { margin-left: auto; padding-left: 6px; color: #a59aa1; font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.question-guess-field input[type="text"] { min-height: 46px; padding-top: 10px; padding-bottom: 10px; font-size: 16px; }
+.question-guess-hint { margin: 7px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.question-guess-field.is-compact { margin-top: 8px; padding: 9px 10px 10px; }
+.question-guess-field.is-compact label { margin-bottom: 7px; font-size: 11px; }
+
+/* Guess my answer: their guess for me to judge, my guess with their verdict. */
+.question-guesses:empty { display: none; }
+.guess-block { display: grid; gap: 8px; margin-top: 12px; }
+.guess-score { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0; padding: 8px 12px; border-radius: 12px; background: #fff0f5; color: var(--muted); font-size: 12px; font-weight: 700; }
+.guess-score-title { display: inline-flex; align-items: center; gap: 6px; margin-right: auto; color: var(--rose-deep); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.guess-score-title .lucide { width: 14px; height: 14px; }
+.guess-score > span:not(.guess-score-title) { overflow-wrap: anywhere; }
+.guess-score b { color: var(--ink); font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.guess-card { min-width: 0; padding: 12px 12px 12px 13px; border: 1px solid #f0dde5; border-radius: 15px; background: #fff; }
+.guess-card.is-judge { border-color: #ebc2d2; background: #fff8fb; }
+.guess-label { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; color: var(--rose-deep); font-size: 11px; font-weight: 800; line-height: 1.35; }
+.guess-label .icon, .guess-label .lucide { width: 14px; height: 14px; flex: 0 0 auto; }
+.guess-label span { min-width: 0; overflow-wrap: anywhere; }
+.guess-text { margin: 0; color: var(--ink); font-family: "Cormorant Garamond", Georgia, serif; font-size: 20px; font-style: italic; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.guess-text::before { content: "\201C"; }
+.guess-text::after { content: "\201D"; }
+.guess-ask { margin: 10px 0 7px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.guess-verdicts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.guess-verdict {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 54px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 7px 4px;
+  white-space: nowrap;
+  border: 1px solid var(--rose-border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--rose-deep);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+.guess-verdict .icon, .guess-verdict .lucide { width: 15px; height: 15px; flex: 0 0 auto; }
+.guess-verdict:active:not(:disabled) { transform: scale(.97); }
+.guess-verdict.is-chosen { border-color: var(--rose); background: var(--rose); color: #fff; }
+.guess-verdict.is-miss.is-chosen { border-color: #8f848b; background: #8f848b; }
+.guess-verdict:disabled { cursor: progress; opacity: .7; }
+.guess-verdict:focus-visible { outline: 3px solid rgba(220,79,131,.34); outline-offset: 2px; }
+.guess-foot, .guess-result { display: flex; align-items: flex-start; gap: 6px; margin: 8px 0 0; color: var(--muted); font-size: 12px; font-style: italic; line-height: 1.4; }
+.guess-foot .icon, .guess-foot .lucide, .guess-result .icon, .guess-result .lucide { width: 15px; height: 15px; flex: 0 0 auto; margin-top: 1px; }
+.guess-foot span, .guess-result span { min-width: 0; overflow-wrap: anywhere; }
+.guess-result { align-self: flex-start; width: fit-content; max-width: 100%; padding: 6px 10px; border-radius: 99px; background: #fff0f5; color: var(--rose-deep); font-style: normal; font-weight: 800; }
+.guess-result.is-spot { background: var(--rose); color: #fff; }
+.guess-result.is-miss { background: #f5f1f3; color: #7f747b; }
+.guess-card .error { margin-top: 8px; }
+.guess-block.is-compact { gap: 6px; margin-top: 10px; }
+.guess-block.is-compact .guess-card { padding: 9px 10px 10px; border-radius: 12px; }
+.guess-block.is-compact .guess-text { font-size: 17px; }
+.guess-block.is-compact .guess-ask { margin-top: 8px; font-size: 11px; }
+.guess-block.is-compact .guess-verdict { min-height: 48px; font-size: 11px; }
 
 .answer-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
 .answer-pair.is-long { grid-template-columns: minmax(0, 1fr); }
@@ -351,6 +420,7 @@
 .history-form { margin-top: 10px; animation: reveal-in 220ms ease both; }
 .history-form textarea { min-height: 84px; font-size: 16px; }
 .history-form .error { margin-top: 6px; }
+.history-card > .answer-pair .answer-edit { margin-top: 2px; }
 .history-form-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .history-form-foot .btn { min-height: 42px; margin-left: 0; }
 .history-more { justify-self: center; min-height: 40px; }
@@ -387,6 +457,7 @@
 /* Hover only where there is a pointer, so taps on iPhone don't leave buttons stuck pink. */
 @media (hover: hover) {
   .jar-putback:hover:not(:disabled), .history-answer:hover { border-color: #e2a4ba; background: #fff0f5; }
+  .guess-verdict:hover:not(:disabled):not(.is-chosen) { border-color: #e2a4ba; background: #fff0f5; }
   .answer-edit:hover { background: #fff0f5; }
   .jar-used summary:hover .jar-used-chevron { transform: translateY(1px); }
   .jar-used[open] summary:hover .jar-used-chevron { transform: rotate(180deg) translateY(1px); }
@@ -400,9 +471,13 @@
   .jar-putback { padding: 6px 8px; }
   .answer-card { padding-right: 10px; padding-left: 10px; }
   .answer-text { font-size: 13px; }
+  .guess-verdict { font-size: 11px; }
+  .question-guess-field { padding-right: 10px; padding-left: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .jar.is-shaking, .jar.is-shaking .jar-note, .jar-note.is-dropping, .jar-pull-next.is-shaking, .jar-pull-next.is-shaking .lucide { animation: none; }
+  .guess-verdict { transition: none; }
+  .guess-verdict:active:not(:disabled) { transform: none; }
   .jar-note { transition: none; }
 }

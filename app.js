@@ -1,7 +1,8 @@
 (function () {
   const TIME_ZONE = "Europe/Zurich";
-  const steps = ["loading", "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game", "journal", "next", "outfits", "snacks", "movies", "ideas", "question"];
-  const extraSteps = ["planned", "coupons", "game", "journal", "outfits", "snacks", "movies", "ideas", "question"];
+  const steps = ["loading", "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game", "journal", "next", "outfits", "snacks", "movies", "ideas", "question", "games", "match", "wordle", "doodle", "icons", "challenges", "shop"];
+  const GAME_STEPS = ["games", "match", "wordle", "doodle", "icons", "challenges", "shop"];
+  const extraSteps = ["planned", "coupons", "game", "journal", "outfits", "snacks", "movies", "ideas", "question", "games", "match", "wordle", "doodle", "icons", "challenges", "shop"];
   const questionSteps = ["date", "time", "activity", "place", "note"];
   const state = { date: "", time: "", activity: null, place: null, "next-activity": null };
   // The "Something else" text field that belongs to each choice group.
@@ -79,10 +80,22 @@
       heading.tabIndex = -1;
       heading.focus({ preventScroll: true });
     }
-    if (name !== previous && window.innerHeight < 760) {
+    if (name !== previous && GAME_STEPS.includes(name)) {
+      // The games open at the very top (their content fills in after this).
+      window.scrollTo({ top: 0, behavior: "instant" });
+    } else if (name !== previous && window.innerHeight < 760 && !(name === "planned" && linkStepPending())) {
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       document.getElementById("question-card").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
     }
+  }
+
+  // A notification link (?step=…) opens another page right after the plan loads: the plan page
+  // then skips its own scroll, which would otherwise still be running on the next page.
+  let linkStepUsed = false;
+  function linkStepPending() {
+    if (linkStepUsed) return false;
+    linkStepUsed = true;
+    return new URLSearchParams(window.location.search).has("step");
   }
 
   function updateProgress(name) {
