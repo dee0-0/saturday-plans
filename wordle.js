@@ -53,6 +53,7 @@
   let resultDrawn = "";
   let statsDrawn = "";
   let duelDrawn = "";
+  let recovering = null;   // { before, row } after a guess whose answer may have been lost
 
   const app = () => window.DateApp;
   const me = () => app().me();
@@ -235,7 +236,7 @@
     const them = nameOf(other());
     if (!state.result) {
       const playing = state.theirs.marks.length;
-      const so = playing ? ` (${plural(playing, "try")} so far)` : "";
+      const so = playing ? ` (${playing} ${playing === 1 ? "try" : "tries"} so far)` : "";
       const text = state.mine.solved ? `Waiting for ${them}${so}. Fewer tries wins.` : `Waiting for ${them} to finish${so}.`;
       return { icon: "hourglass", tone: "is-waiting", text };
     }
@@ -364,7 +365,10 @@
     window.setTimeout(() => {
       const keys = keyboardEl.getBoundingClientRect();
       const top = duelEl.getBoundingClientRect().top - 8;
-      const overflow = keys.bottom + 12 - window.innerHeight;
+      // The preview bar sits over the bottom of the screen: keep the keys above it.
+      const bar = document.querySelector(".preview-bar");
+      const reserve = bar ? Math.max(0, window.innerHeight - bar.getBoundingClientRect().top) : 0;
+      const overflow = keys.bottom + 12 + reserve - window.innerHeight;
       if (overflow <= 0 || keyboardEl.hidden) return;
       window.scrollBy({ top: top > 0 ? Math.min(overflow, top) : overflow, behavior: reduced() ? "auto" : "smooth" });
     }, 420);
@@ -461,6 +465,19 @@
       if (seq !== loadSeq || identity !== identitySeq || busy || revealing) return;
       const { before, dayChanged } = applyState(data);
       if (!quiet) showError("");
+      // A guess whose answer got lost: the Worker saved it, so drop the typed copy and
+      // still tell the other one when it finished the game.
+      if (recovering) {
+        const lost = recovering;
+        recovering = null;
+        if (!dayChanged && data.mine.guesses.length > lost.before.mine.guesses.length) {
+          typed = "";
+          if (data.mine.done && !lost.before.mine.done) {
+            render();
+            finished(lost.before, data, Math.min(lost.row, data.mine.guesses.length - 1));
+          }
+        }
+      }
       // The other one just finished while I was watching and settled the day.
       if (before && !dayChanged && !before.result && data.result && data.mine.done) {
         const winner = data.result.winner;
@@ -599,12 +616,19 @@
       if (error.status === 400) {
         toast(error.message);
         shake();
+        // "You already tried that word" after a lost answer: the guess is saved, show it.
+        recovering = { before, row };
+        load({ quiet: true });
       } else if (error.status === 409) {
         toast(error.message);
         typed = "";
+        recovering = { before, row };
         load();
       } else {
         showError(error.status ? error.message : "Couldn’t send your guess. Check your connection and try again.");
+        // The Worker may have saved it anyway: check right away instead of at the next poll.
+        recovering = { before, row };
+        load({ quiet: true });
       }
     }
   }

@@ -81,7 +81,10 @@
     }
     if (name !== previous && window.innerHeight < 760) {
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      document.getElementById("question-card").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
+      const card = document.getElementById("question-card");
+      // A page taller than the screen (the games, the journal…) opens at its top, not its middle.
+      const tall = name !== "planned" && card.offsetHeight > window.innerHeight;
+      card.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: tall ? "start" : "center" });
     }
   }
 

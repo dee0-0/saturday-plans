@@ -359,6 +359,7 @@
     if (!window.confirm(`Cancel “${purchase.title}”? You get your ${hearts(purchase.cost)} back.`)) return;
     try {
       await send({ action: "cancel", id });
+      postActivity({ kind: "shop.cancel", text: `cancelled ${purchase.title}`, detail: `${hearts(purchase.cost)} back`, step: "shop", icon: "shopping-bag", push: false });
       window.DateGames?.refresh?.();
     } catch { /* Shown by send(). */ }
   }

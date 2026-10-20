@@ -352,7 +352,10 @@
       if (seq !== loadSeq || identity !== identitySeq || busy) return;
       data = next;
       // A new story while nothing was picked yet: show it.
-      if (!tabChosen && data.stats?.openForMe) tab = "guess";
+      // (Never while a story is being put together: that would pull you out of the composer.)
+      const composing = Boolean(category || chosen.length || answerInput.value.trim() || hintInput.value.trim()
+        || sendPanel.contains(document.activeElement));
+      if (!tabChosen && !composing && data.stats?.openForMe) tab = "guess";
       render();
     } catch (error) {
       if (seq !== loadSeq || identity !== identitySeq || data) return;

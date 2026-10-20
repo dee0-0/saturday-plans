@@ -158,9 +158,15 @@ function normalizePoints(value) {
   return {
     awards: { ...(value?.awards || {}) },
     banked: { her: Number(value?.banked?.her) || 0, sender: Number(value?.banked?.sender) || 0 },
-    spent: { her: Number(value?.spent?.her) || 0, sender: Number(value?.spent?.sender) || 0 }
+    spent: { her: Number(value?.spent?.her) || 0, sender: Number(value?.spent?.sender) || 0 },
+    // Folded awards, per kind (so per-game totals never shrink), and the newest day folded.
+    bankedKinds: { ...(value?.bankedKinds || {}) },
+    foldedBefore: typeof value?.foldedBefore === "string" ? value.foldedBefore : ""
   };
 }
+
+// The day inside an award key ("guess:2026-10-19:her" -> "2026-10-19"), if it has one.
+const awardDay = (key) => (String(key).match(/:(\d{4}-\d{2}-\d{2})(?::|$)/) || [])[1] || "";
 
 function pointsSummary(doc) {
   const earned = { her: doc.banked.her, sender: doc.banked.sender };
@@ -175,10 +181,12 @@ function pointsSummary(doc) {
 }
 
 // Hearts earned per kind of award, e.g. { wordle: { her: 4, sender: 6 } } for keys "wordle:…".
-// Only counts awards still in the ledger (the last few thousand).
 export async function awardTotals(txn) {
   const doc = normalizePoints(await txn.get(POINTS_KEY));
   const totals = {};
+  for (const [kind, banked] of Object.entries(doc.bankedKinds)) {
+    totals[kind] = { her: Number(banked?.her) || 0, sender: Number(banked?.sender) || 0 };
+  }
   for (const [key, item] of Object.entries(doc.awards)) {
     const kind = key.split(":")[0];
     totals[kind] ||= { her: 0, sender: 0 };
@@ -193,6 +201,8 @@ export async function awardTotals(txn) {
 export async function award(txn, key, author, amount) {
   if (!AUTHORS.includes(author)) throw new GameError(400, "Choose who is playing.");
   const doc = normalizePoints(await txn.get(POINTS_KEY));
+  // A folded award can't be made again (editing a very old answer earns nothing twice).
+  if (!doc.awards[key] && doc.foldedBefore && awardDay(key) && awardDay(key) <= doc.foldedBefore) return 0;
   const before = doc.awards[key]?.author === author ? Number(doc.awards[key].amount) || 0 : 0;
   const value = Math.max(0, Math.round(Number(amount) || 0));
   if (value === before && (value === 0 || doc.awards[key])) return 0;
@@ -200,12 +210,20 @@ export async function award(txn, key, author, amount) {
   else doc.awards[key] = { author, amount: value, at: new Date().toISOString() };
   const keys = Object.keys(doc.awards);
   if (keys.length > MAX_AWARDS) {
-    // Fold the oldest awards into the totals (they can no longer change).
+    // Fold the oldest awards into the totals; their keys can't be awarded again after that.
     const oldest = keys.sort((a, b) => String(doc.awards[a].at).localeCompare(String(doc.awards[b].at)))
       .slice(0, keys.length - MAX_AWARDS);
     for (const old of oldest) {
       const item = doc.awards[old];
-      if (AUTHORS.includes(item.author)) doc.banked[item.author] += Number(item.amount) || 0;
+      if (AUTHORS.includes(item.author)) {
+        const amount = Number(item.amount) || 0;
+        const kind = old.split(":")[0];
+        doc.banked[item.author] += amount;
+        doc.bankedKinds[kind] = { her: 0, sender: 0, ...(doc.bankedKinds[kind] || {}) };
+        doc.bankedKinds[kind][item.author] += amount;
+      }
+      const day = awardDay(old);
+      if (day && day > doc.foldedBefore) doc.foldedBefore = day;
       delete doc.awards[old];
     }
   }

@@ -2062,7 +2062,8 @@ export class PlanStore {
         entry.answers = { ...entry.answers, [change.author]: { text: change.text, at: now, ...(guess ? { guess } : {}) } };
         // A heart for answering (once per day's question) and today counts for our streak.
         awarded += await award(txn, `question:${change.day}:${change.author}`, change.author, 1);
-        awarded += await markActive(txn, change.author);
+        // Only a first answer counts as playing today (editing an old answer doesn't).
+        if (!previous) awarded += await markActive(txn, change.author);
       } else if (change.action === "judge") {
         // I judge their guess about my answer: hearts go to them (changing it replaces them).
         const entry = doc.days[change.day];

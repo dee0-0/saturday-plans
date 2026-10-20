@@ -40,6 +40,7 @@
   let completeSeen = null; // challenge ids we already saw complete (to pop newly unlocked badges)
   const media = new Map();  // media id -> media item, for thumbnails
   const missingMedia = new Set();
+  const donePosted = new Set(); // "<week>:<challenge>" already announced this visit
   let mediaRequest = null;
   const drawn = {};
 
@@ -508,7 +509,12 @@
     games()?.refresh?.();
     const detail = badge ? `Badge unlocked: ${badge.name}${perfect ? " · Perfect week!" : ""}` : note;
     liveEl.textContent = badge ? `Done together! Badge unlocked: ${badge.name}.${perfect ? " Perfect week!" : ""}` : `Marked done: ${item.title}.`;
-    postActivity({ kind: "challenges.done", text: `did this week’s challenge: ${item.title}`, detail, step: "challenges", icon: "badge-check", push: true });
+    // Once per challenge and week (Undo then Done again stays quiet), but always when a badge unlocks.
+    const posted = `${result.week || data?.week || ""}:${item.id}`;
+    if (badge || !donePosted.has(posted)) {
+      donePosted.add(posted);
+      postActivity({ kind: "challenges.done", text: `did this week’s challenge: ${item.title}`, detail, step: "challenges", icon: "badge-check", push: true });
+    }
     (card?.querySelector("[data-undo]") || card)?.focus({ preventScroll: true });
   }
 

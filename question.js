@@ -624,14 +624,17 @@
       judging = "";
       applyDayView(data);
       renderAfterJudge(forDay, verdict);
-      postActivity({
-        kind: "question.judge",
-        text: `judged your guess: ${VERDICTS[verdict].label}`,
-        detail: question,
-        step: "question",
-        icon: "target",
-        push: !before
-      });
+      // Only the first verdict goes to the other one's bell; changes show on the page.
+      if (!before) {
+        postActivity({
+          kind: "question.judge",
+          text: `judged your guess: ${VERDICTS[verdict].label}`,
+          detail: question,
+          step: "question",
+          icon: "target",
+          push: true
+        });
+      }
       games()?.reward?.(data.awarded);
       games()?.refresh?.();
     } catch (error) {

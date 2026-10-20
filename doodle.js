@@ -41,7 +41,11 @@
   const WIDTHS = [9, 24];      // thin and thick pen, in grid units
   const REPLAY_MS = 3000;
   const GALLERY_STEP = 6;
-  const DRAFT_KEY = "date-letter-doodle-draft";
+  // Preview has its own draft, so a test drawing never ends up in the real letter.
+  // (Read from the URL: app.js, and DateApp.preview with it, loads after this file.)
+  const DRAFT_KEY = new URLSearchParams(window.location.search).has("preview")
+    ? "date-letter-doodle-draft-preview"
+    : "date-letter-doodle-draft";
   const PALETTE = [
     { color: "#29252f", name: "Ink" },
     { color: "#dc4f83", name: "Pink" },
