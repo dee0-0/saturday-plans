@@ -4,6 +4,7 @@
 import { GameError, ensureMigrated, zurichDay, weekStart } from "./common.js";
 import * as hub from "./hub.js";
 import * as match from "./match.js";
+import * as duel from "./duel.js";
 import * as guess from "./guess.js";
 import * as wordle from "./wordle.js";
 import * as doodle from "./doodle.js";
@@ -12,7 +13,7 @@ import * as challenges from "./challenges.js";
 import * as shop from "./shop.js";
 
 // In the order the games hub lists them.
-export const GAME_MODULES = [match, guess, wordle, doodle, icons, challenges, shop];
+export const GAME_MODULES = [match, duel, guess, wordle, doodle, icons, challenges, shop];
 const ALL_MODULES = [hub, ...GAME_MODULES];
 export const GAME_ROUTES = ALL_MODULES.flatMap((module) => Object.keys(module.routes || {}));
 
