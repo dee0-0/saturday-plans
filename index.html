@@ -1002,6 +1002,21 @@
     <section class="step" data-step="hunt">
       <p class="eyebrow">Secret hunt · Season 2</p>
       <h2>Twenty new secrets</h2>
+      <p class="hunt-lede">Harder than the first hunt, and this time we hunt together: both phones can find them, and some need both of us at once.</p>
+      <p class="together-note" id="hunt-status" role="status">Loading the hunt…</p>
+      <div class="hunt-locked" id="hunt-locked" hidden>
+        <span class="hunt-locked-icon" aria-hidden="true"><i class="icon" data-lucide="lock-keyhole" aria-hidden="true"></i></span>
+        <p class="hunt-locked-title">Finish season 1 first</p>
+        <p class="hunt-locked-text">Season 2 opens once all 16 secrets of the first hunt are found. <span id="hunt-locked-progress"></span></p>
+        <button class="btn btn-secondary" data-action="goto" data-target="planned" type="button"><i class="icon" data-lucide="key-round" aria-hidden="true"></i> To the first hunt</button>
+      </div>
+      <div class="hunt-board" id="hunt-board" hidden>
+        <div class="hunt-final" id="hunt-final" role="status" hidden></div>
+        <div class="hunt-summary" id="hunt-summary"></div>
+        <ul class="hunt-grid" id="hunt-grid" aria-label="Season 2 secrets"></ul>
+      </div>
+      <p class="error" id="hunt-error" role="alert" hidden></p>
+      <p class="visually-hidden" id="hunt-live" aria-live="polite"></p>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>
