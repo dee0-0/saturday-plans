@@ -30,19 +30,21 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <link rel="preload" as="image" href="assets/letter-bg-mobile.jpg" media="(max-aspect-ratio: 1/1)">
 <link rel="preload" as="image" href="assets/letter-bg-desktop.jpg" media="(min-aspect-ratio: 1/1)">
-<link rel="stylesheet" href="style.css?v=letter-20">
-<link rel="stylesheet" href="extras.css?v=letter-20">
-<link rel="stylesheet" href="journal.css?v=letter-20">
-<link rel="stylesheet" href="planner.css?v=letter-20">
-<link rel="stylesheet" href="activity.css?v=letter-20">
-<link rel="stylesheet" href="movies.css?v=letter-20">
-<link rel="stylesheet" href="together.css?v=letter-20">
-<link rel="stylesheet" href="games.css?v=letter-20">
-<link rel="stylesheet" href="match.css?v=letter-20">
-<link rel="stylesheet" href="duel.css?v=letter-20">
-<link rel="stylesheet" href="wordle.css?v=letter-20">
-<link rel="stylesheet" href="doodle.css?v=letter-20">
-<link rel="stylesheet" href="rewards.css?v=letter-20">
+<link rel="stylesheet" href="style.css?v=letter-21">
+<link rel="stylesheet" href="extras.css?v=letter-21">
+<link rel="stylesheet" href="journal.css?v=letter-21">
+<link rel="stylesheet" href="planner.css?v=letter-21">
+<link rel="stylesheet" href="activity.css?v=letter-21">
+<link rel="stylesheet" href="movies.css?v=letter-21">
+<link rel="stylesheet" href="together.css?v=letter-21">
+<link rel="stylesheet" href="games.css?v=letter-21">
+<link rel="stylesheet" href="match.css?v=letter-21">
+<link rel="stylesheet" href="duel.css?v=letter-21">
+<link rel="stylesheet" href="quick.css?v=letter-21">
+<link rel="stylesheet" href="hunt.css?v=letter-21">
+<link rel="stylesheet" href="wordle.css?v=letter-21">
+<link rel="stylesheet" href="doodle.css?v=letter-21">
+<link rel="stylesheet" href="rewards.css?v=letter-21">
 <script>document.documentElement.classList.add("intro-pending");setTimeout(function(){document.documentElement.classList.remove("intro-pending");},3000);</script>
 </head>
 <body class="is-envelope-landing">
@@ -920,6 +922,46 @@
     </section>
     <!-- ===== END DAILY DUEL ===== -->
 
+    <!-- ===== SPEED ROUND (speed.js, quick.css) ===== -->
+    <section class="step" data-step="speed">
+      <p class="eyebrow">Speed round</p>
+      <h2>No time to think!</h2>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END SPEED ROUND ===== -->
+
+    <!-- ===== PRICE IS RIGHT (price.js, quick.css) ===== -->
+    <section class="step" data-step="price">
+      <p class="eyebrow">Price is right</p>
+      <h2>What does it cost?</h2>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END PRICE IS RIGHT ===== -->
+
+    <!-- ===== ODD ONE OUT (odd.js, quick.css) ===== -->
+    <section class="step" data-step="odd">
+      <p class="eyebrow">Odd one out</p>
+      <h2>Which one doesn’t fit?</h2>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END ODD ONE OUT ===== -->
+
+    <!-- ===== SECRET HUNT SEASON 2 (hunt.js, hunt.css) ===== -->
+    <section class="step" data-step="hunt">
+      <p class="eyebrow">Secret hunt · Season 2</p>
+      <h2>Twenty new secrets</h2>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END SECRET HUNT SEASON 2 ===== -->
+
     <!-- ===== WORDLE (wordle.js, wordle-words.js, wordle.css) ===== -->
     <section class="step" data-step="wordle">
       <p class="eyebrow">Word of the day</p>
@@ -1125,33 +1167,37 @@
   <footer class="page-note"><span>MADE WITH INTENTION</span><span class="page-note-dot"></span><span id="footer-name">FOR ℬ𝓁ℴ𝓃𝒹𝒾ℯ🥐</span></footer>
 </div>
 
-<script src="config.js?v=letter-20"></script>
+<script src="config.js?v=letter-21"></script>
 <script src="https://unpkg.com/lucide@1.55.0/dist/umd/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Observer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-<script src="music.js?v=letter-20"></script>
-<script src="effects.js?v=letter-20"></script>
-<script src="ask.js?v=letter-20"></script>
-<script src="secrets.js?v=letter-20"></script>
-<script src="extras.js?v=letter-20"></script>
-<script src="coupons.js?v=letter-20"></script>
-<script src="media.js?v=letter-20"></script>
-<script src="activity.js?v=letter-20"></script>
-<script src="journal.js?v=letter-20"></script>
-<script src="outfits.js?v=letter-20"></script>
-<script src="snacks.js?v=letter-20"></script>
-<script src="movies.js?v=letter-20"></script>
-<script src="ideas.js?v=letter-20"></script>
-<script src="question.js?v=letter-20"></script>
-<script src="games.js?v=letter-20"></script>
-<script src="match.js?v=letter-20"></script>
-<script src="duel.js?v=letter-20"></script>
-<script src="wordle.js?v=letter-20"></script>
-<script src="doodle.js?v=letter-20"></script>
-<script src="icons.js?v=letter-20"></script>
-<script src="challenges.js?v=letter-20"></script>
-<script src="shop.js?v=letter-20"></script>
-<script src="app.js?v=letter-20"></script>
+<script src="music.js?v=letter-21"></script>
+<script src="effects.js?v=letter-21"></script>
+<script src="ask.js?v=letter-21"></script>
+<script src="secrets.js?v=letter-21"></script>
+<script src="extras.js?v=letter-21"></script>
+<script src="coupons.js?v=letter-21"></script>
+<script src="media.js?v=letter-21"></script>
+<script src="activity.js?v=letter-21"></script>
+<script src="journal.js?v=letter-21"></script>
+<script src="outfits.js?v=letter-21"></script>
+<script src="snacks.js?v=letter-21"></script>
+<script src="movies.js?v=letter-21"></script>
+<script src="ideas.js?v=letter-21"></script>
+<script src="question.js?v=letter-21"></script>
+<script src="games.js?v=letter-21"></script>
+<script src="match.js?v=letter-21"></script>
+<script src="duel.js?v=letter-21"></script>
+<script src="speed.js?v=letter-21"></script>
+<script src="price.js?v=letter-21"></script>
+<script src="odd.js?v=letter-21"></script>
+<script src="hunt.js?v=letter-21"></script>
+<script src="wordle.js?v=letter-21"></script>
+<script src="doodle.js?v=letter-21"></script>
+<script src="icons.js?v=letter-21"></script>
+<script src="challenges.js?v=letter-21"></script>
+<script src="shop.js?v=letter-21"></script>
+<script src="app.js?v=letter-21"></script>
 </body>
 </html>
