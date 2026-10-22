@@ -896,7 +896,8 @@
     return item.by === me() ? "Found by you" : `Found by ${nameOf(item.by)}`;
   }
 
-  const lines = (text) => escape(text).replace(/\n/g, "<br>");
+  // A riddle's lines, each its own line (a long one wraps with an indent, like a poem).
+  const poem = (text) => String(text).split("\n").map((line) => `<span class="hunt-line">${escape(line)}</span>`).join("");
   const pairIcon = '<span class="hunt-pair" title="Needs both phones"><i class="icon" data-lucide="users" aria-hidden="true"></i><span class="visually-hidden">Needs both of you</span></span>';
 
   function cardHtml(egg, index) {
@@ -913,31 +914,41 @@
           <p class="hunt-card-reward">${escape(egg.reward)}</p>
         </li>`;
     }
-    const open = openId === egg.id;
     const hinted = state.hints.has(egg.id);
-    const hint = hinted
-      ? (open ? "" : `<span class="hunt-hint-chip"><i class="icon" data-lucide="lightbulb" aria-hidden="true"></i>Hint unlocked</span>`)
-      : `<button class="hunt-btn is-hint" type="button" data-hint="${egg.id}" data-focus="hint-${egg.id}" aria-label="Clearer hint for secret ${number}, 5 hearts"${buying ? " disabled" : ""}>
-          <i class="icon" data-lucide="lightbulb" aria-hidden="true"></i><span>Clearer hint</span><small>${buying === egg.id ? "Unlocking…" : `${HINT_COST} hearts`}</small>
-        </button>`;
-    const body = open
-      ? `<div class="hunt-riddle" id="hunt-riddle-${egg.id}">
-          <p class="hunt-riddle-text">${lines(egg.riddle)}</p>
-          ${hinted ? `<p class="hunt-hint"><i class="icon" data-lucide="lightbulb" aria-hidden="true"></i><span>${escape(egg.hint)}</span></p>` : ""}
-        </div>`
-      : "";
-    return `<li class="hunt-card${open ? " is-open" : ""}${egg.together ? " is-together" : ""}" data-id="${egg.id}">
-        <div class="hunt-card-head">
-          <span class="hunt-card-badge"><i class="icon" data-lucide="lock" aria-hidden="true"></i></span>
-          <span class="hunt-card-title"><small>No. ${number}</small><strong>???</strong></span>
-          ${egg.together ? pairIcon : ""}
-        </div>
-        ${body}
-        <div class="hunt-card-actions">
-          <button class="hunt-btn is-riddle" type="button" data-riddle="${egg.id}" data-focus="riddle-${egg.id}" aria-expanded="${open}"${open ? ` aria-controls="hunt-riddle-${egg.id}"` : ""}>
-            <i class="icon" data-lucide="${open ? "chevron-up" : "scroll-text"}" aria-hidden="true"></i><span>${open ? "Close" : "Riddle"}</span>
+    const head = (pair) => `<span class="hunt-card-head">
+        <span class="hunt-card-badge"><i class="icon" data-lucide="${hinted ? "lightbulb" : "lock"}" aria-hidden="true"></i></span>
+        <span class="hunt-card-title"><small>No. ${number}</small><strong>???</strong></span>
+        ${pair && egg.together ? pairIcon : ""}
+      </span>`;
+    // Closed, the whole card opens its riddle; open, it spans the row with the riddle and the hint.
+    if (openId !== egg.id) {
+      return `<li class="hunt-card${egg.together ? " is-together" : ""}${hinted ? " is-hinted" : ""}" data-id="${egg.id}">
+          <button class="hunt-card-button" type="button" data-riddle="${egg.id}" data-focus="riddle-${egg.id}" aria-expanded="false" aria-label="Secret ${number}${egg.together ? ", needs both of you" : ""}: read the riddle${hinted ? " and the hint" : ""}">
+            ${head(false)}
+            <span class="hunt-card-foot">
+              <span class="hunt-card-cta"><i class="icon" data-lucide="scroll-text" aria-hidden="true"></i>${hinted ? "Riddle + hint" : "Riddle"}</span>
+              ${egg.together ? pairIcon : ""}
+            </span>
           </button>
+        </li>`;
+    }
+    const hint = hinted
+      ? `<p class="hunt-hint"><i class="icon" data-lucide="lightbulb" aria-hidden="true"></i><span>${escape(egg.hint)}</span></p>`
+      : "";
+    const buy = hinted ? "" : `<button class="hunt-btn is-hint" type="button" data-hint="${egg.id}" data-focus="hint-${egg.id}"${buying ? " disabled" : ""}>
+        <i class="icon" data-lucide="lightbulb" aria-hidden="true"></i><span>${buying === egg.id ? "Unlocking…" : "Clearer hint"}</span><small>${HINT_COST} hearts</small>
+      </button>`;
+    return `<li class="hunt-card is-open${egg.together ? " is-together" : ""}" data-id="${egg.id}">
+        ${head(true)}
+        <div class="hunt-riddle" id="hunt-riddle-${egg.id}">
+          <p class="hunt-riddle-text">${poem(egg.riddle)}</p>
           ${hint}
+        </div>
+        <div class="hunt-card-actions">
+          ${buy}
+          <button class="hunt-btn is-close" type="button" data-riddle="${egg.id}" data-focus="riddle-${egg.id}" aria-expanded="true" aria-controls="hunt-riddle-${egg.id}">
+            <i class="icon" data-lucide="chevron-up" aria-hidden="true"></i><span>Close</span>
+          </button>
         </div>
       </li>`;
   }
