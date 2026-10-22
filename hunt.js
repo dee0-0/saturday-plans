@@ -914,7 +914,6 @@
           <div class="hunt-card-head">
             <span class="hunt-card-badge"><i class="icon" data-lucide="${egg.icon}" aria-hidden="true"></i></span>
             <span class="hunt-card-title"><small>No. ${number}</small></span>
-            ${egg.together ? pairIcon : ""}
           </div>
           <strong class="hunt-card-name">${escape(egg.name)}</strong>
           <p class="hunt-card-who"><i class="icon" data-lucide="${item.by === "both" ? "users" : "check"}" aria-hidden="true"></i><span><span class="visually-hidden">Found by </span>${escape(finderText(item))}${when(item.at) ? ` · ${escape(when(item.at))}` : ""}</span></p>
