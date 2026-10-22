@@ -83,7 +83,7 @@ const FIRST_QUESTION_DAY = "2026-01-01";
 const STEPS = [
   "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game",
   "journal", "next", "outfits", "snacks", "movies", "ideas", "question",
-  "games", "match", "wordle", "doodle", "icons", "challenges", "shop"
+  "games", "match", "wordle", "doodle", "icons", "challenges", "shop", "duel"
 ];
 const ACTIVITY_KIND = /^[a-z.]{1,40}$/;
 const ICON_NAME = /^[a-z0-9-]{0,40}$/;
