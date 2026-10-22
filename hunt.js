@@ -281,8 +281,9 @@
         if (!quiet) foundAgain(egg, from);
         return;
       }
-      // Waiting for the other phone: look for it to finish during the egg's window.
-      watch((Number(data.window) || 60) * 1000);
+      // Waiting for the other phone: celebrate here too if it finishes during the egg's window
+      // (and ask a few times right away, unless this half could just be ordinary use).
+      watch((Number(data.window) || 60) * 1000, { poll: !quiet });
       if (!quiet) {
         nudge(from);
         toast({ icon: egg.icon, title: egg.name, text: `Your half is done. Now it’s up to ${nameOf(other())}.`, note: "Season 2 · together", duration: 4200 });
@@ -290,11 +291,15 @@
     } catch { /* Together eggs need both phones online at the same time anyway. */ }
   }
 
-  function watch(ms) {
+  const WATCH_POLL_MS = 70000;
+  let pollUntil = 0;
+  function watch(ms, { poll = true } = {}) {
     watchUntil = Math.max(watchUntil, Date.now() + ms + 4000);
+    if (!poll) return;
+    pollUntil = Math.max(pollUntil, Date.now() + Math.min(ms, WATCH_POLL_MS) + 4000);
     if (watchTimer) return;
     watchTimer = window.setInterval(() => {
-      if (Date.now() > watchUntil) {
+      if (Date.now() > pollUntil) {
         window.clearInterval(watchTimer);
         watchTimer = null;
         return;
@@ -847,6 +852,7 @@
   const liveEl = $("#hunt-live");
   let openId = "";
   let buying = "";
+  let cardNote = "";       // a message inside the open card (not enough hearts, offline)
   const drawn = {};
 
   const onPage = () => app()?.step === "hunt";
@@ -892,8 +898,8 @@
   }
 
   function finderText(item) {
-    if (item.by === "both") return "Found together";
-    return item.by === me() ? "Found by you" : `Found by ${nameOf(item.by)}`;
+    if (item.by === "both") return "Together";
+    return item.by === me() ? "You" : nameOf(item.by);
   }
 
   // A riddle's lines, each its own line (a long one wraps with an indent, like a poem).
@@ -907,10 +913,11 @@
       return `<li class="hunt-card is-found${egg.together ? " is-together" : ""}" data-id="${egg.id}">
           <div class="hunt-card-head">
             <span class="hunt-card-badge"><i class="icon" data-lucide="${egg.icon}" aria-hidden="true"></i></span>
-            <span class="hunt-card-title"><small>No. ${number}</small><strong>${escape(egg.name)}</strong></span>
+            <span class="hunt-card-title"><small>No. ${number}</small></span>
             ${egg.together ? pairIcon : ""}
           </div>
-          <p class="hunt-card-who"><i class="icon" data-lucide="${item.by === "both" ? "users" : "check"}" aria-hidden="true"></i><span>${escape(finderText(item))}${when(item.at) ? ` · ${escape(when(item.at))}` : ""}</span></p>
+          <strong class="hunt-card-name">${escape(egg.name)}</strong>
+          <p class="hunt-card-who"><i class="icon" data-lucide="${item.by === "both" ? "users" : "check"}" aria-hidden="true"></i><span><span class="visually-hidden">Found by </span>${escape(finderText(item))}${when(item.at) ? ` · ${escape(when(item.at))}` : ""}</span></p>
           <p class="hunt-card-reward">${escape(egg.reward)}</p>
         </li>`;
     }
@@ -943,6 +950,7 @@
         <div class="hunt-riddle" id="hunt-riddle-${egg.id}">
           <p class="hunt-riddle-text">${poem(egg.riddle)}</p>
           ${hint}
+          ${cardNote ? `<p class="hunt-card-note" role="alert">${escape(cardNote)}</p>` : ""}
         </div>
         <div class="hunt-card-actions">
           ${buy}
@@ -1038,9 +1046,10 @@
     const egg = byId[id];
     if (!egg || buying || !state) return;
     const balance = state.points[me()].balance;
-    showError("");
+    cardNote = "";
     if (balance < HINT_COST) {
-      showError(`A clearer hint costs ${HINT_COST} hearts and you have ${balance}. Play a game to earn more.`);
+      cardNote = `A clearer hint costs ${HINT_COST} hearts and you have ${balance}. Play a game to earn more.`;
+      render();
       return;
     }
     const number = String(EGGS.indexOf(egg) + 1).padStart(2, "0");
@@ -1060,17 +1069,17 @@
     } catch (error) {
       if (identity !== identitySeq) return;
       buying = "";
-      render();
-      showError(error.status === 409 && error.data?.balance !== undefined
+      cardNote = error.status === 409 && error.data?.balance !== undefined
         ? `Not enough hearts yet: you have ${error.data.balance}, a hint costs ${HINT_COST}.`
-        : error.status ? error.message : "Couldn’t unlock the hint. Check your connection and try again.");
+        : error.status ? error.message : "Couldn’t unlock the hint. Check your connection and try again.";
+      render();
       if (error.status) load({ force: true });
     }
   }
 
   function toggleRiddle(id) {
     openId = openId === id ? "" : id;
-    showError("");
+    cardNote = "";
     render();
     const card = gridEl.querySelector(`[data-id="${id}"]`);
     card?.querySelector("[data-riddle]")?.focus({ preventScroll: true });
