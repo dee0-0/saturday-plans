@@ -628,7 +628,9 @@
           else if (round) {
             const result = round;
             round = null;
-            if (result.hearts >= 4 && result.other === 0) find("heartsonly", { from: $("#game-stage") });
+            // Only a round that ran out of time (leaving the game mid-round doesn't count).
+            const finished = $("#game-time")?.textContent.trim() === "0";
+            if (finished && result.hearts >= 4 && result.other === 0) find("heartsonly", { from: $("#game-stage") });
           }
           continue;
         }
@@ -814,9 +816,13 @@
       const icon = slot.querySelector(":scope > svg, :scope > i");
       return icon?.getAttribute("data-lucide") || "";
     };
+    let lastChosen = "";
     new MutationObserver(() => {
-      const names = [...chosenEl.querySelectorAll("[data-unpick]")].map(iconOf);
-      if (names.join(" ") === "eye heart users") find("iloveus", { from: chosenEl });
+      // Only when the row becomes these three (the composer redraws it for other reasons too).
+      const names = [...chosenEl.querySelectorAll("[data-unpick]")].map(iconOf).join(" ");
+      if (names === lastChosen) return;
+      lastChosen = names;
+      if (names === "eye heart users") find("iloveus", { from: chosenEl });
     }).observe(chosenEl, { childList: true });
   }
 
