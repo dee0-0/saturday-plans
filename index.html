@@ -835,6 +835,9 @@
               <li><i class="icon" data-lucide="target" aria-hidden="true"></i><span><strong>Guess my answer</strong><small>Spot on: 3, close: 1</small></span><b>+3</b></li>
               <li><i class="icon" data-lucide="split" aria-hidden="true"></i><span><strong>Daily match</strong><small>Play today’s. All 5 the same: +2 each</small></span><b>+1</b></li>
               <li><i class="icon" data-lucide="swords" aria-hidden="true"></i><span><strong>Daily duel</strong><small>Play it, then hearts for every answer you share (same answer: 2)</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="zap" aria-hidden="true"></i><span><strong>Speed round</strong><small>Play it. Faster: +2, 7 or more the same: +1 each</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="tag" aria-hidden="true"></i><span><strong>Price is right</strong><small>Play it. Win the day: +2, each spot-on guess: +1</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="shapes" aria-hidden="true"></i><span><strong>Odd one out</strong><small>Play it. Win the day: +2, all 3 right: +1</small></span><b>+1</b></li>
               <li><i class="icon" data-lucide="grid-3x3" aria-hidden="true"></i><span><strong>Wordle for two</strong><small>Solve it. Fewer tries: +2 (a tie: +1 each)</small></span><b>+1</b></li>
               <li><i class="icon" data-lucide="brush" aria-hidden="true"></i><span><strong>Daily doodle</strong><small>Draw today’s word</small></span><b>+1</b></li>
               <li><i class="icon" data-lucide="shapes" aria-hidden="true"></i><span><strong>Icon story</strong><small>Guess one right. The storyteller gets 1</small></span><b>+2</b></li>
@@ -926,6 +929,25 @@
     <section class="step" data-step="speed">
       <p class="eyebrow">Speed round</p>
       <h2>No time to think!</h2>
+      <p class="match-lede" id="speed-lede">Ten picks. Fifteen seconds. Go with your gut.</p>
+      <p class="together-note" id="speed-status">Loading today’s round…</p>
+      <div class="quick-intro" id="speed-intro" hidden>
+        <p class="quick-intro-copy"><i class="icon" data-lucide="zap" aria-hidden="true"></i>The pairs show the moment you tap Start, and the clock runs right away. You can only play once a day.</p>
+        <button class="btn btn-primary quick-start" id="speed-start" type="button"><i class="icon" data-lucide="play" aria-hidden="true"></i> Start</button>
+      </div>
+      <div class="quick-play" id="speed-play" hidden>
+        <div class="quick-timer"><span class="quick-timer-bar" id="speed-timer-bar"></span><b id="speed-timer">15.0</b></div>
+        <p class="match-count" id="speed-count"></p>
+        <div class="match-cards" id="speed-cards" role="group" aria-label="Pick one">
+          <button class="match-card" type="button" data-pick="0"><span class="match-card-art"><i class="icon" data-lucide="heart" aria-hidden="true"></i></span><span class="match-card-label"></span></button>
+          <span class="match-or" aria-hidden="true">or</span>
+          <button class="match-card" type="button" data-pick="1"><span class="match-card-art"><i class="icon" data-lucide="heart" aria-hidden="true"></i></span><span class="match-card-label"></span></button>
+        </div>
+      </div>
+      <div class="quick-result" id="speed-result" aria-live="polite" hidden></div>
+      <p class="error" id="speed-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="speed-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="speed-stats" hidden></dl>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>
@@ -936,6 +958,15 @@
     <section class="step" data-step="price">
       <p class="eyebrow">Price is right</p>
       <h2>What does it cost?</h2>
+      <p class="match-lede" id="price-lede">Guess what each one costs, in Swiss francs. Closest guess wins.</p>
+      <p class="together-note" id="price-status">Loading today’s prices…</p>
+      <form class="price-form" id="price-form" novalidate hidden>
+        <ol class="price-items" id="price-items"></ol>
+        <button class="btn btn-primary price-send" id="price-send" type="submit" disabled>Send my guesses <i class="icon" data-lucide="send" aria-hidden="true"></i></button>
+      </form>
+      <div class="quick-result" id="price-result" aria-live="polite" hidden></div>
+      <p class="error" id="price-error" role="alert" hidden></p>
+      <dl class="match-stats" id="price-stats" hidden></dl>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>
@@ -946,6 +977,21 @@
     <section class="step" data-step="odd">
       <p class="eyebrow">Odd one out</p>
       <h2>Which one doesn’t fit?</h2>
+      <p class="match-lede" id="odd-lede">Three puzzles. One word doesn’t fit. Fastest right answers win.</p>
+      <p class="together-note" id="odd-status">Loading today’s puzzles…</p>
+      <div class="quick-intro" id="odd-intro" hidden>
+        <p class="quick-intro-copy"><i class="icon" data-lucide="timer" aria-hidden="true"></i>The words show when you tap Start and the clock starts with them. One try per puzzle.</p>
+        <button class="btn btn-primary quick-start" id="odd-start" type="button"><i class="icon" data-lucide="play" aria-hidden="true"></i> Start</button>
+      </div>
+      <div class="quick-play" id="odd-play" hidden>
+        <p class="quick-clock"><i class="icon" data-lucide="timer" aria-hidden="true"></i><b id="odd-clock">0.0</b> s</p>
+        <p class="match-count" id="odd-count"></p>
+        <div class="quick-words" id="odd-words" role="group" aria-label="Pick the word that doesn’t fit"></div>
+      </div>
+      <div class="quick-result" id="odd-result" aria-live="polite" hidden></div>
+      <p class="error" id="odd-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="odd-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="odd-stats" hidden></dl>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>

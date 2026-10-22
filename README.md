@@ -29,6 +29,9 @@ A mobile-friendly, one-question-at-a-time date invitation in a soft rose envelop
   - Daily match: 5 quick this-or-that picks each day. Once you've both played you see how many you picked the same, plus your all-time compatibility and match streak.
   - Guess my answer: on the question of the day you can also guess what the other one will answer. Once you've both answered, each of you rates the other's guess (Spot on, Close or Not quite). Earlier answers can be edited from the history.
   - Daily duel: 5 quick questions about the two of you each day: "Who's the better…?", "Who did it?" or "Who would rather…?", a "same answer" pick (double hearts), a truth meter (true or false for you, plus a guess for the other one) and a mind reader (a colour, an animal and a number). Once you've both played you see what you agreed on, and every shared answer earns hearts.
+  - Speed round: 10 this-or-that picks in 15 seconds, no time to think. The pairs only show once you tap Start. Then you see how many you picked the same and who was faster.
+  - Price is right: 3 things a day (a croissant in Paris, a flight to Tokyo…). You both guess what they cost in Swiss francs; the closer guess wins each one. Prices are rough real-world prices.
+  - Odd one out: 3 puzzles of 4 words where one doesn't fit, the same for both of you. More right answers wins, and the faster one wins a tie.
   - Wordle for two: the same five-letter word for both of you each day. You see the other one's guesses only as coloured squares until you're done; fewer tries wins the day.
   - Daily doodle: the same drawing prompt for both of you. Draw it with your finger; both drawings show side by side (with a replay) once you've both finished.
   - Icon story: pick 3 to 5 icons that tell a movie, song or memory; the other one has 3 tries to guess it.

@@ -1,0 +1,91 @@
+/* Speed round, price is right and odd one out (speed.js, price.js, odd.js).
+   Cards, scores, waiting and stats come from match.css. */
+.quick-intro { padding: 18px 16px; border: 1px solid #f0dde5; border-radius: 22px; background: #fff; box-shadow: 0 8px 22px rgba(120,40,70,.07); text-align: center; }
+.quick-intro-copy { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 14px; color: var(--muted); font-size: 13px; line-height: 1.5; text-align: left; }
+.quick-intro-copy .icon, .quick-intro-copy .lucide { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 1px; color: var(--rose-deep); }
+.quick-start { min-width: 180px; }
+
+.quick-timer { position: relative; overflow: hidden; height: 34px; margin: 0 0 12px; border-radius: 99px; background: #f6e8ee; }
+.quick-timer-bar { position: absolute; inset: 0; background: linear-gradient(90deg, #f08bb0, var(--rose)); transform-origin: left center; }
+.quick-timer b { position: relative; display: grid; height: 100%; place-items: center; color: #fff; font-size: 15px; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px rgba(120,30,60,.35); }
+.quick-timer.is-hurry .quick-timer-bar { background: linear-gradient(90deg, #f3a04a, #e0503f); }
+.quick-play .match-card { min-height: 150px; }
+
+.quick-clock { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0 0 8px; color: var(--rose-deep); font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.quick-clock .icon, .quick-clock .lucide { width: 17px; height: 17px; }
+.quick-clock b { font-size: 22px; }
+.quick-words { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.quick-words.is-next { animation: quick-in 220ms cubic-bezier(.2,.8,.25,1) both; }
+@keyframes quick-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.quick-word {
+  min-width: 0;
+  min-height: 74px;
+  padding: 10px 8px;
+  border: 1px solid #f0dde5;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(120,40,70,.06);
+  color: var(--ink);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.quick-word:active { transform: scale(.97); }
+.quick-word:focus-visible { outline: 3px solid rgba(220,79,131,.34); outline-offset: 2px; }
+.quick-word.is-picked { border-color: #df6f96; background: #fff0f5; color: var(--rose-deep); }
+
+.quick-result { margin-top: 4px; }
+.quick-versus { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 8px 0 4px; }
+.quick-versus span { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 99px; background: #f6eef2; color: var(--muted); font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.quick-versus span.is-win { background: #fff0f5; color: var(--rose-deep); box-shadow: 0 0 0 1px #f2b8cc; }
+.quick-versus .icon, .quick-versus .lucide { width: 14px; height: 14px; }
+
+.quick-rows, .quick-puzzles { display: grid; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.quick-row { display: grid; gap: 3px; padding: 10px 12px; border: 1px solid #f0dde5; border-radius: 14px; background: #fff; }
+.quick-row.is-same { border-color: #f2b8cc; background: #fff6f9; }
+.quick-row-pair { color: var(--ink); font-size: 13px; font-weight: 800; }
+.quick-row-pair i { color: var(--muted); font-style: normal; font-weight: 600; }
+.quick-row-picks { color: var(--muted); font-size: 12px; }
+.quick-row-picks b { color: var(--rose-deep); }
+
+.quick-puzzle { padding: 12px; border: 1px solid #f0dde5; border-radius: 16px; background: #fff; }
+.quick-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.quick-chip { display: grid; gap: 1px; padding: 7px 9px; border-radius: 12px; background: #f8f1f4; color: var(--ink); font-size: 14px; font-weight: 800; overflow-wrap: anywhere; }
+.quick-chip small { color: var(--muted); font-size: 10px; font-weight: 700; }
+.quick-chip.is-odd { background: #e7f6ee; color: #2c7a51; box-shadow: 0 0 0 1px #a8dcc0; }
+.quick-chip.is-wrong { background: #fdecec; color: #b63b3b; }
+.quick-why { display: flex; align-items: flex-start; gap: 6px; margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.quick-why .icon, .quick-why .lucide { flex: 0 0 auto; width: 14px; height: 14px; margin-top: 1px; color: #d39a2c; }
+
+/* Price is right */
+.price-items { display: grid; gap: 10px; margin: 0 0 14px; padding: 0; list-style: none; }
+.price-item { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 8px 12px; padding: 12px; border: 1px solid #f0dde5; border-radius: 18px; background: #fff; box-shadow: 0 6px 16px rgba(120,40,70,.05); }
+.price-icon { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 12px; background: #fff0f5; color: var(--rose-deep); }
+.price-icon .icon, .price-icon .lucide { width: 21px; height: 21px; }
+.price-name { color: var(--ink); font-size: 14px; font-weight: 800; line-height: 1.3; overflow-wrap: anywhere; }
+.price-input { display: flex; grid-column: 1 / -1; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid #ecd3dd; border-radius: 14px; background: #fffafc; color: var(--muted); font-weight: 800; }
+.price-input:focus-within { border-color: #df6f96; box-shadow: 0 0 0 3px rgba(220,79,131,.15); }
+.price-input input { width: 100%; min-width: 0; height: 46px; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 18px; font-weight: 800; outline: none; }
+.price-send { width: 100%; }
+.price-item.is-done { grid-template-columns: 40px minmax(0, 1fr) auto; }
+.price-real { display: grid; justify-items: end; color: var(--rose-deep); font-size: 15px; font-weight: 800; white-space: nowrap; }
+.price-real small { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.price-guesses { display: flex; flex-wrap: wrap; grid-column: 1 / -1; gap: 6px; }
+.price-guess { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 99px; background: #f6eef2; color: var(--muted); font-size: 12px; font-weight: 800; }
+.price-guess.is-win { background: #fff0f5; color: var(--rose-deep); box-shadow: 0 0 0 1px #f2b8cc; }
+.price-spot { padding: 1px 6px; border-radius: 99px; background: #e7f6ee; color: #2c7a51; font-size: 10px; font-style: normal; }
+
+@media (max-width: 340px) {
+  .quick-word { min-height: 64px; font-size: 15px; }
+  .price-item { padding: 10px; }
+  .price-item.is-done { grid-template-columns: 34px minmax(0, 1fr) auto; }
+  .price-icon { width: 34px; height: 34px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .quick-words.is-next { animation: none; }
+}
