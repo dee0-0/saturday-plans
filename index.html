@@ -30,19 +30,21 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <link rel="preload" as="image" href="assets/letter-bg-mobile.jpg" media="(max-aspect-ratio: 1/1)">
 <link rel="preload" as="image" href="assets/letter-bg-desktop.jpg" media="(min-aspect-ratio: 1/1)">
-<link rel="stylesheet" href="style.css?v=letter-20">
-<link rel="stylesheet" href="extras.css?v=letter-20">
-<link rel="stylesheet" href="journal.css?v=letter-20">
-<link rel="stylesheet" href="planner.css?v=letter-20">
-<link rel="stylesheet" href="activity.css?v=letter-20">
-<link rel="stylesheet" href="movies.css?v=letter-20">
-<link rel="stylesheet" href="together.css?v=letter-20">
-<link rel="stylesheet" href="games.css?v=letter-20">
-<link rel="stylesheet" href="match.css?v=letter-20">
-<link rel="stylesheet" href="duel.css?v=letter-20">
-<link rel="stylesheet" href="wordle.css?v=letter-20">
-<link rel="stylesheet" href="doodle.css?v=letter-20">
-<link rel="stylesheet" href="rewards.css?v=letter-20">
+<link rel="stylesheet" href="style.css?v=letter-21">
+<link rel="stylesheet" href="extras.css?v=letter-21">
+<link rel="stylesheet" href="journal.css?v=letter-21">
+<link rel="stylesheet" href="planner.css?v=letter-21">
+<link rel="stylesheet" href="activity.css?v=letter-21">
+<link rel="stylesheet" href="movies.css?v=letter-21">
+<link rel="stylesheet" href="together.css?v=letter-21">
+<link rel="stylesheet" href="games.css?v=letter-21">
+<link rel="stylesheet" href="match.css?v=letter-21">
+<link rel="stylesheet" href="duel.css?v=letter-21">
+<link rel="stylesheet" href="quick.css?v=letter-21">
+<link rel="stylesheet" href="hunt.css?v=letter-21">
+<link rel="stylesheet" href="wordle.css?v=letter-21">
+<link rel="stylesheet" href="doodle.css?v=letter-21">
+<link rel="stylesheet" href="rewards.css?v=letter-21">
 <script>document.documentElement.classList.add("intro-pending");setTimeout(function(){document.documentElement.classList.remove("intro-pending");},3000);</script>
 </head>
 <body class="is-envelope-landing">
@@ -833,6 +835,9 @@
               <li><i class="icon" data-lucide="target" aria-hidden="true"></i><span><strong>Guess my answer</strong><small>Spot on: 3, close: 1</small></span><b>+3</b></li>
               <li><i class="icon" data-lucide="split" aria-hidden="true"></i><span><strong>Daily match</strong><small>Play today’s. All 5 the same: +2 each</small></span><b>+1</b></li>
               <li><i class="icon" data-lucide="swords" aria-hidden="true"></i><span><strong>Daily duel</strong><small>Play it, then hearts for every answer you share (same answer: 2)</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="zap" aria-hidden="true"></i><span><strong>Speed round</strong><small>Play it. Faster: +2, 7 or more the same: +1 each</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="tag" aria-hidden="true"></i><span><strong>Price is right</strong><small>Play it. Win the day: +2, each spot-on guess: +1</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="shapes" aria-hidden="true"></i><span><strong>Odd one out</strong><small>Play it. Win the day: +2, all 3 right: +1</small></span><b>+1</b></li>
               <li><i class="icon" data-lucide="grid-3x3" aria-hidden="true"></i><span><strong>Wordle for two</strong><small>Solve it. Fewer tries: +2 (a tie: +1 each)</small></span><b>+1</b></li>
               <li><i class="icon" data-lucide="brush" aria-hidden="true"></i><span><strong>Daily doodle</strong><small>Draw today’s word</small></span><b>+1</b></li>
               <li><i class="icon" data-lucide="shapes" aria-hidden="true"></i><span><strong>Icon story</strong><small>Guess one right. The storyteller gets 1</small></span><b>+2</b></li>
@@ -919,6 +924,89 @@
       </div>
     </section>
     <!-- ===== END DAILY DUEL ===== -->
+
+    <!-- ===== SPEED ROUND (speed.js, quick.css) ===== -->
+    <section class="step" data-step="speed">
+      <p class="eyebrow">Speed round</p>
+      <h2>No time to think!</h2>
+      <p class="match-lede" id="speed-lede">Ten picks. Fifteen seconds. Go with your gut.</p>
+      <p class="together-note" id="speed-status">Loading today’s round…</p>
+      <div class="quick-intro" id="speed-intro" hidden>
+        <p class="quick-intro-copy"><i class="icon" data-lucide="zap" aria-hidden="true"></i>The pairs show the moment you tap Start, and the clock runs right away. You can only play once a day.</p>
+        <button class="btn btn-primary quick-start" id="speed-start" type="button"><i class="icon" data-lucide="play" aria-hidden="true"></i> Start</button>
+      </div>
+      <div class="quick-play" id="speed-play" hidden>
+        <div class="quick-timer"><span class="quick-timer-bar" id="speed-timer-bar"></span><b id="speed-timer">15.0</b></div>
+        <p class="match-count" id="speed-count"></p>
+        <div class="match-cards" id="speed-cards" role="group" aria-label="Pick one">
+          <button class="match-card" type="button" data-pick="0"><span class="match-card-art"><i class="icon" data-lucide="heart" aria-hidden="true"></i></span><span class="match-card-label"></span></button>
+          <span class="match-or" aria-hidden="true">or</span>
+          <button class="match-card" type="button" data-pick="1"><span class="match-card-art"><i class="icon" data-lucide="heart" aria-hidden="true"></i></span><span class="match-card-label"></span></button>
+        </div>
+      </div>
+      <div class="quick-result" id="speed-result" aria-live="polite" hidden></div>
+      <p class="error" id="speed-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="speed-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="speed-stats" hidden></dl>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END SPEED ROUND ===== -->
+
+    <!-- ===== PRICE IS RIGHT (price.js, quick.css) ===== -->
+    <section class="step" data-step="price">
+      <p class="eyebrow">Price is right</p>
+      <h2>What does it cost?</h2>
+      <p class="match-lede" id="price-lede">Guess what each one costs, in Swiss francs. Closest guess wins.</p>
+      <p class="together-note" id="price-status">Loading today’s prices…</p>
+      <form class="price-form" id="price-form" novalidate hidden>
+        <ol class="price-items" id="price-items"></ol>
+        <button class="btn btn-primary price-send" id="price-send" type="submit" disabled>Send my guesses <i class="icon" data-lucide="send" aria-hidden="true"></i></button>
+      </form>
+      <div class="quick-result" id="price-result" aria-live="polite" hidden></div>
+      <p class="error" id="price-error" role="alert" hidden></p>
+      <dl class="match-stats" id="price-stats" hidden></dl>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END PRICE IS RIGHT ===== -->
+
+    <!-- ===== ODD ONE OUT (odd.js, quick.css) ===== -->
+    <section class="step" data-step="odd">
+      <p class="eyebrow">Odd one out</p>
+      <h2>Which one doesn’t fit?</h2>
+      <p class="match-lede" id="odd-lede">Three puzzles. One word doesn’t fit. Fastest right answers win.</p>
+      <p class="together-note" id="odd-status">Loading today’s puzzles…</p>
+      <div class="quick-intro" id="odd-intro" hidden>
+        <p class="quick-intro-copy"><i class="icon" data-lucide="timer" aria-hidden="true"></i>The words show when you tap Start and the clock starts with them. One try per puzzle.</p>
+        <button class="btn btn-primary quick-start" id="odd-start" type="button"><i class="icon" data-lucide="play" aria-hidden="true"></i> Start</button>
+      </div>
+      <div class="quick-play" id="odd-play" hidden>
+        <p class="quick-clock"><i class="icon" data-lucide="timer" aria-hidden="true"></i><b id="odd-clock">0.0</b> s</p>
+        <p class="match-count" id="odd-count"></p>
+        <div class="quick-words" id="odd-words" role="group" aria-label="Pick the word that doesn’t fit"></div>
+      </div>
+      <div class="quick-result" id="odd-result" aria-live="polite" hidden></div>
+      <p class="error" id="odd-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="odd-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="odd-stats" hidden></dl>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END ODD ONE OUT ===== -->
+
+    <!-- ===== SECRET HUNT SEASON 2 (hunt.js, hunt.css) ===== -->
+    <section class="step" data-step="hunt">
+      <p class="eyebrow">Secret hunt · Season 2</p>
+      <h2>Twenty new secrets</h2>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END SECRET HUNT SEASON 2 ===== -->
 
     <!-- ===== WORDLE (wordle.js, wordle-words.js, wordle.css) ===== -->
     <section class="step" data-step="wordle">
@@ -1125,33 +1213,37 @@
   <footer class="page-note"><span>MADE WITH INTENTION</span><span class="page-note-dot"></span><span id="footer-name">FOR ℬ𝓁ℴ𝓃𝒹𝒾ℯ🥐</span></footer>
 </div>
 
-<script src="config.js?v=letter-20"></script>
+<script src="config.js?v=letter-21"></script>
 <script src="https://unpkg.com/lucide@1.55.0/dist/umd/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Observer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-<script src="music.js?v=letter-20"></script>
-<script src="effects.js?v=letter-20"></script>
-<script src="ask.js?v=letter-20"></script>
-<script src="secrets.js?v=letter-20"></script>
-<script src="extras.js?v=letter-20"></script>
-<script src="coupons.js?v=letter-20"></script>
-<script src="media.js?v=letter-20"></script>
-<script src="activity.js?v=letter-20"></script>
-<script src="journal.js?v=letter-20"></script>
-<script src="outfits.js?v=letter-20"></script>
-<script src="snacks.js?v=letter-20"></script>
-<script src="movies.js?v=letter-20"></script>
-<script src="ideas.js?v=letter-20"></script>
-<script src="question.js?v=letter-20"></script>
-<script src="games.js?v=letter-20"></script>
-<script src="match.js?v=letter-20"></script>
-<script src="duel.js?v=letter-20"></script>
-<script src="wordle.js?v=letter-20"></script>
-<script src="doodle.js?v=letter-20"></script>
-<script src="icons.js?v=letter-20"></script>
-<script src="challenges.js?v=letter-20"></script>
-<script src="shop.js?v=letter-20"></script>
-<script src="app.js?v=letter-20"></script>
+<script src="music.js?v=letter-21"></script>
+<script src="effects.js?v=letter-21"></script>
+<script src="ask.js?v=letter-21"></script>
+<script src="secrets.js?v=letter-21"></script>
+<script src="extras.js?v=letter-21"></script>
+<script src="coupons.js?v=letter-21"></script>
+<script src="media.js?v=letter-21"></script>
+<script src="activity.js?v=letter-21"></script>
+<script src="journal.js?v=letter-21"></script>
+<script src="outfits.js?v=letter-21"></script>
+<script src="snacks.js?v=letter-21"></script>
+<script src="movies.js?v=letter-21"></script>
+<script src="ideas.js?v=letter-21"></script>
+<script src="question.js?v=letter-21"></script>
+<script src="games.js?v=letter-21"></script>
+<script src="match.js?v=letter-21"></script>
+<script src="duel.js?v=letter-21"></script>
+<script src="speed.js?v=letter-21"></script>
+<script src="price.js?v=letter-21"></script>
+<script src="odd.js?v=letter-21"></script>
+<script src="hunt.js?v=letter-21"></script>
+<script src="wordle.js?v=letter-21"></script>
+<script src="doodle.js?v=letter-21"></script>
+<script src="icons.js?v=letter-21"></script>
+<script src="challenges.js?v=letter-21"></script>
+<script src="shop.js?v=letter-21"></script>
+<script src="app.js?v=letter-21"></script>
 </body>
 </html>

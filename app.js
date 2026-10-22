@@ -1,8 +1,8 @@
 (function () {
   const TIME_ZONE = "Europe/Zurich";
-  const steps = ["loading", "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game", "journal", "next", "outfits", "snacks", "movies", "ideas", "question", "games", "match", "wordle", "doodle", "icons", "challenges", "shop", "duel"];
-  const GAME_STEPS = ["games", "match", "wordle", "doodle", "icons", "challenges", "shop", "duel"];
-  const extraSteps = ["planned", "coupons", "game", "journal", "outfits", "snacks", "movies", "ideas", "question", "games", "match", "wordle", "doodle", "icons", "challenges", "shop", "duel"];
+  const steps = ["loading", "intro", "ask", "date", "time", "activity", "place", "note", "review", "planned", "coupons", "game", "journal", "next", "outfits", "snacks", "movies", "ideas", "question", "games", "match", "wordle", "doodle", "icons", "challenges", "shop", "duel", "speed", "price", "odd", "hunt"];
+  const GAME_STEPS = ["games", "match", "wordle", "doodle", "icons", "challenges", "shop", "duel", "speed", "price", "odd", "hunt"];
+  const extraSteps = ["planned", "coupons", "game", "journal", "outfits", "snacks", "movies", "ideas", "question", "games", "match", "wordle", "doodle", "icons", "challenges", "shop", "duel", "speed", "price", "odd", "hunt"];
   const questionSteps = ["date", "time", "activity", "place", "note"];
   const state = { date: "", time: "", activity: null, place: null, "next-activity": null };
   // The "Something else" text field that belongs to each choice group.
