@@ -284,6 +284,11 @@
     finalEl.hidden = count !== total;
     $("#secret-final-text").textContent = CONFIG.allSecretsMessage || "You found every single secret.";
     $("#secret-final-prize").hidden = !prize;
+    // Season 2 (hunt.js) opens once every season 1 secret is found.
+    if (count === total && !finalEl.querySelector('[data-target="hunt"]')) {
+      finalEl.insertAdjacentHTML("beforeend", '<button class="btn btn-secondary secret-season-two" data-action="goto" data-target="hunt" type="button"><i class="icon" data-lucide="key-round" aria-hidden="true"></i> Season 2 is open</button>');
+      renderIcons(finalEl);
+    }
   }
 
   async function claimPrize() {

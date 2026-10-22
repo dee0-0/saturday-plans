@@ -84,6 +84,10 @@ const CONFIG = {
   secretsCoupon: { id: "secret-hunter", icon: "🗝️", title: "Secret hunter prize", detail: "For finding every secret: a whole date planned by me, every detail a surprise." },
   allSecretsMessage: "You found every single secret. I knew you would, you little detective.",
 
+  // Season 2 of the hunt (hunt.js, where its 20 riddles live) opens once all 16 are found.
+  // This message shows on the final reveal when the two of you have found all 20.
+  season2Message: "All twenty, found together. Turns out we make a pretty great team. Next date: my treat.",
+
   // Background music. Leave empty for the built-in music-box melody, or put an
   // .mp3 in the assets folder and set e.g. "assets/our-song.mp3" to loop that instead.
   musicUrl: "",
