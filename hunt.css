@@ -1,0 +1,264 @@
+/* Styles for hunt.js: the season 2 secret hunt page (progress, the twenty cards with their
+   riddles and hints, the final reveal), the little effects of a find, and a few touch tweaks
+   on the things the season 2 secrets are hidden in. Builds on style.css tokens; cards match
+   games.css and together.css. */
+
+/* ---------- Page ---------- */
+.hunt-lede { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.hunt-board { display: grid; gap: 12px; }
+.hunt-retry { min-height: 34px; padding: 6px 12px; border: 1px solid var(--rose-border); border-radius: 10px; background: #fff; color: var(--rose-deep); font-size: 12px; font-weight: 800; cursor: pointer; }
+.step[data-step="hunt"] .lucide { flex: 0 0 auto; }
+.hunt-btn:focus-visible, .hunt-retry:focus-visible { outline: 3px solid rgba(220,79,131,.34); outline-offset: 2px; }
+
+/* ---------- Locked ---------- */
+.hunt-locked { display: grid; justify-items: center; gap: 8px; padding: 22px 18px 20px; border: 1px dashed #e9c6d3; border-radius: 18px; background: #fffafc; text-align: center; }
+.hunt-locked-icon { display: grid; width: 52px; height: 52px; place-items: center; border-radius: 16px; background: #fff0f5; color: var(--rose-deep); }
+.hunt-locked-icon .lucide { width: 25px; height: 25px; }
+.hunt-locked-title { margin: 4px 0 0; color: var(--ink); font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
+.hunt-locked-text { max-width: 300px; margin: 0 0 6px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+/* ---------- Progress ---------- */
+.hunt-summary { padding: 14px 15px 13px; border: 1px solid #f0dde5; border-radius: 18px; background: linear-gradient(140deg, #fff5f8 0%, #fff 70%); box-shadow: 0 4px 14px rgba(120,40,70,.05); }
+.hunt-summary-top { display: flex; align-items: center; gap: 10px; }
+.hunt-key { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border-radius: 11px; background: var(--rose); color: #fff; box-shadow: 0 6px 14px rgba(220,79,131,.22); }
+.hunt-key .lucide { width: 18px; height: 18px; }
+.hunt-count { flex: 1; min-width: 0; margin: 0; color: var(--ink); font-size: 14px; font-weight: 800; line-height: 1.2; }
+.hunt-count strong { font-size: 26px; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.hunt-left { flex: 0 0 auto; padding: 4px 9px; border-radius: 99px; background: #fff0f5; color: var(--rose-deep); font-size: 10px; font-weight: 800; white-space: nowrap; }
+.hunt-progress { display: block; height: 8px; margin: 12px 0 8px; overflow: hidden; border-radius: 99px; background: #f6e6ec; }
+.hunt-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #ef7aa3, var(--rose) 60%, #b65ad1); transition: width 700ms cubic-bezier(.2,.8,.25,1); }
+.hunt-who { margin: 0; color: var(--muted); font-size: 12px; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
+.hunt-rules { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid #f6e6ec; color: var(--muted); font-size: 11.5px; line-height: 1.55; }
+.hunt-rules .lucide { width: 14px; height: 14px; margin: -2px 2px 0; vertical-align: middle; color: #7a5cc4; }
+.hunt-balance { display: inline-flex; align-items: center; gap: 6px; margin: 8px 0 0; padding: 4px 10px 4px 7px; border-radius: 99px; background: #fff0f5; color: var(--rose-deep); font-size: 11px; font-weight: 700; }
+.hunt-balance .lucide { width: 14px; height: 14px; fill: currentColor; }
+.hunt-balance strong { font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* ---------- The twenty cards ---------- */
+.hunt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 9px; margin: 0; padding: 0; list-style: none; }
+.hunt-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid #f0dde5;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(120,40,70,.04);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.hunt-card:not(.is-open):not(.is-found) { padding: 0; }
+.hunt-card.is-open { grid-column: 1 / -1; border-color: #e9b3c7; background: #fffafc; box-shadow: 0 8px 22px rgba(173,49,95,.08); }
+/* A closed card is one button: it opens the riddle. */
+.hunt-card-button {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+  padding: 10px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 160ms ease, transform 160ms ease;
+}
+.hunt-card-button:active { transform: scale(.98); }
+.hunt-card-button:focus-visible { outline: 3px solid rgba(220,79,131,.34); outline-offset: 2px; }
+.hunt-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: auto; }
+.hunt-card-cta { display: inline-flex; min-width: 0; align-items: center; white-space: nowrap; gap: 5px; padding: 5px 10px 5px 8px; border-radius: 99px; background: #fff0f5; color: var(--rose-deep); font-size: 11px; font-weight: 800; line-height: 1.2; }
+.hunt-card-cta .lucide { width: 13px; height: 13px; }
+.hunt-card.is-hinted .hunt-card-cta { background: #fff6e2; color: #8a5300; }
+.hunt-card.is-hinted .hunt-card-badge { background: #fff6e2; color: #c98612; }
+.hunt-card.is-found { border-color: #f2cddb; background: linear-gradient(160deg, #fff3f7, #fff 75%); }
+.hunt-card-head { display: flex; min-width: 0; align-items: center; gap: 9px; }
+.hunt-card-badge { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 11px; background: #f6eff2; color: #b3a6ad; }
+.hunt-card-badge .lucide { width: 17px; height: 17px; }
+.hunt-card.is-found .hunt-card-badge { background: var(--rose); color: #fff; box-shadow: 0 5px 12px rgba(220,79,131,.22); }
+.hunt-card.is-found.is-together .hunt-card-badge { background: linear-gradient(150deg, #e0609a, #8a5cd1); }
+.hunt-card-title { display: grid; flex: 1; gap: 1px; min-width: 0; }
+.hunt-card-title small { color: #a39aa0; font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+.hunt-card-title strong { overflow: hidden; color: var(--ink); font-size: 13px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+.hunt-card:not(.is-found) .hunt-card-title strong { color: #9b8f97; letter-spacing: .12em; white-space: nowrap; }
+.hunt-pair { display: grid; width: 26px; height: 26px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #f1ebff; color: #6a4bb0; }
+.hunt-pair .lucide { width: 14px; height: 14px; }
+.hunt-card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+.hunt-btn {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 38px;
+  flex: 1 1 112px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px 5px;
+  padding: 6px 9px;
+  border: 1px solid var(--rose-border);
+  border-radius: 11px;
+  background: #fff;
+  color: var(--rose-deep);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.2;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+.hunt-btn .lucide { width: 14px; height: 14px; }
+.hunt-btn:active:not(:disabled) { transform: scale(.98); }
+.hunt-btn:disabled { opacity: .55; cursor: progress; }
+.hunt-btn.is-close { flex: 0 0 auto; border-color: transparent; background: transparent; color: var(--muted); }
+.hunt-btn.is-hint { flex: 1 1 185px; white-space: nowrap; border-color: #f1dcb6; background: #fffaf0; color: #8a5300; }
+.hunt-btn.is-hint small { color: #a87422; font-size: 10.5px; font-weight: 700; }
+.hunt-btn.is-hint small::before { content: "· "; }
+
+/* The riddle, like a line of the letter. */
+.hunt-riddle { display: grid; gap: 10px; animation: reveal-in 220ms ease both; }
+.hunt-riddle-text {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid #efb3c8;
+  border-radius: 4px 12px 12px 4px;
+  background: #fff;
+  color: #3d2b36;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 18px;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.hunt-line { display: block; padding-left: 1em; text-indent: -1em; }
+.hunt-hint { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border-radius: 12px; background: #fff6e2; color: #6f4500; font-size: 12.5px; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
+.hunt-hint .lucide { width: 15px; height: 15px; margin-top: 2px; color: #c98612; }
+
+.hunt-card-note { margin: 0; color: #aa3152; font-size: 12px; font-weight: 700; line-height: 1.45; }
+
+/* A found secret. */
+.hunt-card.is-found { gap: 7px; }
+.hunt-card-name { margin-top: 2px; color: var(--ink); font-size: 14px; font-weight: 800; letter-spacing: -.01em; line-height: 1.25; overflow-wrap: break-word; }
+.hunt-card-who { display: flex; align-items: center; gap: 5px; margin: -2px 0 0; color: #2f7357; font-size: 10.5px; font-weight: 800; line-height: 1.35; }
+.hunt-card-who .lucide { width: 13px; height: 13px; }
+.hunt-card.is-together .hunt-card-who { color: #6a4bb0; }
+.hunt-card-reward { margin: 0; color: #8b5367; font-size: 12px; line-height: 1.45; overflow-wrap: break-word; }
+
+/* ---------- The final reveal ---------- */
+.hunt-final {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 20px 18px 18px;
+  border: 1px solid #f3dcb5;
+  border-radius: 20px;
+  background: radial-gradient(circle at 50% 0%, #fff2cf 0%, #fff6f9 55%, #fff 100%);
+  box-shadow: 0 10px 26px rgba(214,141,32,.14);
+  text-align: center;
+  animation: reveal-in 320ms ease both;
+}
+.hunt-final-icon { display: grid; width: 58px; height: 58px; place-items: center; border-radius: 50%; background: linear-gradient(150deg, #ffd56e, #f4a338); color: #fff; box-shadow: 0 0 0 4px #fff3d6, 0 8px 18px rgba(214,141,32,.28); }
+.hunt-final-icon .lucide { width: 27px; height: 27px; }
+.hunt-final-eyebrow { margin: 6px 0 0; color: #b36d0c; font-size: 10px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+.hunt-final-title { margin: 0; color: var(--ink); font-size: 24px; font-weight: 800; letter-spacing: -.04em; }
+.hunt-final-text { max-width: 330px; margin: 2px 0 0; color: #3d2b36; font-family: "Cormorant Garamond", Georgia, serif; font-size: 20px; font-style: italic; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.hunt-final-who { margin: 4px 0 0; color: var(--muted); font-size: 12px; font-weight: 700; line-height: 1.45; }
+
+/* ---------- Effects of a find ---------- */
+.hunt-float { position: fixed; z-index: 45; inset: 0; overflow: hidden; pointer-events: none; }
+.hunt-float span { position: absolute; display: block; width: 22px; height: 22px; color: var(--rose); animation: hunt-float 1.7s cubic-bezier(.15,.7,.3,1) both; }
+.hunt-float span:nth-child(3n) { color: #8a5cd1; }
+.hunt-float span:nth-child(3n+1) { color: #f2a23b; }
+.hunt-float span svg { display: block; width: 100%; height: 100%; }
+.hunt-float span.is-letter { width: auto; height: auto; color: var(--rose-deep); font-size: 24px; font-weight: 800; line-height: 1; }
+@keyframes hunt-float {
+  0% { opacity: 0; transform: translate(0, 0) scale(.4); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx, 0), var(--dy, -80px)) rotate(var(--spin, 0)) scale(1.1); }
+}
+
+.hunt-rainbow {
+  position: fixed;
+  z-index: 44;
+  top: 8%;
+  left: 50%;
+  width: min(118vw, 560px);
+  aspect-ratio: 2 / 1;
+  border-radius: 999px 999px 0 0;
+  background: radial-gradient(circle at 50% 100%, transparent 0 44%, #8a5cd1 44% 49%, #3f7fd8 49% 54%, #2e9e83 54% 59%, #f2c641 59% 64%, #f28b30 64% 69%, #d9443f 69% 74%, transparent 74%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) scale(.92);
+  animation: hunt-rainbow 3s ease both;
+}
+@keyframes hunt-rainbow { 0% { opacity: 0; transform: translateX(-50%) scale(.9); } 20%, 70% { opacity: .78; transform: translateX(-50%) scale(1); } 100% { opacity: 0; transform: translateX(-50%) scale(1.03); } }
+
+/* The hug meter: a heart that fills while the coupon is held. */
+.hunt-hug {
+  --hug: 0;
+  position: fixed;
+  z-index: 45;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--rose) calc(var(--hug) * 360deg), #f6e1ea 0);
+  box-shadow: 0 6px 16px rgba(173,49,95,.25);
+  pointer-events: none;
+  animation: reveal-in 200ms ease both;
+}
+.hunt-hug-ring { position: absolute; inset: 4px; border-radius: 50%; background: #fffdfd; }
+.hunt-hug-heart { position: relative; display: grid; width: 20px; height: 20px; color: var(--rose); }
+.hunt-hug-heart svg { width: 100%; height: 100%; fill: currentColor; }
+
+.hunt-confetti { position: fixed; z-index: 46; inset: 0; overflow: hidden; pointer-events: none; }
+.hunt-confetti span { position: absolute; top: -20px; display: block; width: 8px; height: 13px; border-radius: 2px; animation: hunt-confetti 3s cubic-bezier(.3,.1,.6,1) both; }
+.hunt-confetti span:nth-child(odd) { width: 10px; height: 7px; border-radius: 50%; }
+@keyframes hunt-confetti {
+  from { opacity: 1; transform: translate(0, 0) rotate(0); }
+  85% { opacity: 1; }
+  to { opacity: 0; transform: translate(var(--drift, 0), calc(100vh + 60px)) rotate(var(--spin, 0)); }
+}
+
+/* The way in from the season 1 tracker (secrets.js), under "See your prize". */
+.secret-final .secret-season-two { margin: 8px 4px 0; }
+
+/* ---------- Where the season 2 secrets hide ---------- */
+/* Long presses and double taps here shouldn't select text, open a menu or zoom. */
+.brand-mark, #planned-countdown, #journal-list .scrap-stamp, #coupon-list .coupon,
+#challenges-list .challenges-card-icon, #activity-bell, #match-cards .match-or {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* The little "or" keeps its own taps instead of passing them to the card under its edge. */
+#match-cards .match-or { pointer-events: auto; cursor: default; touch-action: manipulation; }
+
+@media (hover: hover) {
+  .hunt-card:not(.is-open):not(.is-found):hover { border-color: #e5a8bd; box-shadow: 0 7px 18px rgba(73,37,52,.07); }
+  .hunt-btn:hover:not(:disabled) { border-color: #e2a4ba; background: #fff0f5; }
+  .hunt-btn.is-close:hover { border-color: transparent; background: #fff0f5; color: var(--rose-deep); }
+  .hunt-btn.is-hint:hover:not(:disabled) { border-color: #e7c48a; background: #fff3dc; }
+  .hunt-retry:hover { border-color: #e2a4ba; background: #fff0f5; }
+}
+
+@media (max-width: 360px) {
+  .hunt-summary { padding-right: 12px; padding-left: 12px; }
+  .hunt-count strong { font-size: 23px; }
+  .hunt-riddle-text { padding: 11px 12px; font-size: 17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hunt-riddle, .hunt-final, .hunt-hug { animation: none; }
+  .hunt-float, .hunt-rainbow, .hunt-confetti { display: none; }
+  .hunt-progress span { transition: none; }
+}
