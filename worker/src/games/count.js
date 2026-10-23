@@ -77,7 +77,7 @@ export const BOX = { left: 150, right: 850, top: 262, bottom: 872 };
 export const SKY = { left: 34, right: 966, top: 34, bottom: 744, moonY: 150, moonR: 72 };
 export const BUNCH = { x: 500, y: 400, rx: 420, ry: 320, knotY: 922 };
 export const DISC = { x: 500, y: 500, r: 404 };
-export const FIELD = { left: 36, right: 964, top: 528, bottom: 958 };
+export const FIELD = { left: 36, right: 964, top: 452, bottom: 958 };
 export const TANK = { left: 108, right: 892, top: 196, bottom: 800 };
 
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
@@ -142,7 +142,7 @@ function pour(n, base, rand) {
 const LAYOUTS = {
   sweets(n, rand) {
     const area = (JAR.right - JAR.left) * (JAR.floor - JAR.top);
-    let base = clamp(Math.sqrt(((0.42 + rand() * 0.5) * area) / (n * Math.PI)), 14, 58);
+    let base = clamp(Math.sqrt(((0.62 + rand() * 0.36) * area) / (n * Math.PI)), 14, 60);
     let items = pour(n, base, rand);
     // Too full for the jar: smaller sweets until they fit under the shoulders.
     for (let attempt = 0; attempt < 10 && items.some((item) => item.y - item.r < JAR.top); attempt += 1) {
@@ -199,7 +199,7 @@ const LAYOUTS = {
   },
   sheep(n, rand) {
     const area = (FIELD.right - FIELD.left) * (FIELD.bottom - FIELD.top);
-    const base = clamp(Math.sqrt(((0.3 + 0.32 * busy(n)) * area) / (1.6 * n)), 20, 74);
+    const base = clamp(Math.sqrt(((0.4 + 0.36 * busy(n)) * area) / (1.6 * n)), 22, 82);
     const depth = (y) => 0.5 + 0.5 * ((y - FIELD.top) / (FIELD.bottom - FIELD.top));
     const items = scatter(n, rand, () => base * (0.9 + rand() * 0.2), (next, s) => {
       // More sheep further back, where they look smaller.

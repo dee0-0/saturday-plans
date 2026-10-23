@@ -34,6 +34,8 @@
 
   const POLL_MS = 12000;
   const LEDE = "A picture shows for 5 seconds. Guess how many. Closest guess wins.";
+  // Where the "87 sweets" tally sits on the answer picture: a corner with no items.
+  const TOP_TALLY = ["sweets", "hearts", "sheep"];
   const KIND_ICONS = { sweets: "candy", hearts: "heart", stars: "star", balloons: "balloon", dots: "circle-dot", sheep: "fence", fish: "fish" };
   const DRAFT_KEY = new URLSearchParams(window.location.search).has("preview") ? "date-letter-count-draft-preview" : "date-letter-count-draft";
 
@@ -654,14 +656,14 @@
     const wool = WOOL[colour] || WOOL[0];
     const skin = black ? "#272025" : "#3d3740";
     const d = flipped ? -1 : 1;
-    const cy = y - 0.62 * s;
+    const cy = y - 0.76 * s;
     ctx.beginPath();
     ctx.ellipse(x, y, s * 0.86, s * 0.16, 0, 0, TAU);
     ctx.fillStyle = "rgba(40,90,30,.22)";
     ctx.fill();
     ctx.fillStyle = skin;
     for (const lx of [-0.42, -0.18, 0.18, 0.42]) {
-      roundedRect(ctx, x + lx * s - 0.065 * s, y - 0.46 * s, 0.13 * s, 0.46 * s, 0.06 * s);
+      roundedRect(ctx, x + lx * s - 0.065 * s, y - 0.5 * s, 0.13 * s, 0.5 * s, 0.06 * s);
       ctx.fill();
     }
     // Wool: a shaded rim first, then the fluffy body over it.
@@ -683,7 +685,7 @@
     ctx.fill();
     // The head, ears, an eye and a little tuft of wool.
     const hx = x + d * 0.66 * s;
-    const hy = y - 0.8 * s;
+    const hy = y - 0.94 * s;
     ctx.fillStyle = skin;
     ctx.beginPath();
     ctx.ellipse(hx - d * 0.2 * s, hy - 0.16 * s, 0.15 * s, 0.065 * s, d * -0.5, 0, TAU);
@@ -703,20 +705,20 @@
 
   function paintSheep(ctx, items, seed, shown, unit) {
     const rand = random(seed);
-    ctx.fillStyle = vertical(ctx, 0, 520, [[0, "#86cbff"], [1, "#dcf2ff"]]);
-    ctx.fillRect(0, 0, SIZE, 520);
+    ctx.fillStyle = vertical(ctx, 0, 450, [[0, "#86cbff"], [1, "#dcf2ff"]]);
+    ctx.fillRect(0, 0, SIZE, 450);
     const sunX = rand() < 0.5 ? 150 : 850;
-    glow(ctx, sunX, 120, 260, "rgba(255,240,170,.55)");
-    circle(ctx, sunX, 120, 54);
+    glow(ctx, sunX, 110, 250, "rgba(255,240,170,.55)");
+    circle(ctx, sunX, 110, 50);
     ctx.fillStyle = "#ffe26b";
     ctx.fill();
     // The Alps in the distance, with snow on top.
     const peaks = [];
-    for (let x = -60; x < SIZE + 120; x += 130 + rand() * 90) peaks.push([x, 290 + rand() * 110]);
+    for (let x = -60; x < SIZE + 120; x += 130 + rand() * 90) peaks.push([x, 228 + rand() * 96]);
     ctx.beginPath();
-    ctx.moveTo(-60, 520);
+    ctx.moveTo(-60, 450);
     for (const [x, y] of peaks) ctx.lineTo(x, y);
-    ctx.lineTo(SIZE + 120, 520);
+    ctx.lineTo(SIZE + 120, 450);
     ctx.closePath();
     ctx.fillStyle = "#b3c7e4";
     ctx.fill();
@@ -737,28 +739,28 @@
     ctx.restore();
     // Rolling green hills, then the meadow.
     ctx.beginPath();
-    ctx.moveTo(0, 470);
-    ctx.bezierCurveTo(240, 420, 420, 500, 620, 456);
-    ctx.bezierCurveTo(780, 424, 900, 450, SIZE, 440);
-    ctx.lineTo(SIZE, 560);
-    ctx.lineTo(0, 560);
+    ctx.moveTo(0, 398);
+    ctx.bezierCurveTo(240, 350, 420, 428, 620, 384);
+    ctx.bezierCurveTo(780, 352, 900, 378, SIZE, 368);
+    ctx.lineTo(SIZE, 480);
+    ctx.lineTo(0, 480);
     ctx.closePath();
     ctx.fillStyle = "#a9dd86";
     ctx.fill();
     ctx.beginPath();
-    ctx.moveTo(0, 508);
-    ctx.quadraticCurveTo(500, 478, SIZE, 506);
+    ctx.moveTo(0, 432);
+    ctx.quadraticCurveTo(500, 400, SIZE, 430);
     ctx.lineTo(SIZE, SIZE);
     ctx.lineTo(0, SIZE);
     ctx.closePath();
-    ctx.fillStyle = vertical(ctx, 490, SIZE, [[0, "#9cda72"], [1, "#5fb646"]]);
+    ctx.fillStyle = vertical(ctx, 410, SIZE, [[0, "#9cda72"], [1, "#5fb646"]]);
     ctx.fill();
     ctx.strokeStyle = "rgba(60,130,45,.5)";
     ctx.lineCap = "round";
     for (let index = 0; index < 46; index += 1) {
-      const y = 530 + rand() * 460;
+      const y = 450 + rand() * 540;
       const x = rand() * SIZE;
-      const s = 7 + ((y - 520) / 480) * 12;
+      const s = 7 + ((y - 440) / 560) * 12;
       ctx.lineWidth = Math.max(2, s * 0.28);
       ctx.beginPath();
       ctx.moveTo(x - s * 0.6, y - s);
@@ -773,7 +775,7 @@
   }
 
   /* Fish in a tank */
-  const FISH = ["#ff8a3d", "#ffd23f", "#3fa7ff", "#ff6fb5", "#9b6bff", "#38d39f"];
+  const FISH = ["#ff8a3d", "#ffd23f", "#e8304f", "#ff6fb5", "#9b6bff", "#38d39f"];
 
   function fish(ctx, x, y, s, angle, c, flipped) {
     const colour = FISH[c % FISH.length];
@@ -1060,6 +1062,7 @@
     if (!scene) return;
     frameEl.hidden = false;
     tallyEl.hidden = false;
+    tallyEl.dataset.corner = TOP_TALLY.includes(scene.kind) ? "top" : "bottom";
     canvas.setAttribute("aria-label", `${data.title}: ${data.n} ${data.noun}.`);
     const total = Array.isArray(scene.items) ? scene.items.length : 0;
     const tally = (value) => { tallyEl.innerHTML = `<b>${value}</b> ${escape(data.noun)}`; };

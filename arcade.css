@@ -91,6 +91,7 @@
 .count-canvas { display: block; width: 100%; height: 100%; }
 .quick-result + .count-frame { margin-top: 12px; }
 .count-tally { position: absolute; right: 10px; bottom: 10px; display: inline-flex; align-items: baseline; gap: 5px; margin: 0; padding: 6px 11px; border-radius: 99px; background: rgba(255,255,255,.9); box-shadow: 0 4px 12px rgba(60,20,40,.16); color: var(--muted); font-size: 12px; font-weight: 800; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.count-tally[data-corner="top"] { top: 10px; right: auto; bottom: auto; left: 10px; }
 .count-tally b { color: var(--rose-deep); font-size: 18px; font-variant-numeric: tabular-nums; }
 
 .count-form { display: grid; gap: 12px; padding: 18px 16px 16px; border: 1px solid #f0dde5; border-radius: 22px; background: #fff; box-shadow: 0 8px 22px rgba(120,40,70,.07); text-align: center; }
@@ -112,6 +113,9 @@
   .clock-duel-row { grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr); gap: 5px; }
   .count-frame { border-radius: 18px; }
   .count-question { font-size: 17px; }
+  .count-tally { right: 8px; bottom: 8px; padding: 4px 9px; font-size: 11px; }
+  .count-tally[data-corner="top"] { top: 8px; left: 8px; }
+  .count-tally b { font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .clock-face, .clock-digits { transition: none; }
