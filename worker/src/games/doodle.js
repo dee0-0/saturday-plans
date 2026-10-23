@@ -14,8 +14,13 @@ export const MAX_STROKES = 400;
 export const MAX_POINTS = 8000;
 export const MAX_BYTES = 150 * 1024;
 export const CANVAS_SIZE = 1000;
-// The page's six pens; a stroke's colour has to be one of them.
-export const PALETTE = ["#29252f", "#dc4f83", "#f28b30", "#f2c641", "#2e9e83", "#3f7fd8"];
+// The page's colours; a stroke's colour has to be one of them (add new ones at the end of the page's list too).
+export const PALETTE = [
+  "#29252f", "#8e8a96", "#ffffff", "#e5483f", "#dc4f83", "#f7b5c8", "#f28b30",
+  "#f2c641", "#8fd16a", "#2e9e83", "#9dd5f5", "#3f7fd8", "#8a5cd1", "#8b5a3c"
+];
+// Pen sizes: thin, thick, and the big colouring brush.
+const WIDTHS = [0, 1, 2];
 
 // Easy, fun things to draw (add new ones at the end).
 export const PROMPTS = [
@@ -104,8 +109,9 @@ function normalizeIndex(value) {
 
 export const promptFor = (index, day) => index.days[day]?.prompt || pickForDay(PROMPTS, day, "doodle");
 
-// Checks the strokes from a page: { w: 0|1 (thin or thick pen), c: a palette colour,
-// p: [x, y, x, y, …] whole numbers 0..1000 }. Returns a clean copy.
+// Checks the strokes from a page: pen strokes { w: 0|1|2 (thin, thick, big brush), c: a palette
+// colour, p: [x, y, x, y, …] whole numbers 0..1000 } and fills { f: 1, c, p: [x, y] } (the paint
+// bucket, tapped at x, y; it counts as one point). Returns a clean copy.
 export function cleanStrokes(value) {
   if (!Array.isArray(value) || !value.length) throw new GameError(400, "Draw something first.");
   if (value.length > MAX_STROKES) throw new GameError(400, `That's more than ${MAX_STROKES} lines. Undo a few and try again.`);
@@ -114,8 +120,15 @@ export function cleanStrokes(value) {
     if (!stroke || typeof stroke !== "object" || Array.isArray(stroke)) throw new GameError(400, "That drawing couldn't be read.");
     const colour = typeof stroke.c === "string" ? stroke.c.toLowerCase() : "";
     if (!PALETTE.includes(colour)) throw new GameError(400, "That drawing uses an unknown colour.");
-    if (stroke.w !== 0 && stroke.w !== 1) throw new GameError(400, "That drawing uses an unknown pen size.");
     const path = stroke.p;
+    if (stroke.f === 1) {
+      if (!Array.isArray(path) || path.length !== 2 || !path.every((n) => Number.isInteger(n) && n >= 0 && n <= CANVAS_SIZE)) {
+        throw new GameError(400, "That drawing couldn't be read.");
+      }
+      points += 1;
+      return { f: 1, c: colour, p: path.slice() };
+    }
+    if (!WIDTHS.includes(stroke.w)) throw new GameError(400, "That drawing uses an unknown pen size.");
     if (!Array.isArray(path) || path.length < 2 || path.length % 2 !== 0) throw new GameError(400, "That drawing couldn't be read.");
     if (!path.every((n) => Number.isInteger(n) && n >= 0 && n <= CANVAS_SIZE)) throw new GameError(400, "That drawing couldn't be read.");
     points += path.length / 2;
