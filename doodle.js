@@ -38,7 +38,8 @@
   const MAX_STROKES = 400;     // the Worker's limits
   const MAX_POINTS = 8000;
   const MIN_STEP = 4;          // points closer than this to the last one are skipped
-  const WIDTHS = [9, 24];      // thin and thick pen, in grid units
+  const WIDTHS = [9, 24, 60];  // thin, thick and colouring pen, in grid units
+  const FILL_TOLERANCE = 64;   // how different a pixel may be and still be filled (anti-aliased edges)
   const REPLAY_MS = 3000;
   const GALLERY_STEP = 6;
   // Preview has its own draft, so a test drawing never ends up in the real letter.
@@ -48,11 +49,19 @@
     : "date-letter-doodle-draft";
   const PALETTE = [
     { color: "#29252f", name: "Ink" },
+    { color: "#8e8a96", name: "Grey" },
+    { color: "#ffffff", name: "White" },
+    { color: "#e5483f", name: "Red" },
     { color: "#dc4f83", name: "Pink" },
+    { color: "#f7b5c8", name: "Light pink" },
     { color: "#f28b30", name: "Orange" },
     { color: "#f2c641", name: "Yellow" },
+    { color: "#8fd16a", name: "Light green" },
     { color: "#2e9e83", name: "Green" },
-    { color: "#3f7fd8", name: "Blue" }
+    { color: "#9dd5f5", name: "Sky blue" },
+    { color: "#3f7fd8", name: "Blue" },
+    { color: "#8a5cd1", name: "Purple" },
+    { color: "#8b5a3c", name: "Brown" }
   ];
 
   let data = null;             // GET /games/doodle for today
@@ -64,7 +73,9 @@
   let actions = [];            // undo history: "stroke", or { cleared: [...] } for Clear
   let current = null;          // the stroke under the finger
   let pointer = null;
-  let pen = { color: PALETTE[0].color, width: 0 };
+  let pen = { color: PALETTE[0].color, width: 0, tool: "pen" }; // tool: "pen" or "fill"
+  let padBase = null;          // the pad's finished strokes and fills, painted once (fills are slow)
+  let padBaked = 0;            // how many of `strokes` are on padBase
   let frame = 0;
   let replayFrame = 0;
   let replayed = "";           // the day whose reveal already played once
@@ -83,6 +94,7 @@
   const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const clamp = (value) => Math.max(0, Math.min(SIZE, Math.round(value)));
   const pointsIn = (list) => list.reduce((sum, stroke) => sum + stroke.p.length / 2, 0);
+  const isFill = (stroke) => stroke?.f === 1;
   const capital = (text) => String(text || "").charAt(0).toUpperCase() + String(text || "").slice(1);
 
   function showError(message) {
@@ -151,7 +163,76 @@
     context.stroke();
   }
 
-  // Draws `list` on `target`; `limit` stops after that many points (for the replay).
+  const rgb = (hex) => [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16));
+
+  // The paint bucket: fills the area around the tapped point that has (about) the same
+  // colour as that point, like in a paint app. Compared as seen on the white pad; one
+  // extra pixel around the area covers the soft edges of the lines.
+  function floodFill(context, stroke, scale) {
+    const { width, height } = context.canvas;
+    if (!width || !height) return;
+    const x0 = Math.min(width - 1, Math.max(0, Math.floor(stroke.p[0] * scale)));
+    const y0 = Math.min(height - 1, Math.max(0, Math.floor(stroke.p[1] * scale)));
+    const image = context.getImageData(0, 0, width, height);
+    const px = image.data;
+    const seen = (index) => {
+      const alpha = px[index + 3] / 255;
+      return [px[index] * alpha + 255 * (1 - alpha), px[index + 1] * alpha + 255 * (1 - alpha), px[index + 2] * alpha + 255 * (1 - alpha)];
+    };
+    const [sr, sg, sb] = seen((y0 * width + x0) * 4);
+    const [fr, fg, fb] = rgb(stroke.c);
+    // Filling an area with the colour it already has changes nothing.
+    if (Math.max(Math.abs(sr - fr), Math.abs(sg - fg), Math.abs(sb - fb)) <= 8) return;
+    const matches = (pixel) => {
+      const [r, g, b] = seen(pixel * 4);
+      return Math.abs(r - sr) <= FILL_TOLERANCE && Math.abs(g - sg) <= FILL_TOLERANCE && Math.abs(b - sb) <= FILL_TOLERANCE;
+    };
+    const mask = new Uint8Array(width * height);
+    const stack = [y0 * width + x0];
+    // Scanline fill: run left and right along a row, then look at the rows above and below.
+    while (stack.length) {
+      const pixel = stack.pop();
+      if (mask[pixel]) continue;
+      const row = Math.floor(pixel / width);
+      let left = pixel;
+      let right = pixel;
+      const rowStart = row * width;
+      const rowEnd = rowStart + width - 1;
+      while (left > rowStart && !mask[left - 1] && matches(left - 1)) left -= 1;
+      while (right < rowEnd && !mask[right + 1] && matches(right + 1)) right += 1;
+      for (let at = left; at <= right; at += 1) {
+        mask[at] = 1;
+        if (row > 0 && !mask[at - width] && matches(at - width)) stack.push(at - width);
+        if (row < height - 1 && !mask[at + width] && matches(at + width)) stack.push(at + width);
+      }
+    }
+    for (let pixel = 0; pixel < mask.length; pixel += 1) {
+      if (mask[pixel] !== 1) continue;
+      const x = pixel % width;
+      for (const near of [pixel - 1, pixel + 1, pixel - width, pixel + width]) {
+        if (near < 0 || near >= mask.length || mask[near]) continue;
+        if ((near === pixel - 1 && x === 0) || (near === pixel + 1 && x === width - 1)) continue;
+        mask[near] = 2;
+      }
+    }
+    for (let pixel = 0; pixel < mask.length; pixel += 1) {
+      if (!mask[pixel]) continue;
+      const at = pixel * 4;
+      px[at] = fr;
+      px[at + 1] = fg;
+      px[at + 2] = fb;
+      px[at + 3] = 255;
+    }
+    context.putImageData(image, 0, 0);
+  }
+
+  // A pen stroke (its first `count` points) or a fill.
+  function drawItem(context, stroke, count, scale) {
+    if (isFill(stroke)) floodFill(context, stroke, scale);
+    else trace(context, stroke, count, scale);
+  }
+
+  // Draws `list` on `target`; `limit` stops after that many points (a fill is one point).
   function paint(target, list, limit = Infinity) {
     if (!target || !target.isConnected) return;
     const context = fit(target);
@@ -161,14 +242,43 @@
     for (const stroke of list || []) {
       if (left <= 0) break;
       const count = Math.min(stroke.p.length / 2, left);
-      trace(context, stroke, count, scale);
+      drawItem(context, stroke, count, scale);
       left -= count;
     }
   }
 
+  // A canvas the size of `target` that keeps finished strokes, so a frame only adds new ones.
+  function layerFor(target) {
+    const layer = document.createElement("canvas");
+    layer.width = target.width;
+    layer.height = target.height;
+    return layer;
+  }
+
+  function invalidatePad() {
+    padBase = null;
+    padBaked = 0;
+  }
+
+  // The pad: finished strokes (and fills) come from padBase; only the line under the
+  // finger is drawn again on each frame.
   function paintPad() {
     frame = 0;
-    paint(canvas, current ? [...strokes, current] : strokes);
+    if (!canvas.isConnected) return;
+    const context = fit(canvas);
+    if (!padBase || padBase.width !== canvas.width || padBase.height !== canvas.height || padBaked > strokes.length) {
+      padBase = layerFor(canvas);
+      padBaked = 0;
+    }
+    const scale = canvas.width / SIZE;
+    const base = padBase.getContext("2d", { willReadFrequently: true });
+    for (; padBaked < strokes.length; padBaked += 1) {
+      const stroke = strokes[padBaked];
+      drawItem(base, stroke, stroke.p.length / 2, scale);
+    }
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(padBase, 0, 0);
+    if (current) trace(context, current, current.p.length / 2, scale);
   }
 
   function schedulePad() {
@@ -185,6 +295,7 @@
   }
 
   // Redraws the drawings in `root` stroke by stroke, both finishing after about 3 seconds.
+  // Finished strokes and fills go on a layer once, so fills don't slow the replay down.
   function replay(root) {
     stopReplay();
     const items = [...root.querySelectorAll("canvas[data-art]")].map((element) => ({ element, list: art.get(element.dataset.art) || [] }));
@@ -193,11 +304,36 @@
       items.forEach(({ element, list }) => paint(element, list));
       return;
     }
-    const totals = items.map(({ list }) => pointsIn(list));
+    items.forEach((item) => {
+      if (!item.element.isConnected) return;
+      fit(item.element);
+      item.layer = layerFor(item.element);
+      item.baked = 0;      // strokes on the layer
+      item.bakedPoints = 0;
+      item.total = pointsIn(item.list);
+    });
     const start = performance.now();
     const step = (now) => {
       const progress = Math.min(1, (now - start) / REPLAY_MS);
-      items.forEach(({ element, list }, index) => paint(element, list, Math.ceil(totals[index] * progress)));
+      items.forEach((item) => {
+        const { element, list, layer } = item;
+        if (!layer || !element.isConnected) return;
+        const context = element.getContext("2d");
+        const scale = element.width / SIZE;
+        const limit = Math.ceil(item.total * progress);
+        const base = layer.getContext("2d", { willReadFrequently: true });
+        while (item.baked < list.length && item.bakedPoints + list[item.baked].p.length / 2 <= limit) {
+          const stroke = list[item.baked];
+          drawItem(base, stroke, stroke.p.length / 2, scale);
+          item.bakedPoints += stroke.p.length / 2;
+          item.baked += 1;
+        }
+        context.clearRect(0, 0, element.width, element.height);
+        context.drawImage(layer, 0, 0);
+        const next = list[item.baked];
+        const partial = limit - item.bakedPoints;
+        if (next && !isFill(next) && partial > 0) trace(context, next, Math.min(next.p.length / 2, partial), scale);
+      });
       replayFrame = progress < 1 ? window.requestAnimationFrame(step) : 0;
     };
     items.forEach(({ element }) => paint(element, []));
@@ -217,7 +353,8 @@
     try {
       const draft = JSON.parse(window.localStorage.getItem(DRAFT_KEY) || "null");
       if (draft && draft.day === day && draft.author === me() && Array.isArray(draft.strokes)) {
-        return draft.strokes.filter((stroke) => stroke && Array.isArray(stroke.p) && stroke.p.length >= 2 && PALETTE.some((item) => item.color === stroke.c) && (stroke.w === 0 || stroke.w === 1));
+        return draft.strokes.filter((stroke) => stroke && Array.isArray(stroke.p) && PALETTE.some((item) => item.color === stroke.c)
+          && (isFill(stroke) ? stroke.p.length === 2 : stroke.p.length >= 2 && [0, 1, 2].includes(stroke.w)));
       }
     } catch { /* Ignore a broken draft. */ }
     return [];
@@ -280,9 +417,18 @@
       return;
     }
     showError("");
+    const [x, y] = toPoint(event);
+    if (pen.tool === "fill") {
+      // The paint bucket fills where you tap; one tap, no dragging.
+      strokes.push({ f: 1, c: pen.color, p: [x, y] });
+      actions.push("stroke");
+      saveDraft();
+      updateTools();
+      schedulePad();
+      return;
+    }
     pointer = event.pointerId;
     try { canvas.setPointerCapture(event.pointerId); } catch { /* Synthetic events. */ }
-    const [x, y] = toPoint(event);
     current = { w: pen.width, c: pen.color, p: [x, y] };
     padHint.hidden = true;
     schedulePad();
@@ -317,6 +463,7 @@
     if (!last) return;
     if (last === "stroke") strokes.pop();
     else strokes = last.cleared;
+    invalidatePad();
     showError("");
     saveDraft();
     updateTools();
@@ -327,6 +474,7 @@
     if (!strokes.length) return;
     actions.push({ cleared: strokes });
     strokes = [];
+    invalidatePad();
     showError("");
     saveDraft();
     updateTools();
@@ -337,9 +485,11 @@
     // PALETTE is our own fixed list, so it needs no escaping (and DateApp may not exist yet).
     colorsEl.innerHTML = PALETTE.map((item) => `<button class="doodle-color" type="button" role="radio" aria-checked="${item.color === pen.color}" aria-label="${item.name}" data-color="${item.color}" style="--swatch: ${item.color}"></button>`).join("");
     sizesEl.querySelectorAll("[data-width]").forEach((button) => {
-      button.setAttribute("aria-checked", String(Number(button.dataset.width) === pen.width));
+      button.setAttribute("aria-checked", String(pen.tool === "pen" && Number(button.dataset.width) === pen.width));
     });
+    sizesEl.querySelector("[data-fill]")?.setAttribute("aria-checked", String(pen.tool === "fill"));
     sizesEl.style.setProperty("--pen", pen.color);
+    canvas.classList.toggle("is-filling", pen.tool === "fill");
   }
 
   /* ------------------------------- Render -------------------------------- */
@@ -475,6 +625,7 @@
       // A new day (or the first load): pick up an unsent drawing of that day, if any.
       if (!strokes.length) {
         strokes = loadDraft(next.day);
+        invalidatePad();
         actions = strokes.map(() => "stroke");
       } else {
         saveDraft();
@@ -484,6 +635,7 @@
       // Sent (maybe from another phone): nothing left to draw today.
       if (strokes.length) dropDraft();
       strokes = [];
+      invalidatePad();
       actions = [];
       current = null;
       pointer = null;
@@ -593,6 +745,7 @@
     stopReplay();
     data = null;
     strokes = [];
+    invalidatePad();
     actions = [];
     current = null;
     pointer = null;
@@ -627,9 +780,15 @@
     colorsEl.querySelector(`[data-color="${CSS.escape(pen.color)}"]`)?.focus({ preventScroll: true });
   });
   sizesEl.addEventListener("click", (event) => {
+    if (event.target.closest("[data-fill]")) {
+      pen = { ...pen, tool: "fill" };
+      renderTools();
+      return;
+    }
     const button = event.target.closest("[data-width]");
     if (!button) return;
-    pen = { ...pen, width: Number(button.dataset.width) === 1 ? 1 : 0 };
+    const width = Number(button.dataset.width);
+    pen = { ...pen, tool: "pen", width: [0, 1, 2].includes(width) ? width : 0 };
     renderTools();
   });
   // Arrow keys move through the colours, like a radio group.

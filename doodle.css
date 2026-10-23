@@ -65,7 +65,7 @@
 
 /* ---------- Daily doodle: tools ---------- */
 .doodle-tools { display: grid; gap: 10px; margin: 12px 0 0; }
-.doodle-colors { display: flex; justify-content: space-between; gap: 4px; padding: 0 3px; }
+.doodle-colors { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); justify-items: center; gap: 8px 4px; padding: 0 3px; }
 .doodle-color {
   width: 36px;
   height: 36px;
@@ -85,7 +85,11 @@
 .doodle-size[aria-checked="true"] { background: #fde6ee; }
 .doodle-size-dot { display: block; border-radius: 50%; background: var(--pen, var(--ink)); box-shadow: 0 0 0 1px rgba(41,37,47,.08); }
 .doodle-size-dot.is-thin { width: 6px; height: 6px; }
-.doodle-size-dot.is-thick { width: 15px; height: 15px; }
+.doodle-size-dot.is-thick { width: 13px; height: 13px; }
+.doodle-size-dot.is-huge { width: 22px; height: 22px; }
+.doodle-fill { color: var(--pen, var(--ink)); }
+.doodle-fill .icon, .doodle-fill .lucide { width: 20px; height: 20px; filter: drop-shadow(0 0 1px rgba(41,37,47,.35)); }
+.doodle-canvas.is-filling { cursor: cell; }
 .doodle-tool {
   display: inline-flex;
   min-height: 42px;
@@ -512,10 +516,15 @@
   .icons-giveup:hover { color: var(--rose-deep); }
 }
 
+/* Four pen buttons, Undo and Clear in one row: the last two lose their words on phones. */
+@media (max-width: 430px) {
+  .doodle-tool span { display: none; }
+  .doodle-tool { width: 42px; padding: 0; }
+}
 @media (max-width: 360px) {
   .doodle-color { width: 32px; height: 32px; }
-  .doodle-tool { padding-right: 10px; padding-left: 10px; }
   .doodle-size { width: 36px; }
+  .doodle-tool-row { gap: 6px; }
   .icons-card { padding-right: 12px; padding-left: 12px; }
   .icons-row { gap: 5px; }
   .icons-chosen { gap: 5px; padding: 8px; }
