@@ -1060,6 +1060,22 @@
     <section class="step" data-step="clock">
       <p class="eyebrow">Stop the clock</p>
       <h2>Feel the seconds</h2>
+      <p class="match-lede" id="clock-lede">Stop it at exactly the target. The digits vanish after 1.5 seconds. Best of 3 tries.</p>
+      <p class="together-note" id="clock-status">Loading today’s clock…</p>
+      <div class="clock-game" id="clock-game" hidden>
+        <p class="clock-target" id="clock-target"></p>
+        <button class="clock-face" id="clock-face" type="button" aria-describedby="clock-target">
+          <span class="clock-ring" aria-hidden="true"></span>
+          <span class="clock-digits" id="clock-digits" aria-hidden="true">0.00</span>
+          <span class="clock-hint" id="clock-hint">Tap to start</span>
+        </button>
+        <p class="clock-note" id="clock-note" aria-live="polite"></p>
+        <ol class="clock-tries" id="clock-tries" aria-label="Your tries"></ol>
+      </div>
+      <div class="quick-result" id="clock-result" aria-live="polite" hidden></div>
+      <p class="error" id="clock-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="clock-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="clock-stats" hidden></dl>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>
@@ -1070,6 +1086,28 @@
     <section class="step" data-step="count">
       <p class="eyebrow">How many?</p>
       <h2>Quick, count them!</h2>
+      <p class="match-lede" id="count-lede">A picture shows for 5 seconds. Guess how many. Closest guess wins.</p>
+      <p class="together-note" id="count-status">Loading today’s picture…</p>
+      <div class="quick-intro" id="count-intro" hidden>
+        <p class="count-today" id="count-today"></p>
+        <p class="quick-intro-copy"><i class="icon" data-lucide="eye" aria-hidden="true"></i>The picture shows when you tap Start and is gone after 5 seconds. One look, one guess.</p>
+        <button class="btn btn-primary quick-start" id="count-start" type="button"><i class="icon" data-lucide="play" aria-hidden="true"></i> Start</button>
+      </div>
+      <div class="quick-timer count-timer" id="count-timer" hidden><span class="quick-timer-bar" id="count-timer-bar"></span><b id="count-timer-text">5.0</b></div>
+      <div class="quick-result" id="count-result" aria-live="polite" hidden></div>
+      <div class="count-frame" id="count-frame" hidden>
+        <canvas class="count-canvas" id="count-canvas" role="img" aria-label="Today’s picture"></canvas>
+        <p class="count-tally" id="count-tally" hidden></p>
+      </div>
+      <form class="count-form" id="count-form" novalidate hidden>
+        <p class="count-gone"><i class="icon" data-lucide="eye-off" aria-hidden="true"></i> Time’s up</p>
+        <label class="count-question" id="count-question" for="count-guess">How many were there?</label>
+        <input class="count-input" id="count-guess" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="send" maxlength="4" placeholder="0">
+        <button class="btn btn-primary count-send" id="count-send" type="submit" disabled>Send my guess <i class="icon" data-lucide="send" aria-hidden="true"></i></button>
+      </form>
+      <p class="error" id="count-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="count-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="count-stats" hidden></dl>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>
