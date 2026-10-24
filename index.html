@@ -1030,6 +1030,30 @@
     <section class="step" data-step="connect">
       <p class="eyebrow">Connections</p>
       <h2>Find the four groups</h2>
+      <p class="match-lede" id="connect-lede">Sixteen words, four hidden groups of four. Fewest mistakes wins.</p>
+      <p class="together-note" id="connect-status">Loading today’s puzzle…</p>
+      <div class="quick-intro" id="connect-intro" hidden>
+        <p class="quick-intro-copy"><i class="icon" data-lucide="timer" aria-hidden="true"></i>The words show when you tap Start and the clock starts with them. Pick four that belong together. Four mistakes and the round is over.</p>
+        <button class="btn btn-primary quick-start" id="connect-start" type="button"><i class="icon" data-lucide="play" aria-hidden="true"></i> Start</button>
+      </div>
+      <div class="connect-play" id="connect-play" hidden>
+        <div class="connect-bar">
+          <p class="quick-clock"><i class="icon" data-lucide="timer" aria-hidden="true"></i><b id="connect-clock">0.0</b> s</p>
+          <p class="connect-mistakes" id="connect-mistakes"></p>
+        </div>
+        <ol class="connect-found" id="connect-found" aria-label="Groups you found"></ol>
+        <div class="connect-grid" id="connect-grid" role="group" aria-label="Pick four words that belong together"></div>
+        <p class="connect-toast" id="connect-toast" role="status" aria-live="polite"></p>
+        <div class="connect-actions">
+          <button class="btn btn-secondary connect-action" id="connect-shuffle" type="button"><i class="icon" data-lucide="shuffle" aria-hidden="true"></i> Shuffle</button>
+          <button class="btn btn-secondary connect-action" id="connect-clear" type="button" disabled><i class="icon" data-lucide="eraser" aria-hidden="true"></i> Clear</button>
+          <button class="btn btn-primary connect-action" id="connect-submit" type="button" disabled>Submit</button>
+        </div>
+      </div>
+      <div class="quick-result" id="connect-result" aria-live="polite" hidden></div>
+      <p class="error" id="connect-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="connect-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="connect-stats" hidden></dl>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>
@@ -1040,6 +1064,27 @@
     <section class="step" data-step="sort">
       <p class="eyebrow">Sort it</p>
       <h2>Put them in order</h2>
+      <p class="match-lede" id="sort-lede">Five things, one rule. Put them in the right order, fast.</p>
+      <p class="together-note" id="sort-status">Loading today’s five…</p>
+      <div class="quick-intro" id="sort-intro" hidden>
+        <p class="quick-intro-copy"><i class="icon" data-lucide="timer" aria-hidden="true"></i>The rule and the five things show when you tap Start, and the clock starts with them. Drag them into order, or use the arrows. One try a day.</p>
+        <button class="btn btn-primary quick-start" id="sort-start" type="button"><i class="icon" data-lucide="play" aria-hidden="true"></i> Start</button>
+      </div>
+      <div class="sort-play" id="sort-play" hidden>
+        <p class="quick-clock"><i class="icon" data-lucide="timer" aria-hidden="true"></i><b id="sort-clock">0.0</b> s</p>
+        <p class="sort-rule" id="sort-rule"></p>
+        <p class="sort-about" id="sort-about"></p>
+        <p class="sort-end" id="sort-top"></p>
+        <ol class="sort-list" id="sort-list" aria-describedby="sort-help"></ol>
+        <p class="sort-end" id="sort-bottom"></p>
+        <p class="sort-help" id="sort-help">Drag a row, or move it with the arrows.</p>
+        <button class="btn btn-primary sort-send" id="sort-send" type="button">Lock it in <i class="icon" data-lucide="check" aria-hidden="true"></i></button>
+        <p class="visually-hidden" id="sort-live" aria-live="polite"></p>
+      </div>
+      <div class="quick-result" id="sort-result" aria-live="polite" hidden></div>
+      <p class="error" id="sort-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="sort-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="sort-stats" hidden></dl>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>
@@ -1050,6 +1095,26 @@
     <section class="step" data-step="first">
       <p class="eyebrow">Which came first?</p>
       <h2>Older or newer?</h2>
+      <p class="match-lede" id="first-lede">Five pairs. Tap the one that happened first. Fastest right answers win.</p>
+      <p class="together-note" id="first-status">Loading today’s pairs…</p>
+      <div class="quick-intro" id="first-intro" hidden>
+        <p class="quick-intro-copy"><i class="icon" data-lucide="timer" aria-hidden="true"></i>The pairs show when you tap Start and the clock starts with them. One tap per pair, no going back.</p>
+        <button class="btn btn-primary quick-start" id="first-start" type="button"><i class="icon" data-lucide="play" aria-hidden="true"></i> Start</button>
+      </div>
+      <div class="first-play" id="first-play" hidden>
+        <p class="quick-clock"><i class="icon" data-lucide="timer" aria-hidden="true"></i><b id="first-clock">0.0</b> s</p>
+        <p class="match-count" id="first-count"></p>
+        <p class="match-prompt">Which came first?</p>
+        <div class="match-cards first-cards" id="first-cards" role="group" aria-label="Which came first?">
+          <button class="match-card" type="button" data-pick="0"><span class="match-card-art"><i class="icon" data-lucide="history" aria-hidden="true"></i></span><span class="match-card-label"></span></button>
+          <span class="match-or" aria-hidden="true">or</span>
+          <button class="match-card" type="button" data-pick="1"><span class="match-card-art"><i class="icon" data-lucide="history" aria-hidden="true"></i></span><span class="match-card-label"></span></button>
+        </div>
+      </div>
+      <div class="quick-result" id="first-result" aria-live="polite" hidden></div>
+      <p class="error" id="first-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="first-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="first-stats" hidden></dl>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>
