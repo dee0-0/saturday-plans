@@ -162,6 +162,7 @@
   function begin(resumeMs = 0) {
     playing = true;
     startedAt = performance.now() - resumeMs;
+    clockEl.textContent = (Math.max(0, resumeMs) / 1000).toFixed(1);
     const words = data.words || [];
     const draft = readDraft();
     // The board as I left it (shuffled or not), if this page was reloaded mid-round.

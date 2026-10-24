@@ -154,6 +154,7 @@
   function begin(resumeMs = 0) {
     playing = true;
     startedAt = performance.now() - resumeMs;
+    clockEl.textContent = (Math.max(0, resumeMs) / 1000).toFixed(1);
     order = readDraft() || Array.from({ length: count() }, (_, index) => index);
     const puzzle = data.puzzle || {};
     ruleEl.textContent = puzzle.rule || "";

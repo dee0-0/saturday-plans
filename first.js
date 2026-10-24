@@ -110,6 +110,7 @@
   function begin(resumeMs = 0) {
     playing = true;
     startedAt = performance.now() - resumeMs;
+    clockEl.textContent = (Math.max(0, resumeMs) / 1000).toFixed(1);
     picks = readDraft().slice(0, count());
     introEl.hidden = true;
     resultEl.hidden = true;

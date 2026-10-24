@@ -180,7 +180,7 @@
 
 @media (max-width: 360px) {
   .connect-grid { gap: 5px; }
-  .connect-word { min-height: 56px; padding: 5px 3px; border-radius: 10px; font-size: 13px; }
+  .connect-word { min-height: 56px; padding: 5px 2px; border-radius: 10px; font-size: 13px; }
   .connect-group { min-height: 52px; padding: 7px 10px; }
   .connect-group strong, .connect-group span { font-size: 12px; }
   .connect-action { padding-right: 6px; padding-left: 6px; }
