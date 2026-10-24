@@ -70,8 +70,15 @@
 .connect-action { min-width: 0; margin: 0; padding-right: 8px; padding-left: 8px; justify-content: center; }
 .connect-action:disabled { opacity: .45; cursor: not-allowed; }
 
-.connect-patterns { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin: 14px 0 0; }
-.connect-pattern { display: grid; justify-items: center; gap: 6px; margin: 0; }
+.connect-versus { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0 0 10px; }
+.connect-side { display: grid; align-content: start; gap: 1px; min-width: 0; padding: 9px 10px; border-radius: 14px; background: #f6eef2; color: var(--muted); font-size: 12px; font-weight: 700; line-height: 1.35; }
+.connect-side strong { display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 2px; color: var(--ink); font-size: 14px; font-weight: 800; overflow-wrap: anywhere; }
+.connect-side span { font-variant-numeric: tabular-nums; }
+.connect-side.is-win { background: #fff; box-shadow: 0 0 0 1px #f2b8cc; color: var(--rose-deep); }
+.connect-side .icon, .connect-side .lucide { width: 15px; height: 15px; flex: 0 0 auto; color: #d39a2c; }
+
+.connect-patterns { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: center; gap: 18px; margin: 14px 0 0; }
+.connect-pattern { display: grid; align-content: start; justify-items: center; gap: 6px; margin: 0; }
 .connect-pattern figcaption { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; overflow-wrap: anywhere; }
 .connect-pattern-rows { display: grid; gap: 4px; }
 .connect-pattern-rows span { display: flex; gap: 4px; }

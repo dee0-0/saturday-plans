@@ -54,7 +54,7 @@
   const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const iconHtml = (name) => `<i class="icon" data-lucide="${name}" aria-hidden="true"></i>`;
   const games = () => window.DateGames || null;
-  const seconds = (ms) => `${(Math.max(0, ms) / 1000).toFixed(1)} s`;
+  const seconds = (ms) => `${(Math.max(0, ms) / 1000).toFixed(1)}\u00a0s`;
   const count = () => data?.count || 5;
   const labelOf = (at) => data?.puzzle?.items?.[at] || "";
 
@@ -316,7 +316,7 @@
     if (!stats?.daysPlayed) return "";
     return `<div class="match-stat"><dt>Wins</dt><dd><strong>${Number(stats.wins?.[me()]) || 0} : ${Number(stats.wins?.[other()]) || 0}</strong><small>you : ${escape(nameOf(other()))}</small></dd></div>
       <div class="match-stat"><dt>Perfect</dt><dd><strong>${Number(stats.perfect?.[me()]) || 0} : ${Number(stats.perfect?.[other()]) || 0}</strong><small>all 5 in place</small></dd></div>
-      <div class="match-stat"><dt>Played</dt><dd><strong>${Number(stats.daysPlayed) || 0}</strong><small>days together</small></dd></div>`;
+      <div class="match-stat"><dt>Played</dt><dd><strong>${Number(stats.daysPlayed) || 0}</strong><small>${Number(stats.daysPlayed) === 1 ? "day" : "days"} together</small></dd></div>`;
   }
 
   function put(element, key, html) {

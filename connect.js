@@ -56,7 +56,7 @@
   const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const iconHtml = (name) => `<i class="icon" data-lucide="${name}" aria-hidden="true"></i>`;
   const games = () => window.DateGames || null;
-  const seconds = (ms) => `${(Math.max(0, ms) / 1000).toFixed(1)} s`;
+  const seconds = (ms) => `${(Math.max(0, ms) / 1000).toFixed(1)}\u00a0s`;
   const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
   const fold = (word) => String(word ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const keyOf = (words) => words.map(fold).sort().join("|");
@@ -320,8 +320,14 @@
       </figure>`;
   }
 
-  function line(round) {
-    return `${round.solved}/4 · ${plural(round.mistakes, "mistake")} · ${seconds(round.ms)}`;
+  // One side of the score: groups, mistakes and time, stacked so it fits a small phone.
+  function sideHtml(who, round, win) {
+    return `<div class="connect-side${win ? " is-win" : ""}">
+        <strong>${who}${win ? iconHtml("crown") : ""}</strong>
+        <span>${round.solved} of 4 groups</span>
+        <span>${round.mistakes ? plural(round.mistakes, "mistake") : "no mistakes"}</span>
+        <span>${seconds(round.ms)}</span>
+      </div>`;
   }
 
   function resultHtml() {
@@ -332,14 +338,14 @@
     const groups = (data.groups || []).map((group) => groupHtml(group, foundLevels.has(group.level) ? "" : " is-missed")).join("");
     let head;
     if (!res) {
-      const title = mine.solved === 4 ? `All 4 groups, ${plural(mine.mistakes, "mistake")}` : `${mine.solved} of 4 groups`;
+      const title = mine.solved === 4 ? "All 4 groups" : `${mine.solved} of 4 groups`;
       head = `<div class="match-waiting"><span class="match-waiting-icon">${iconHtml("hourglass")}</span>
           <div><p class="match-waiting-title">${escape(title)} in ${seconds(mine.ms)}</p>
-          <p class="match-waiting-copy">Waiting for ${them} to play. Shh, no spoilers!</p></div></div>`;
+          <p class="match-waiting-copy">${mine.mistakes ? `${plural(mine.mistakes, "mistake")}.` : "No mistakes!"} Waiting for ${them} to play. Shh, no spoilers!</p></div></div>`;
     } else {
       const message = res.winner === "tie" ? "A perfect tie!" : res.winner === me() ? "You won today!" : `${them} won today!`;
       head = `<div class="match-score${mine.perfect ? " is-perfect" : ""}">
-          <p class="quick-versus"><span class="${res.winner === me() ? "is-win" : ""}">${iconHtml("layout-grid")}You ${line(mine)}</span><span class="${res.winner === other() ? "is-win" : ""}">${iconHtml("layout-grid")}${them} ${line(data.theirs)}</span></p>
+          <div class="connect-versus">${sideHtml("You", mine, res.winner === me())}${sideHtml(them, data.theirs, res.winner === other())}</div>
           <p class="match-score-msg">${escape(message)}</p></div>`;
     }
     const patterns = `<div class="connect-patterns">${patternHtml(mine, "You")}${patternHtml(data.theirs, nameOf(other()))}</div>`;
@@ -350,7 +356,7 @@
     if (!stats?.daysPlayed) return "";
     return `<div class="match-stat"><dt>Wins</dt><dd><strong>${Number(stats.wins?.[me()]) || 0} : ${Number(stats.wins?.[other()]) || 0}</strong><small>you : ${escape(nameOf(other()))}</small></dd></div>
       <div class="match-stat"><dt>Perfect</dt><dd><strong>${Number(stats.perfect?.[me()]) || 0} : ${Number(stats.perfect?.[other()]) || 0}</strong><small>all 4, no mistakes</small></dd></div>
-      <div class="match-stat"><dt>Played</dt><dd><strong>${Number(stats.daysPlayed) || 0}</strong><small>days together</small></dd></div>`;
+      <div class="match-stat"><dt>Played</dt><dd><strong>${Number(stats.daysPlayed) || 0}</strong><small>${Number(stats.daysPlayed) === 1 ? "day" : "days"} together</small></dd></div>`;
   }
 
   function put(element, key, html) {

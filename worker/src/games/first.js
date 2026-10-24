@@ -595,7 +595,7 @@ export async function summary(ctx) {
     line,
     board: [
       { label: "Which came first wins", her: stats.wins.her, sender: stats.wins.sender },
-      { label: "Perfect days", her: stats.perfect.her, sender: stats.perfect.sender }
+      { label: "Which came first 5/5", her: stats.perfect.her, sender: stats.perfect.sender }
     ]
   };
 }
