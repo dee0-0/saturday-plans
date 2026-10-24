@@ -30,21 +30,24 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 <link rel="preload" as="image" href="assets/letter-bg-mobile.jpg" media="(max-aspect-ratio: 1/1)">
 <link rel="preload" as="image" href="assets/letter-bg-desktop.jpg" media="(min-aspect-ratio: 1/1)">
-<link rel="stylesheet" href="style.css?v=letter-22">
-<link rel="stylesheet" href="extras.css?v=letter-22">
-<link rel="stylesheet" href="journal.css?v=letter-22">
-<link rel="stylesheet" href="planner.css?v=letter-22">
-<link rel="stylesheet" href="activity.css?v=letter-22">
-<link rel="stylesheet" href="movies.css?v=letter-22">
-<link rel="stylesheet" href="together.css?v=letter-22">
-<link rel="stylesheet" href="games.css?v=letter-22">
-<link rel="stylesheet" href="match.css?v=letter-22">
-<link rel="stylesheet" href="duel.css?v=letter-22">
-<link rel="stylesheet" href="quick.css?v=letter-22">
-<link rel="stylesheet" href="hunt.css?v=letter-22">
-<link rel="stylesheet" href="wordle.css?v=letter-22">
-<link rel="stylesheet" href="doodle.css?v=letter-22">
-<link rel="stylesheet" href="rewards.css?v=letter-22">
+<link rel="stylesheet" href="style.css?v=letter-23">
+<link rel="stylesheet" href="extras.css?v=letter-23">
+<link rel="stylesheet" href="journal.css?v=letter-23">
+<link rel="stylesheet" href="planner.css?v=letter-23">
+<link rel="stylesheet" href="activity.css?v=letter-23">
+<link rel="stylesheet" href="movies.css?v=letter-23">
+<link rel="stylesheet" href="together.css?v=letter-23">
+<link rel="stylesheet" href="games.css?v=letter-23">
+<link rel="stylesheet" href="match.css?v=letter-23">
+<link rel="stylesheet" href="duel.css?v=letter-23">
+<link rel="stylesheet" href="quick.css?v=letter-23">
+<link rel="stylesheet" href="hunt.css?v=letter-23">
+<link rel="stylesheet" href="puzzles.css?v=letter-23">
+<link rel="stylesheet" href="arcade.css?v=letter-23">
+<link rel="stylesheet" href="pin.css?v=letter-23">
+<link rel="stylesheet" href="wordle.css?v=letter-23">
+<link rel="stylesheet" href="doodle.css?v=letter-23">
+<link rel="stylesheet" href="rewards.css?v=letter-23">
 <script>document.documentElement.classList.add("intro-pending");setTimeout(function(){document.documentElement.classList.remove("intro-pending");},3000);</script>
 </head>
 <body class="is-envelope-landing">
@@ -838,6 +841,12 @@
               <li><i class="icon" data-lucide="zap" aria-hidden="true"></i><span><strong>Speed round</strong><small>Play it. Faster: +2, 7 or more the same: +1 each</small></span><b>+1</b></li>
               <li><i class="icon" data-lucide="tag" aria-hidden="true"></i><span><strong>Price is right</strong><small>Play it. Win the day: +2, each spot-on guess: +1</small></span><b>+1</b></li>
               <li><i class="icon" data-lucide="shapes" aria-hidden="true"></i><span><strong>Odd one out</strong><small>Play it. Win the day: +2, all 3 right: +1</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="layout-grid" aria-hidden="true"></i><span><strong>Connections</strong><small>Play it. Win the day: +2, all 4 groups with no mistakes: +1</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="arrow-down-up" aria-hidden="true"></i><span><strong>Sort it</strong><small>Play it. Win the day: +2, all 5 in the right place: +1</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="history" aria-hidden="true"></i><span><strong>Which came first?</strong><small>Play it. Win the day: +2, all 5 right: +1</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="timer" aria-hidden="true"></i><span><strong>Stop the clock</strong><small>Play it. Closer best try: +2, within 0.05 s: +1</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="circle-dot" aria-hidden="true"></i><span><strong>How many?</strong><small>Play it. Closer guess: +2, exact: +2, within 10%: +1</small></span><b>+1</b></li>
+              <li><i class="icon" data-lucide="map-pin" aria-hidden="true"></i><span><strong>Map pin</strong><small>Play it. Win the day: +2, each pin within 10 km: +1</small></span><b>+1</b></li>
               <li><i class="icon" data-lucide="grid-3x3" aria-hidden="true"></i><span><strong>Wordle for two</strong><small>Solve it. Fewer tries: +2 (a tie: +1 each)</small></span><b>+1</b></li>
               <li><i class="icon" data-lucide="brush" aria-hidden="true"></i><span><strong>Daily doodle</strong><small>Draw today’s word</small></span><b>+1</b></li>
               <li><i class="icon" data-lucide="shapes" aria-hidden="true"></i><span><strong>Icon story</strong><small>Guess one right. The storyteller gets 1</small></span><b>+2</b></li>
@@ -1022,6 +1031,184 @@
       </div>
     </section>
     <!-- ===== END SECRET HUNT SEASON 2 ===== -->
+
+    <!-- ===== CONNECTIONS (connect.js, puzzles.css) ===== -->
+    <section class="step" data-step="connect">
+      <p class="eyebrow">Connections</p>
+      <h2>Find the four groups</h2>
+      <p class="match-lede" id="connect-lede">Sixteen words, four hidden groups of four. Fewest mistakes wins.</p>
+      <p class="together-note" id="connect-status">Loading today’s puzzle…</p>
+      <div class="quick-intro" id="connect-intro" hidden>
+        <p class="quick-intro-copy"><i class="icon" data-lucide="timer" aria-hidden="true"></i>The words show when you tap Start and the clock starts with them. Pick four that belong together. Four mistakes and the round is over.</p>
+        <button class="btn btn-primary quick-start" id="connect-start" type="button"><i class="icon" data-lucide="play" aria-hidden="true"></i> Start</button>
+      </div>
+      <div class="connect-play" id="connect-play" hidden>
+        <div class="connect-bar">
+          <p class="quick-clock"><i class="icon" data-lucide="timer" aria-hidden="true"></i><b id="connect-clock">0.0</b> s</p>
+          <p class="connect-mistakes" id="connect-mistakes"></p>
+        </div>
+        <ol class="connect-found" id="connect-found" aria-label="Groups you found"></ol>
+        <div class="connect-grid" id="connect-grid" role="group" aria-label="Pick four words that belong together"></div>
+        <p class="connect-toast" id="connect-toast" role="status" aria-live="polite"></p>
+        <div class="connect-actions">
+          <button class="btn btn-secondary connect-action" id="connect-shuffle" type="button"><i class="icon" data-lucide="shuffle" aria-hidden="true"></i> Shuffle</button>
+          <button class="btn btn-secondary connect-action" id="connect-clear" type="button" disabled><i class="icon" data-lucide="eraser" aria-hidden="true"></i> Clear</button>
+          <button class="btn btn-primary connect-action" id="connect-submit" type="button" disabled>Submit</button>
+        </div>
+      </div>
+      <div class="quick-result" id="connect-result" aria-live="polite" hidden></div>
+      <p class="error" id="connect-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="connect-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="connect-stats" hidden></dl>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END CONNECTIONS ===== -->
+
+    <!-- ===== SORT IT (sort.js, puzzles.css) ===== -->
+    <section class="step" data-step="sort">
+      <p class="eyebrow">Sort it</p>
+      <h2>Put them in order</h2>
+      <p class="match-lede" id="sort-lede">Five things, one rule. Put them in the right order, fast.</p>
+      <p class="together-note" id="sort-status">Loading today’s five…</p>
+      <div class="quick-intro" id="sort-intro" hidden>
+        <p class="quick-intro-copy"><i class="icon" data-lucide="timer" aria-hidden="true"></i>The rule and the five things show when you tap Start, and the clock starts with them. Drag them into order, or use the arrows. One try a day.</p>
+        <button class="btn btn-primary quick-start" id="sort-start" type="button"><i class="icon" data-lucide="play" aria-hidden="true"></i> Start</button>
+      </div>
+      <div class="sort-play" id="sort-play" hidden>
+        <p class="quick-clock"><i class="icon" data-lucide="timer" aria-hidden="true"></i><b id="sort-clock">0.0</b> s</p>
+        <p class="sort-rule" id="sort-rule"></p>
+        <p class="sort-about" id="sort-about"></p>
+        <p class="sort-end" id="sort-top"></p>
+        <ol class="sort-list" id="sort-list" aria-describedby="sort-help"></ol>
+        <p class="sort-end" id="sort-bottom"></p>
+        <p class="sort-help" id="sort-help">Drag a row, or move it with the arrows.</p>
+        <button class="btn btn-primary sort-send" id="sort-send" type="button">Lock it in <i class="icon" data-lucide="check" aria-hidden="true"></i></button>
+        <p class="visually-hidden" id="sort-live" aria-live="polite"></p>
+      </div>
+      <div class="quick-result" id="sort-result" aria-live="polite" hidden></div>
+      <p class="error" id="sort-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="sort-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="sort-stats" hidden></dl>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END SORT IT ===== -->
+
+    <!-- ===== WHICH CAME FIRST (first.js, puzzles.css) ===== -->
+    <section class="step" data-step="first">
+      <p class="eyebrow">Which came first?</p>
+      <h2>Older or newer?</h2>
+      <p class="match-lede" id="first-lede">Five pairs. Tap the one that happened first. Fastest right answers win.</p>
+      <p class="together-note" id="first-status">Loading today’s pairs…</p>
+      <div class="quick-intro" id="first-intro" hidden>
+        <p class="quick-intro-copy"><i class="icon" data-lucide="timer" aria-hidden="true"></i>The pairs show when you tap Start and the clock starts with them. One tap per pair, no going back.</p>
+        <button class="btn btn-primary quick-start" id="first-start" type="button"><i class="icon" data-lucide="play" aria-hidden="true"></i> Start</button>
+      </div>
+      <div class="first-play" id="first-play" hidden>
+        <p class="quick-clock"><i class="icon" data-lucide="timer" aria-hidden="true"></i><b id="first-clock">0.0</b> s</p>
+        <p class="match-count" id="first-count"></p>
+        <p class="match-prompt">Which came first?</p>
+        <div class="match-cards first-cards" id="first-cards" role="group" aria-label="Which came first?">
+          <button class="match-card" type="button" data-pick="0"><span class="match-card-art"><i class="icon" data-lucide="history" aria-hidden="true"></i></span><span class="match-card-label"></span></button>
+          <span class="match-or" aria-hidden="true">or</span>
+          <button class="match-card" type="button" data-pick="1"><span class="match-card-art"><i class="icon" data-lucide="history" aria-hidden="true"></i></span><span class="match-card-label"></span></button>
+        </div>
+      </div>
+      <div class="quick-result" id="first-result" aria-live="polite" hidden></div>
+      <p class="error" id="first-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="first-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="first-stats" hidden></dl>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END WHICH CAME FIRST ===== -->
+
+    <!-- ===== STOP THE CLOCK (clock.js, arcade.css) ===== -->
+    <section class="step" data-step="clock">
+      <p class="eyebrow">Stop the clock</p>
+      <h2>Feel the seconds</h2>
+      <p class="match-lede" id="clock-lede">Stop it at exactly the target. The digits vanish after 1.5 seconds. Best of 3 tries.</p>
+      <p class="together-note" id="clock-status">Loading today’s clock…</p>
+      <div class="clock-game" id="clock-game" hidden>
+        <p class="clock-target" id="clock-target"></p>
+        <button class="clock-face" id="clock-face" type="button" aria-describedby="clock-target">
+          <span class="clock-ring" aria-hidden="true"></span>
+          <span class="clock-digits" id="clock-digits" aria-hidden="true">0.00</span>
+          <span class="clock-hint" id="clock-hint">Tap to start</span>
+        </button>
+        <p class="clock-note" id="clock-note" aria-live="polite"></p>
+        <ol class="clock-tries" id="clock-tries" aria-label="Your tries"></ol>
+      </div>
+      <div class="quick-result" id="clock-result" aria-live="polite" hidden></div>
+      <p class="error" id="clock-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="clock-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="clock-stats" hidden></dl>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END STOP THE CLOCK ===== -->
+
+    <!-- ===== HOW MANY (count.js, arcade.css) ===== -->
+    <section class="step" data-step="count">
+      <p class="eyebrow">How many?</p>
+      <h2>Quick, count them!</h2>
+      <p class="match-lede" id="count-lede">A picture shows for 5 seconds. Guess how many. Closest guess wins.</p>
+      <p class="together-note" id="count-status">Loading today’s picture…</p>
+      <div class="quick-intro" id="count-intro" hidden>
+        <p class="count-today" id="count-today"></p>
+        <p class="quick-intro-copy"><i class="icon" data-lucide="eye" aria-hidden="true"></i>The picture shows when you tap Start and is gone after 5 seconds. One look, one guess.</p>
+        <button class="btn btn-primary quick-start" id="count-start" type="button"><i class="icon" data-lucide="play" aria-hidden="true"></i> Start</button>
+      </div>
+      <div class="quick-timer count-timer" id="count-timer" hidden><span class="quick-timer-bar" id="count-timer-bar"></span><b id="count-timer-text">5.0</b></div>
+      <div class="quick-result" id="count-result" aria-live="polite" hidden></div>
+      <div class="count-frame" id="count-frame" hidden>
+        <canvas class="count-canvas" id="count-canvas" role="img" aria-label="Today’s picture"></canvas>
+        <p class="count-tally" id="count-tally" hidden></p>
+      </div>
+      <form class="count-form" id="count-form" novalidate hidden>
+        <p class="count-gone"><i class="icon" data-lucide="eye-off" aria-hidden="true"></i> Time’s up</p>
+        <label class="count-question" id="count-question" for="count-guess">How many were there?</label>
+        <input class="count-input" id="count-guess" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="send" maxlength="4" placeholder="0">
+        <button class="btn btn-primary count-send" id="count-send" type="submit" disabled>Send my guess <i class="icon" data-lucide="send" aria-hidden="true"></i></button>
+      </form>
+      <p class="error" id="count-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="count-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="count-stats" hidden></dl>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END HOW MANY ===== -->
+
+    <!-- ===== MAP PIN (pin.js, pin.css; result looks from match.css + quick.css) ===== -->
+    <section class="step" data-step="pin">
+      <p class="eyebrow">Map pin</p>
+      <h2>Where in Switzerland?</h2>
+      <p class="match-lede" id="pin-lede">Three Swiss places a day: tap the map where each one is. The closer pin wins the place, and more places wins the day.</p>
+      <p class="together-note" id="pin-status">Loading today’s places…</p>
+      <div class="pin-head" id="pin-head" aria-live="polite" hidden></div>
+      <div class="pin-prompt" id="pin-prompt" aria-live="polite" hidden></div>
+      <div class="pin-board" id="pin-board" hidden>
+        <div class="pin-map" id="pin-map" aria-label="Map of Switzerland"></div>
+        <p class="pin-map-note" id="pin-map-note" hidden></p>
+      </div>
+      <p class="pin-legend" id="pin-legend" hidden></p>
+      <div class="pin-reveal" id="pin-reveal" aria-live="polite" hidden></div>
+      <button class="btn btn-primary pin-action" id="pin-action" type="button" hidden disabled></button>
+      <ol class="pin-rows" id="pin-rows" aria-label="Today’s places" hidden></ol>
+      <p class="error" id="pin-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="pin-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="pin-stats" hidden></dl>
+      <div class="nav">
+        <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
+      </div>
+    </section>
+    <!-- ===== END MAP PIN ===== -->
 
     <!-- ===== WORDLE (wordle.js, wordle-words.js, wordle.css) ===== -->
     <section class="step" data-step="wordle">
@@ -1230,37 +1417,43 @@
   <footer class="page-note"><span>MADE WITH INTENTION</span><span class="page-note-dot"></span><span id="footer-name">FOR ℬ𝓁ℴ𝓃𝒹𝒾ℯ🥐</span></footer>
 </div>
 
-<script src="config.js?v=letter-22"></script>
+<script src="config.js?v=letter-23"></script>
 <script src="https://unpkg.com/lucide@1.55.0/dist/umd/lucide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Observer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-<script src="music.js?v=letter-22"></script>
-<script src="effects.js?v=letter-22"></script>
-<script src="ask.js?v=letter-22"></script>
-<script src="secrets.js?v=letter-22"></script>
-<script src="extras.js?v=letter-22"></script>
-<script src="coupons.js?v=letter-22"></script>
-<script src="media.js?v=letter-22"></script>
-<script src="activity.js?v=letter-22"></script>
-<script src="journal.js?v=letter-22"></script>
-<script src="outfits.js?v=letter-22"></script>
-<script src="snacks.js?v=letter-22"></script>
-<script src="movies.js?v=letter-22"></script>
-<script src="ideas.js?v=letter-22"></script>
-<script src="question.js?v=letter-22"></script>
-<script src="games.js?v=letter-22"></script>
-<script src="match.js?v=letter-22"></script>
-<script src="duel.js?v=letter-22"></script>
-<script src="speed.js?v=letter-22"></script>
-<script src="price.js?v=letter-22"></script>
-<script src="odd.js?v=letter-22"></script>
-<script src="hunt.js?v=letter-22"></script>
-<script src="wordle.js?v=letter-22"></script>
-<script src="doodle.js?v=letter-22"></script>
-<script src="icons.js?v=letter-22"></script>
-<script src="challenges.js?v=letter-22"></script>
-<script src="shop.js?v=letter-22"></script>
-<script src="app.js?v=letter-22"></script>
+<script src="music.js?v=letter-23"></script>
+<script src="effects.js?v=letter-23"></script>
+<script src="ask.js?v=letter-23"></script>
+<script src="secrets.js?v=letter-23"></script>
+<script src="extras.js?v=letter-23"></script>
+<script src="coupons.js?v=letter-23"></script>
+<script src="media.js?v=letter-23"></script>
+<script src="activity.js?v=letter-23"></script>
+<script src="journal.js?v=letter-23"></script>
+<script src="outfits.js?v=letter-23"></script>
+<script src="snacks.js?v=letter-23"></script>
+<script src="movies.js?v=letter-23"></script>
+<script src="ideas.js?v=letter-23"></script>
+<script src="question.js?v=letter-23"></script>
+<script src="games.js?v=letter-23"></script>
+<script src="match.js?v=letter-23"></script>
+<script src="duel.js?v=letter-23"></script>
+<script src="speed.js?v=letter-23"></script>
+<script src="price.js?v=letter-23"></script>
+<script src="odd.js?v=letter-23"></script>
+<script src="hunt.js?v=letter-23"></script>
+<script src="connect.js?v=letter-23"></script>
+<script src="sort.js?v=letter-23"></script>
+<script src="first.js?v=letter-23"></script>
+<script src="clock.js?v=letter-23"></script>
+<script src="count.js?v=letter-23"></script>
+<script src="pin.js?v=letter-23"></script>
+<script src="wordle.js?v=letter-23"></script>
+<script src="doodle.js?v=letter-23"></script>
+<script src="icons.js?v=letter-23"></script>
+<script src="challenges.js?v=letter-23"></script>
+<script src="shop.js?v=letter-23"></script>
+<script src="app.js?v=letter-23"></script>
 </body>
 </html>

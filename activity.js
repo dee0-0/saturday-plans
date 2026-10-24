@@ -21,7 +21,7 @@
   const SHOWN = 50;
   const KEPT = 100;
   // Pages an activity can open (the ones the "goto" buttons can reach).
-  const STEPS = ["planned", "coupons", "game", "journal", "outfits", "snacks", "movies", "ideas", "question", "games", "match", "wordle", "doodle", "icons", "challenges", "shop", "duel", "speed", "price", "odd", "hunt"];
+  const STEPS = ["planned", "coupons", "game", "journal", "outfits", "snacks", "movies", "ideas", "question", "games", "match", "wordle", "doodle", "icons", "challenges", "shop", "duel", "speed", "price", "odd", "hunt", "connect", "sort", "first", "clock", "count", "pin"];
   const KIND = /^[a-z.]{1,40}$/;
   const ICON = /^[a-z0-9-]{1,40}$/;
   const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;

@@ -1,0 +1,122 @@
+/* Map pin (pin.js): the place card, the Leaflet map with our pins, the distance after each
+   place and the day's result. Scores, waiting, chips and stats come from match.css + quick.css.
+   Leaflet's own stylesheet loads later, so overrides of its controls use `.pin-map.leaflet-container`. */
+
+/* ---------- The place to find ---------- */
+.pin-prompt { margin: 0 0 12px; padding: 14px 14px 13px; border: 1px solid #f0dde5; border-radius: 20px; background: #fff; box-shadow: 0 8px 22px rgba(120,40,70,.07); }
+.pin-prompt .match-progress { margin-bottom: 12px; }
+.pin-name { display: flex; align-items: center; gap: 12px; margin: 0; }
+.pin-kind { display: grid; width: 46px; height: 46px; flex: 0 0 auto; place-items: center; border-radius: 15px; background: #fff0f5; color: var(--rose-deep); }
+.pin-kind .icon, .pin-kind .lucide { width: 23px; height: 23px; }
+.pin-name-copy { display: grid; gap: 2px; min-width: 0; }
+.pin-name-copy small { color: var(--rose-deep); font-size: 10px; font-weight: 800; letter-spacing: .12em; line-height: 1.3; text-transform: uppercase; }
+.pin-name-copy strong { color: var(--ink); font-size: 23px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; overflow-wrap: anywhere; }
+.pin-hint { display: flex; align-items: flex-start; gap: 7px; margin: 11px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.pin-hint .icon, .pin-hint .lucide { width: 16px; height: 16px; margin-top: 1px; color: var(--rose); }
+.pin-hint.is-set { color: var(--rose-deep); font-weight: 700; }
+
+/* ---------- The map ---------- */
+.pin-board { position: relative; overflow: hidden; border: 1px solid #ecd8e0; border-radius: 20px; background: #e6edf0; box-shadow: 0 8px 22px rgba(120,40,70,.08); isolation: isolate; }
+.pin-map {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  height: clamp(250px, 76vw, 430px);
+  background: #e6edf0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.pin-map.leaflet-container { background: #e6edf0; font-family: inherit; font-size: 12px; }
+.pin-map.leaflet-container.is-placing.leaflet-grab { cursor: crosshair; }
+.pin-map.leaflet-container.is-placing.leaflet-dragging .leaflet-grab { cursor: grabbing; }
+.pin-map.leaflet-container:focus-visible { outline: 3px solid rgba(220,79,131,.45); outline-offset: -3px; }
+.pin-map-note { position: absolute; z-index: 1100; inset: 0; display: grid; margin: 0; padding: 20px; place-items: center; background: rgba(255,250,252,.88); color: var(--muted); font-size: 13px; font-weight: 700; line-height: 1.5; text-align: center; }
+
+/* Leaflet's controls in our look, with bigger tap targets. */
+.pin-map.leaflet-container .leaflet-bar { overflow: hidden; border: 0; border-radius: 14px; box-shadow: 0 4px 14px rgba(70,30,50,.18); }
+.pin-map.leaflet-container .leaflet-bar a { width: 40px; height: 40px; border-bottom-color: #f2e4ea; background: rgba(255,255,255,.96); color: var(--rose-deep); font: 700 22px/40px "Manrope", system-ui, sans-serif; }
+.pin-map.leaflet-container .leaflet-bar a:hover { background: #fff3f7; }
+.pin-map.leaflet-container .leaflet-bar a.leaflet-disabled { color: #cdbcc4; background: rgba(255,255,255,.9); }
+.pin-map.leaflet-container .leaflet-control-zoom { margin: 10px 10px 0 0; }
+.pin-map.leaflet-container .leaflet-control-attribution { padding: 1px 7px; border-top-left-radius: 9px; background: rgba(255,255,255,.82); color: #615a64; font-size: 9px; line-height: 1.5; }
+.pin-map.leaflet-container .leaflet-control-attribution a { color: var(--rose-deep); }
+
+/* Pins and the real spot. */
+.pin-icon { border: 0; background: none; }
+.pin-marker { display: block; width: 30px; height: 40px; filter: drop-shadow(0 3px 3px rgba(60,20,40,.35)); transform-origin: 50% 100%; }
+.pin-marker svg { display: block; width: 100%; height: 100%; }
+.pin-marker path { fill: var(--rose); stroke: #fff; stroke-width: 2; }
+.pin-marker circle { fill: #fff; }
+.pin-marker.is-theirs path { fill: #7c5cc4; }
+.pin-marker.is-dropped { animation: pin-drop 340ms cubic-bezier(.2,.8,.25,1.3) both; }
+@keyframes pin-drop { from { opacity: .3; transform: translateY(-16px) scale(.9); } to { opacity: 1; transform: none; } }
+.pin-marker.is-real { display: grid; width: 30px; height: 30px; place-items: center; border: 3px solid #fff; border-radius: 50%; background: #2c7a51; box-shadow: 0 0 0 3px rgba(44,122,81,.28), 0 3px 8px rgba(0,0,0,.3); filter: none; color: #fff; font-size: 13px; font-weight: 800; line-height: 1; }
+.pin-marker.is-real span:empty::before { display: block; width: 8px; height: 8px; border-radius: 50%; background: #fff; content: ""; }
+.pin-map.leaflet-container .leaflet-tooltip.pin-km { padding: 3px 9px; border: 0; border-radius: 99px; background: #fff; box-shadow: 0 2px 10px rgba(70,30,50,.25); color: var(--rose-deep); font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pin-map.leaflet-container .leaflet-tooltip.pin-km::before { display: none; }
+
+.pin-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 9px 4px 0; color: var(--muted); font-size: 11px; font-weight: 700; }
+.pin-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.pin-legend .pin-legend-tip { margin-left: auto; font-style: italic; font-weight: 600; }
+.pin-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--rose); box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(0,0,0,.08); }
+.pin-dot.is-theirs { background: #7c5cc4; }
+.pin-dot.is-real { background: #2c7a51; }
+
+/* ---------- After each place ---------- */
+.pin-reveal { margin: 12px 0 0; padding: 13px 14px; border: 1px solid #f1dbe3; border-radius: 18px; background: #fff7fa; }
+.pin-off { margin: 0; color: var(--ink); font-size: 14px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.pin-off strong { color: var(--rose-deep); font-size: 27px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.pin-off.is-near strong { color: #2c7a51; }
+.pin-bonus { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; color: #2c7a51; font-size: 12px; font-weight: 700; line-height: 1.4; }
+.pin-bonus .icon, .pin-bonus .lucide { width: 15px; height: 15px; fill: currentColor; }
+.pin-reveal .quick-why { margin-top: 9px; font-size: 12.5px; }
+.pin-action { width: 100%; margin: 12px 0 0; }
+
+/* ---------- The day's result ---------- */
+.pin-head { margin: 0 0 12px; }
+.pin-head .match-score-big { font-size: 12px; font-weight: 700; color: var(--muted); }
+.pin-head .match-score-msg { margin-top: 6px; }
+.pin-total { margin: 10px 0 0; color: var(--muted); font-size: 12px; font-weight: 700; line-height: 1.5; text-align: center; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.pin-total .icon, .pin-total .lucide { width: 14px; height: 14px; margin-right: 5px; color: var(--rose); vertical-align: -2px; }
+.pin-rows { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+.pin-row {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid #f0dde5;
+  border-radius: 16px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+.pin-row:focus-visible { outline: 3px solid rgba(220,79,131,.34); outline-offset: 2px; }
+.pin-row.is-focus { border-color: #df6f96; background: #fff6f9; box-shadow: 0 0 0 2px rgba(220,79,131,.14); }
+.pin-row-num { display: grid; width: 26px; height: 26px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #2c7a51; color: #fff; font-size: 12px; font-weight: 800; }
+.pin-row-copy { display: grid; flex: 1; gap: 3px; min-width: 0; }
+.pin-row-copy strong { font-size: 14px; font-weight: 800; line-height: 1.3; overflow-wrap: anywhere; }
+.pin-row-copy small { color: var(--muted); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+.pin-row .price-guesses { margin-top: 5px; }
+
+@media (hover: hover) {
+  .pin-row:hover { border-color: #e5a8bd; }
+}
+@media (max-width: 360px) {
+  .pin-prompt { padding: 12px 12px 11px; }
+  .pin-kind { width: 40px; height: 40px; border-radius: 13px; }
+  .pin-name-copy strong { font-size: 20px; }
+  .pin-off strong { font-size: 24px; }
+  .pin-row { padding: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pin-marker.is-dropped { animation: none; }
+  .pin-row { transition: none; }
+}

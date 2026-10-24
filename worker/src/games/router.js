@@ -9,6 +9,12 @@ import * as speed from "./speed.js";
 import * as price from "./price.js";
 import * as odd from "./odd.js";
 import * as hunt from "./hunt.js";
+import * as connect from "./connect.js";
+import * as sort from "./sort.js";
+import * as first from "./first.js";
+import * as clock from "./clock.js";
+import * as count from "./count.js";
+import * as pin from "./pin.js";
 import * as guess from "./guess.js";
 import * as wordle from "./wordle.js";
 import * as doodle from "./doodle.js";
@@ -17,7 +23,7 @@ import * as challenges from "./challenges.js";
 import * as shop from "./shop.js";
 
 // In the order the games hub lists them.
-export const GAME_MODULES = [match, duel, speed, price, odd, guess, wordle, doodle, icons, challenges, hunt, shop];
+export const GAME_MODULES = [match, duel, speed, price, odd, connect, sort, first, clock, count, pin, guess, wordle, doodle, icons, challenges, hunt, shop];
 const ALL_MODULES = [hub, ...GAME_MODULES];
 export const GAME_ROUTES = ALL_MODULES.flatMap((module) => Object.keys(module.routes || {}));
 
