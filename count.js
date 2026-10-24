@@ -1037,7 +1037,7 @@
       postActivity({
         kind: "count.played",
         text: res
-          ? (res.winner === me() ? "was closer in today’s how many?" : res.winner === "tie" ? "played how many?: a tie" : "played how many?: you were closer")
+          ? (res.winner === me() ? "won today’s how many" : res.winner === "tie" ? "played how many: a tie" : "played how many: you were closer")
           : `guessed ${question}. Your turn!`,
         step: "count",
         icon: "circle-dot",
@@ -1094,7 +1094,7 @@
     const res = data.result;
     const mine = data.mine;
     const noun = escape(data.noun);
-    const offText = (off) => (off === 0 ? "exact!" : `${off} off`);
+    const offText = (off) => (off === 0 ? "" : ` · ${off} off`);
     if (!res) {
       const praise = mine.off === 0 ? "Exactly right. Wow!" : mine.off <= data.n * 0.1 ? "Within 10%. Nice eye!" : `${mine.off} off.`;
       return `<div class="match-waiting"><span class="match-waiting-icon">${iconHtml("hourglass")}</span>
@@ -1105,7 +1105,7 @@
     const badge = (who) => (res.bonus[who] === 2 ? `<em class="count-badge">Exact</em>` : res.bonus[who] === 1 ? `<em class="count-badge">Within 10%</em>` : "");
     return `<div class="match-score${res.bonus[me()] === 2 ? " is-perfect" : ""}">
         <p class="match-score-big"><strong>${res.n}</strong>${noun}</p>
-        <p class="quick-versus"><span class="${res.winner === me() ? "is-win" : ""}">${iconHtml("circle-dot")}You ${mine.guess} · ${offText(res.off[me()])}${badge(me())}</span><span class="${res.winner === other() ? "is-win" : ""}">${iconHtml("circle-dot")}${them} ${data.theirs.guess} · ${offText(res.off[other()])}${badge(other())}</span></p>
+        <p class="quick-versus"><span class="${res.winner === me() ? "is-win" : ""}">${iconHtml("circle-dot")}You ${mine.guess}${offText(res.off[me()])}${badge(me())}</span><span class="${res.winner === other() ? "is-win" : ""}">${iconHtml("circle-dot")}${them} ${data.theirs.guess}${offText(res.off[other()])}${badge(other())}</span></p>
         <p class="match-score-msg">${escape(message)}</p>
       </div>`;
   }
@@ -1115,7 +1115,7 @@
     return `<div class="match-stat"><dt>Wins</dt><dd><strong>${Number(stats.wins?.[me()]) || 0} : ${Number(stats.wins?.[other()]) || 0}</strong><small>you : ${escape(nameOf(other()))}</small></dd></div>
       <div class="match-stat"><dt>Exact</dt><dd><strong>${Number(stats.exact?.[me()]) || 0} : ${Number(stats.exact?.[other()]) || 0}</strong><small>spot-on guesses</small></dd></div>
       <div class="match-stat"><dt>Within 10%</dt><dd><strong>${Number(stats.close?.[me()]) || 0} : ${Number(stats.close?.[other()]) || 0}</strong><small>close guesses</small></dd></div>
-      <div class="match-stat"><dt>Played</dt><dd><strong>${Number(stats.daysPlayed) || 0}</strong><small>days together</small></dd></div>`;
+      <div class="match-stat"><dt>Played</dt><dd><strong>${Number(stats.daysPlayed) || 0}</strong><small>${Number(stats.daysPlayed) === 1 ? "day" : "days"} together</small></dd></div>`;
   }
 
   function put(element, key, html) {

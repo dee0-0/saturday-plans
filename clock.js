@@ -38,6 +38,7 @@
   let data = null;
   let run = null;        // { from } while the stopwatch runs (performance.now() time)
   let pending = null;    // { day, index, ms }: a stopped try on its way to the Worker
+  let stuck = false;     // the last send failed: a tap on the face sends it again
   let lastTry = null;    // { index, ms }: the try just stopped, shown on the face
   let restUntil = 0;
   let holdUntil = 0;
@@ -115,6 +116,10 @@
 
   function press(event) {
     if (!data || data.done) return;
+    if (pending && stuck) {
+      send();
+      return;
+    }
     const at = eventTime(event);
     if (run) {
       if (at - run.from >= MIN_MS) stop(at);
@@ -179,8 +184,10 @@
   async function send() {
     if (!pending) return;
     const attempt = pending;
+    stuck = false;
     showError("");
     retryButton.hidden = true;
+    if (data) drawFace();
     const identity = identitySeq;
     try {
       const result = await app().apiRequest("/games/clock", "POST", { author: me(), day: attempt.day, action: "try", index: attempt.index, ms: attempt.ms });
@@ -214,6 +221,7 @@
         load();
         return;
       }
+      stuck = true;
       showError(error.status ? error.message : "Couldn’t send your try. Check your connection and try again.");
       retryButton.hidden = false;
       render();
@@ -241,13 +249,13 @@
     face.classList.toggle("is-stopped", Boolean(shown));
     face.classList.toggle("is-perfect", Boolean(shown) && Math.abs(shown.ms - data.target) <= 50);
     face.classList.toggle("is-resting", resting() || used >= count());
-    face.setAttribute("aria-disabled", String(Boolean(pending) || used >= count()));
+    face.setAttribute("aria-disabled", String((Boolean(pending) && !stuck) || used >= count()));
     digitsEl.textContent = shown ? secs(shown.ms) : "0.00";
-    if (pending) hintEl.textContent = "Saving…";
+    if (pending) hintEl.textContent = stuck ? "Tap to send again" : "Saving…";
     else if (used >= count()) hintEl.textContent = "All done";
     else if (resting()) hintEl.textContent = "Get ready…";
     else hintEl.textContent = used === 0 ? "Tap to start" : `Tap for try ${used + 1}`;
-    setNote(shown ? `<b>${secs(shown.ms)} s</b> — ${escape(offText(Math.abs(shown.ms - data.target)))}<span>${escape(verdict(shown.ms, data.target))}</span>` : "");
+    setNote(shown ? `<span><b>${secs(shown.ms)} s</b> — ${escape(offText(Math.abs(shown.ms - data.target)))}</span><em>${escape(verdict(shown.ms, data.target))}</em>` : "");
   }
 
   function triesHtml(tries, { pendingMs = null } = {}) {
@@ -300,12 +308,12 @@
   }
 
   function statsHtml(stats) {
-    if (!stats || (!stats.daysPlayed && stats.best?.[me()] === null)) return "";
+    if (!stats?.daysPlayed) return "";
     const best = stats.best?.[me()];
     return `<div class="match-stat"><dt>Wins</dt><dd><strong>${Number(stats.wins?.[me()]) || 0} : ${Number(stats.wins?.[other()]) || 0}</strong><small>you : ${escape(nameOf(other()))}</small></dd></div>
       <div class="match-stat"><dt>Your best ever</dt><dd><strong>${best === null || best === undefined ? "–" : `${(best / 1000).toFixed(best < 10 ? 3 : 2)} s`}</strong><small>off the target</small></dd></div>
       <div class="match-stat"><dt>Perfect stops</dt><dd><strong>${Number(stats.perfect?.[me()]) || 0} : ${Number(stats.perfect?.[other()]) || 0}</strong><small>within 0.05 s</small></dd></div>
-      <div class="match-stat"><dt>Played</dt><dd><strong>${Number(stats.daysPlayed) || 0}</strong><small>days together</small></dd></div>`;
+      <div class="match-stat"><dt>Played</dt><dd><strong>${Number(stats.daysPlayed) || 0}</strong><small>${Number(stats.daysPlayed) === 1 ? "day" : "days"} together</small></dd></div>`;
   }
 
   function put(element, key, html) {
@@ -391,6 +399,7 @@
     loadSeq += 1;
     run = null;
     pending = null;
+    stuck = false;
     lastTry = null;
     holdUntil = 0;
     restUntil = 0;
