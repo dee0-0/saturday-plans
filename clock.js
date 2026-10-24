@@ -30,7 +30,7 @@
   const VISIBLE_MS = 1500;  // the digits show this long, then you're on your own
   const MAX_MS = 30000;
   const MIN_MS = 300;       // a stop this soon is a double tap, not a stop
-  const REST_MS = 650;      // after a stop, a short pause before the next try can start
+  const REST_MS = 600;      // after a stop, a short pause before the next try can start
   const HOLD_MS = 1300;     // the last try stays on the face this long before the result
   const LEDE = "Stop it at exactly the target. The digits vanish after 1.5 seconds. Best of 3 tries.";
   const DRAFT_KEY = new URLSearchParams(window.location.search).has("preview") ? "date-letter-clock-draft-preview" : "date-letter-clock-draft";
@@ -245,6 +245,7 @@
     digitsEl.textContent = shown ? secs(shown.ms) : "0.00";
     if (pending) hintEl.textContent = "Saving…";
     else if (used >= count()) hintEl.textContent = "All done";
+    else if (resting()) hintEl.textContent = "Get ready…";
     else hintEl.textContent = used === 0 ? "Tap to start" : `Tap for try ${used + 1}`;
     setNote(shown ? `<b>${secs(shown.ms)} s</b> — ${escape(offText(Math.abs(shown.ms - data.target)))}<span>${escape(verdict(shown.ms, data.target))}</span>` : "");
   }
