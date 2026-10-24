@@ -32,6 +32,12 @@ A mobile-friendly, one-question-at-a-time date invitation in a soft rose envelop
   - Speed round: 10 this-or-that picks in 15 seconds, no time to think. The pairs only show once you tap Start. Then you see how many you picked the same and who was faster.
   - Price is right: 3 things a day (a croissant in Paris, a flight to Tokyo…). You both guess what they cost in Swiss francs; the closer guess wins each one. Prices are rough real-world prices.
   - Odd one out: 3 puzzles of 4 words where one doesn't fit, the same for both of you. More right answers wins, and the faster one wins a tie.
+  - Connections for two: 16 words in 4 hidden groups of 4, from easy (yellow) to tricky (purple), the same puzzle for both of you. Every guess is checked by the server, and 4 mistakes end the round. More groups wins, then fewer mistakes, then faster.
+  - Sort it: put 5 things in order by a rule ("Oldest first", "Furthest from Bern first"…) by dragging or with the arrows. One point per thing in the right place; more points wins, then faster.
+  - Which came first?: 5 pairs of events a day; tap the one that happened first. More right wins, then faster. Both years show afterwards.
+  - Stop the clock: stop a stopwatch at exactly the day's target (3 to 9 seconds). The digits disappear after 1.5 s, so you have to feel it. Best of 3 tries; the closer best try wins.
+  - How many?: a picture (sweets in a jar, hearts, stars, balloons, sheep, fish…) shows for 5 seconds, then you guess how many things were in it. The closer guess wins; an exact guess earns extra hearts.
+  - Map pin: 3 Swiss places a day (one easy, one medium, one hard). Tap where each one is on a map of Switzerland without labels and see how far off you were. The closer pin wins each place; more places wins the day. The map shows swisstopo aerial photos, or CARTO's light map without labels once a free CARTO key is set as `cartoKey` in `config.js`.
   - Wordle for two: the same five-letter word for both of you each day. You see the other one's guesses only as coloured squares until you're done; fewer tries wins the day.
   - Daily doodle: the same drawing prompt for both of you. Draw it with your finger; both drawings show side by side (with a replay) once you've both finished.
   - Icon story: pick 3 to 5 icons that tell a movie, song or memory; the other one has 3 tries to guess it.
