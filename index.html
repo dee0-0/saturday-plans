@@ -1076,10 +1076,25 @@
     </section>
     <!-- ===== END HOW MANY ===== -->
 
-    <!-- ===== MAP PIN (pin.js, pin.css) ===== -->
+    <!-- ===== MAP PIN (pin.js, pin.css; result looks from match.css + quick.css) ===== -->
     <section class="step" data-step="pin">
       <p class="eyebrow">Map pin</p>
       <h2>Where in Switzerland?</h2>
+      <p class="match-lede" id="pin-lede">Three Swiss places a day: tap the map where each one is. The closer pin wins the place, and more places wins the day.</p>
+      <p class="together-note" id="pin-status">Loading today’s places…</p>
+      <div class="pin-head" id="pin-head" aria-live="polite" hidden></div>
+      <div class="pin-prompt" id="pin-prompt" aria-live="polite" hidden></div>
+      <div class="pin-board" id="pin-board" hidden>
+        <div class="pin-map" id="pin-map" aria-label="Map of Switzerland"></div>
+        <p class="pin-map-note" id="pin-map-note" hidden></p>
+      </div>
+      <p class="pin-legend" id="pin-legend" hidden></p>
+      <div class="pin-reveal" id="pin-reveal" aria-live="polite" hidden></div>
+      <button class="btn btn-primary pin-action" id="pin-action" type="button" hidden disabled></button>
+      <ol class="pin-rows" id="pin-rows" aria-label="Today’s places" hidden></ol>
+      <p class="error" id="pin-error" role="alert" hidden></p>
+      <button class="btn btn-secondary match-retry" id="pin-retry" type="button" hidden><i class="icon" data-lucide="refresh-cw" aria-hidden="true"></i> Try again</button>
+      <dl class="match-stats" id="pin-stats" hidden></dl>
       <div class="nav">
         <button class="btn btn-ghost" data-action="goto" data-target="games" type="button"><i class="icon" data-lucide="arrow-left" aria-hidden="true"></i> Games</button>
       </div>
