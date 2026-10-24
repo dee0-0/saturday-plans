@@ -253,7 +253,7 @@
         maxZoom: MAX_ZOOM,
         detectRetina: true,
         bounds: AREA,
-        attribution: '&copy; <a href="https://www.swisstopo.admin.ch/en/home.html" target="_blank" rel="noopener">swisstopo</a> · border &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+        attribution: '&copy; <a href="https://www.swisstopo.admin.ch/en/home.html" target="_blank" rel="noopener">swisstopo</a> · &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
       }).addTo(map);
     }
     mapEl.classList.toggle("is-photo", !carto);
@@ -429,9 +429,10 @@
     }
     const score = `${res.points[me()]} : ${res.points[other()]}`.replace(/\.5/g, "½");
     const message = res.winner === "tie" ? "A tie!" : res.winner === me() ? "You won today!" : `${them} won today!`;
+    // More places won decides the day; the total distance is only for fun.
     return `<div class="match-score"><p class="match-score-big"><strong>${escape(score)}</strong>places won</p>
-        <p class="quick-versus"><span class="${res.winner === me() ? "is-win" : ""}">${iconHtml("map-pin")}You ${escape(kmText(res.km[me()]))}</span><span class="${res.winner === other() ? "is-win" : ""}">${iconHtml("map-pin")}${them} ${escape(kmText(res.km[other()]))}</span></p>
-        <p class="match-score-msg">${escape(message)}</p></div>`;
+        <p class="match-score-msg">${escape(message)}</p>
+        <p class="pin-total">${iconHtml("ruler")}Off in total: you ${escape(kmText(res.km[me()]))} · ${them} ${escape(kmText(res.km[other()]))}</p></div>`;
   }
 
   function rowsHtml() {
@@ -493,7 +494,8 @@
     const fit = (points, maxZoom) => {
       if (fittedFor === key) return;
       fittedFor = key;
-      map.fitBounds(L.latLngBounds(points), { padding: [44, 44], maxZoom, animate: !reduced() });
+      // Room for the pin heads above their points, the zoom buttons and the credits.
+      map.fitBounds(L.latLngBounds(points), { paddingTopLeft: [34, 52], paddingBottomRight: [62, 40], maxZoom, animate: !reduced() });
     };
     if (mode.startsWith("play")) {
       pending = pending?.index === data.next ? pending : readDraft(data.next);
@@ -565,8 +567,8 @@
     const play = playing();
     ledeEl.hidden = !play || data.mine.pins.length > 0 || reveal !== null;
     ledeEl.textContent = data.theirsDone
-      ? `${nameOf(other())} already played. Your turn! The closer pin wins each place, and more places wins the day.`
-      : "Three Swiss places a day. Tap the map where each one is. The closer pin wins the place, and whoever wins more places wins the day.";
+      ? `${nameOf(other())} already played. Your turn! Closer pin wins each place, more places wins the day.`
+      : "Three Swiss places a day: tap the map where each one is. The closer pin wins the place, and more places wins the day.";
     ledeEl.classList.toggle("is-nudge", Boolean(data.theirsDone));
     boardEl.hidden = false;
     promptEl.hidden = !play;

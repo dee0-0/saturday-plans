@@ -40,7 +40,7 @@
 .pin-map.leaflet-container .leaflet-bar a:hover { background: #fff3f7; }
 .pin-map.leaflet-container .leaflet-bar a.leaflet-disabled { color: #cdbcc4; background: rgba(255,255,255,.9); }
 .pin-map.leaflet-container .leaflet-control-zoom { margin: 10px 10px 0 0; }
-.pin-map.leaflet-container .leaflet-control-attribution { max-width: calc(100% - 12px); padding: 1px 7px; border-top-left-radius: 9px; background: rgba(255,255,255,.82); color: #615a64; font-size: 9px; line-height: 1.5; }
+.pin-map.leaflet-container .leaflet-control-attribution { padding: 1px 7px; border-top-left-radius: 9px; background: rgba(255,255,255,.82); color: #615a64; font-size: 9px; line-height: 1.5; }
 .pin-map.leaflet-container .leaflet-control-attribution a { color: var(--rose-deep); }
 
 /* Pins and the real spot. */
@@ -77,6 +77,9 @@
 /* ---------- The day's result ---------- */
 .pin-head { margin: 0 0 12px; }
 .pin-head .match-score-big { font-size: 12px; font-weight: 700; color: var(--muted); }
+.pin-head .match-score-msg { margin-top: 6px; }
+.pin-total { margin: 10px 0 0; color: var(--muted); font-size: 12px; font-weight: 700; line-height: 1.5; text-align: center; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.pin-total .icon, .pin-total .lucide { width: 14px; height: 14px; margin-right: 5px; color: var(--rose); vertical-align: -2px; }
 .pin-rows { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
 .pin-row {
   display: flex;
