@@ -75,9 +75,9 @@
   let pointer = null;
   let pen = { color: PALETTE[0].color, width: 0, tool: "pen" }; // tool: "pen" or "fill"
   let helper = null;           // the drawing helper's elements (Dee's phone only)
-  let helperBusy = false;      // a traced photo is being drawn onto the pad
+  let helperBusy = false;      // a drawing is on its way or being drawn onto the pad
   let helperFrame = 0;
-  let helperPhoto = null;      // { pixels, url } of the picked photo
+  let helperPhoto = null;      // { media_type, data, url } of the picked photo
   let padBase = null;          // the pad's finished strokes and fills, painted once (fills are slow)
   let padBaked = 0;            // how many of `strokes` are on padBase
   let frame = 0;
@@ -498,37 +498,41 @@
 
 
   /* ------------------------ Drawing helper (Dee only) ------------------------ */
-  // On Dee's phone only (it isn't in the page at all on hers): pick a photo, and the phone
-  // traces it (doodle-trace.js) into outlines and colouring that appear on the pad as if drawn
-  // by a finger. Nothing is sent anywhere; afterwards it's an ordinary drawing (undo, add
-  // lines, send).
-  const TRACE_SIDE = 240;      // the photo is traced at this size (long side, in pixels)
-  const DETAILS = ["Simple", "Normal", "Lots"];
+  // On Dee's phone only (it isn't in the page at all on hers): a few words or a photo go to
+  // the Worker, which asks Claude for a doodle; the strokes then appear on the pad as if
+  // drawn by a finger, and stay an ordinary drawing (undo, add lines, send).
+  const HELPER_MAX_SIDE = 1024;
+  const MODEL_KEY = "date-letter-doodle-helper-model";
+  function savedModel() {
+    try { return localStorage.getItem(MODEL_KEY) === "sonnet" ? "sonnet" : "opus"; } catch { return "opus"; }
+  }
 
   function buildHelper() {
     const wrap = document.createElement("div");
     wrap.className = "doodle-helper";
     wrap.innerHTML = `
       <button class="doodle-helper-toggle" type="button" aria-expanded="false" aria-controls="doodle-helper-panel">
-        <i class="icon" data-lucide="wand-sparkles" aria-hidden="true"></i><span>Trace a photo</span>
+        <i class="icon" data-lucide="wand-sparkles" aria-hidden="true"></i><span>Draw it for me</span>
       </button>
       <div class="doodle-helper-panel" id="doodle-helper-panel" hidden>
+        <label class="doodle-helper-label" for="doodle-helper-text">What should it draw?</label>
+        <textarea class="doodle-helper-text" id="doodle-helper-text" rows="2" maxlength="200"></textarea>
         <div class="doodle-helper-row">
           <label class="doodle-helper-photo">
             <input type="file" accept="image/*" hidden>
-            <i class="icon" data-lucide="image-plus" aria-hidden="true"></i><span>Pick a photo</span>
+            <i class="icon" data-lucide="image-plus" aria-hidden="true"></i><span>Use a photo</span>
           </label>
           <span class="doodle-helper-thumb" hidden>
-            <img alt="The photo to trace">
+            <img alt="The photo to draw">
             <button type="button" aria-label="Remove the photo"><i class="icon" data-lucide="x" aria-hidden="true"></i></button>
           </span>
         </div>
-        <div class="doodle-helper-details" role="radiogroup" aria-label="How many lines">
-          ${DETAILS.map((label, index) => `<button type="button" role="radio" data-detail="${index}" aria-checked="${index === 0}">${label}</button>`).join("")}
+        <div class="doodle-helper-models" role="radiogroup" aria-label="Which Claude draws">
+          <button type="button" role="radio" data-model="opus"><b>Opus</b><small>Best drawings</small></button>
+          <button type="button" role="radio" data-model="sonnet"><b>Sonnet</b><small>About half the cost</small></button>
         </div>
-        <label class="doodle-helper-check"><input type="checkbox" checked> Colour it in</label>
-        <button class="btn btn-primary doodle-helper-go" type="button" disabled><i class="icon" data-lucide="wand-sparkles" aria-hidden="true"></i> <span>Trace it</span></button>
-        <p class="doodle-helper-note">Only on your phone, and the photo stays on it. Photos with one big thing work best (a pet, a cup, a flower). You can still undo or add lines before you send it.</p>
+        <button class="btn btn-primary doodle-helper-go" type="button"><i class="icon" data-lucide="wand-sparkles" aria-hidden="true"></i> <span>Draw it</span></button>
+        <p class="doodle-helper-note">Only on your phone. It draws onto the pad like a finger would; you can still undo or add lines before you send it.</p>
         <p class="error doodle-helper-error" role="alert" hidden></p>
       </div>`;
     const tools = board.querySelector(".doodle-tools");
@@ -537,20 +541,30 @@
       wrap,
       toggle: wrap.querySelector(".doodle-helper-toggle"),
       panel: wrap.querySelector(".doodle-helper-panel"),
+      text: wrap.querySelector(".doodle-helper-text"),
       file: wrap.querySelector('input[type="file"]'),
       thumb: wrap.querySelector(".doodle-helper-thumb"),
       img: wrap.querySelector(".doodle-helper-thumb img"),
       removePhoto: wrap.querySelector(".doodle-helper-thumb button"),
-      details: [...wrap.querySelectorAll("[data-detail]")],
-      colour: wrap.querySelector('.doodle-helper-check input'),
       go: wrap.querySelector(".doodle-helper-go"),
+      goLabel: wrap.querySelector(".doodle-helper-go span"),
       error: wrap.querySelector(".doodle-helper-error"),
-      detail: 0
+      models: [...wrap.querySelectorAll("[data-model]")],
+      model: savedModel(),
+      day: ""
     };
+    const showModel = () => helper.models.forEach((item) => item.setAttribute("aria-checked", String(item.dataset.model === helper.model)));
+    showModel();
+    helper.models.forEach((button) => button.addEventListener("click", () => {
+      helper.model = button.dataset.model;
+      try { localStorage.setItem(MODEL_KEY, helper.model); } catch { /* Only a convenience. */ }
+      showModel();
+    }));
     helper.toggle.addEventListener("click", () => {
       const open = helper.panel.hidden;
       helper.panel.hidden = !open;
       helper.toggle.setAttribute("aria-expanded", String(open));
+      if (open) helper.text.focus({ preventScroll: true });
     });
     helper.file.addEventListener("change", () => {
       const file = helper.file.files?.[0];
@@ -558,11 +572,7 @@
       if (file) pickPhoto(file);
     });
     helper.removePhoto.addEventListener("click", () => setPhoto(null));
-    helper.details.forEach((button) => button.addEventListener("click", () => {
-      helper.detail = Number(button.dataset.detail);
-      helper.details.forEach((item) => item.setAttribute("aria-checked", String(item === button)));
-    }));
-    helper.go.addEventListener("click", traceIt);
+    helper.go.addEventListener("click", askHelper);
     icons(wrap);
   }
 
@@ -576,12 +586,17 @@
   // Shown only on Dee's phone, while today's doodle can still be drawn.
   function syncHelper() {
     const mine = app()?.me?.() === "sender";
-    if (!mine || !window.DoodleTrace) {
+    if (!mine) {
       if (helper) removeHelper();
       return;
     }
     if (!helper) buildHelper();
     helper.wrap.hidden = board.hidden;
+    // Start each day with that day's prompt as the suggestion.
+    if (data && helper.day !== data.day) {
+      helper.day = data.day;
+      helper.text.value = capital(data.prompt || "");
+    }
   }
 
   function helperError(message) {
@@ -595,12 +610,11 @@
     helperPhoto = photo;
     if (!helper) return;
     helper.thumb.hidden = !photo;
-    helper.go.disabled = !photo;
     if (photo) helper.img.src = photo.url;
     else helper.img.removeAttribute("src");
   }
 
-  // Keeps a small copy of the photo's pixels for tracing.
+  // Scales the photo down on the phone (and turns it into a JPEG) before it is sent.
   async function pickPhoto(file) {
     helperError("");
     if (!/^image\//.test(file.type || "image/")) {
@@ -613,40 +627,60 @@
       image.decoding = "async";
       image.src = url;
       await image.decode();
-      const scale = Math.min(1, TRACE_SIDE / Math.max(image.naturalWidth, image.naturalHeight));
-      const small = document.createElement("canvas");
-      small.width = Math.max(1, Math.round(image.naturalWidth * scale));
-      small.height = Math.max(1, Math.round(image.naturalHeight * scale));
-      const context = small.getContext("2d", { willReadFrequently: true });
+      const scale = Math.min(1, HELPER_MAX_SIDE / Math.max(image.naturalWidth, image.naturalHeight));
+      const shrink = document.createElement("canvas");
+      shrink.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      shrink.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = shrink.getContext("2d");
       context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, small.width, small.height);
-      context.drawImage(image, 0, 0, small.width, small.height);
-      setPhoto({ pixels: context.getImageData(0, 0, small.width, small.height), url });
+      context.fillRect(0, 0, shrink.width, shrink.height);
+      context.drawImage(image, 0, 0, shrink.width, shrink.height);
+      const data64 = shrink.toDataURL("image/jpeg", 0.85).split(",")[1] || "";
+      setPhoto({ media_type: "image/jpeg", data: data64, url });
     } catch {
       URL.revokeObjectURL(url);
       helperError("That photo couldn't be opened. Try another one.");
     }
   }
 
-  function traceIt() {
-    if (!helper || helperBusy || !canDraw() || !helperPhoto) return;
-    helperError("");
-    let list;
-    try {
-      list = window.DoodleTrace.trace(helperPhoto.pixels, { detail: helper.detail, colour: helper.colour.checked });
-    } catch {
-      list = [];
-    }
-    if (!list.length) {
-      helperError("Couldn't find any outlines in that photo. Try one with a clear subject.");
+  async function askHelper() {
+    if (!helper || helperBusy || !canDraw()) return;
+    const prompt = helper.text.value.replace(/\s+/g, " ").trim();
+    if (!prompt && !helperPhoto) {
+      helperError("Say what to draw, or pick a photo.");
       return;
     }
-    if (strokes.length && !window.confirm("Replace what's on the pad with the traced photo? Undo brings it back.")) return;
+    if (strokes.length && !window.confirm("Replace what's on the pad with the new drawing? Undo brings it back.")) return;
+    helperError("");
     showError("");
-    if (strokes.length) clearPad();
-    helper.panel.hidden = true;
-    helper.toggle.setAttribute("aria-expanded", "false");
-    drawIn(list);
+    helperBusy = true;
+    helper.go.disabled = true;
+    helper.goLabel.textContent = "Drawing… (about half a minute)";
+    updateTools();
+    const identity = identitySeq;
+    try {
+      const body = { author: me(), prompt, model: helper.model };
+      if (helperPhoto) body.image = { media_type: helperPhoto.media_type, data: helperPhoto.data };
+      const result = await app().apiRequest("/games/doodle/ai", "POST", body);
+      if (identity !== identitySeq || !helper) return;
+      if (!Array.isArray(result.strokes) || !result.strokes.length || data?.mine) throw new Error("The helper drew nothing. Try different words.");
+      if (strokes.length) clearPad();
+      helper.panel.hidden = true;
+      helper.toggle.setAttribute("aria-expanded", "false");
+      drawIn(result.strokes);
+    } catch (error) {
+      if (identity !== identitySeq) return;
+      helperBusy = false;
+      helperError(error.status === 404
+        ? "The drawing helper needs the latest server update first."
+        : error.status ? error.message : (error.message || "Check your connection and try again."));
+      updateTools();
+    } finally {
+      if (helper) {
+        helper.go.disabled = false;
+        helper.goLabel.textContent = "Draw it";
+      }
+    }
   }
 
   // Puts the strokes on the pad bit by bit, like a finger drawing them (all at once with
