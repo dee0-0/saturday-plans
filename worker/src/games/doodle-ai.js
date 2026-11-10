@@ -398,6 +398,41 @@ function fitter(all) {
   return ([px, py]) => [500 + (px - cx) * scale, 500 + (py - cy) * scale];
 }
 
+// Finds the JSON object in a model's text answer: allows a code fence or words around it,
+// // comments and trailing commas. Returns null when there is none.
+export function looseJson(text) {
+  if (text && typeof text === "object") return text;
+  if (typeof text !== "string") return null;
+  const start = text.indexOf("{");
+  if (start < 0) return null;
+  // The matching closing brace (strings respected), or the end when it was cut off.
+  let depth = 0;
+  let inString = false;
+  let end = text.length;
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index];
+    if (inString) {
+      if (char === "\\") index += 1;
+      else if (char === '"') inString = false;
+    } else if (char === '"') inString = true;
+    else if (char === "{" || char === "[") depth += 1;
+    else if (char === "}" || char === "]") {
+      depth -= 1;
+      if (depth === 0) { end = index + 1; break; }
+    }
+  }
+  const body = text.slice(start, end)
+    .replace(/\/\/[^\n]*/g, "")
+    .replace(/,\s*([}\]])/g, "$1");
+  try { return JSON.parse(body); } catch { /* try once more below */ }
+  // Cut off mid-way: keep the shapes that are complete.
+  const cut = body.lastIndexOf("}");
+  if (cut > 0) {
+    try { return JSON.parse(`${body.slice(0, cut + 1)}]}`); } catch { /* give up */ }
+  }
+  return null;
+}
+
 async function askCloudflare(ai, image, text) {
   const messages = [{ role: "system", content: CF_SYSTEM }];
   if (image) {
@@ -408,28 +443,29 @@ async function askCloudflare(ai, image, text) {
   } else {
     messages.push({ role: "user", content: text });
   }
-  let result;
-  try {
-    result = await ai.run(image ? CF_MODEL : CF_TEXT_MODEL, {
-      messages,
-      response_format: { type: "json_schema", json_schema: SHAPES_SCHEMA },
-      max_tokens: 3000,
-      temperature: 0.5
-    });
-  } catch (error) {
-    const message = String(error?.message || error);
-    if (/4006|daily free allocation|neurons/i.test(message)) throw new GameError(429, "Today's free drawings are used up. Try again tomorrow.");
-    if (/JSON Mode couldn't be met/i.test(message)) throw new GameError(502, "The helper got muddled. Try again.");
-    throw new GameError(502, "The helper couldn't draw right now. Try again.");
+  // A free model sometimes answers in a broken way: one more try costs nothing.
+  let lastAnswer = "";
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    let result;
+    try {
+      result = await ai.run(image ? CF_MODEL : CF_TEXT_MODEL, {
+        messages,
+        response_format: { type: "json_schema", json_schema: SHAPES_SCHEMA },
+        max_tokens: 3000,
+        temperature: attempt ? 0.3 : 0.5
+      });
+    } catch (error) {
+      const message = String(error?.message || error);
+      if (/4006|daily free allocation|neurons/i.test(message)) throw new GameError(429, "Today's free drawings are used up. Try again tomorrow.");
+      if (attempt === 0) continue;
+      throw new GameError(502, "The helper couldn't draw right now. Try again.", { detail: message.slice(0, 200) });
+    }
+    const parsed = looseJson(result?.response);
+    const shapes = Array.isArray(parsed?.shapes) ? parsed.shapes : Array.isArray(parsed) ? parsed : null;
+    if (shapes?.length) return handDrawn(shapesToStrokes(shapes));
+    lastAnswer = typeof result?.response === "string" ? result.response : JSON.stringify(result?.response ?? result);
   }
-  let parsed = result?.response;
-  if (typeof parsed === "string") {
-    // Allow a little text or a code fence around the JSON.
-    const start = parsed.indexOf("{");
-    const end = parsed.lastIndexOf("}");
-    try { parsed = JSON.parse(parsed.slice(start, end + 1)); } catch { throw new GameError(502, "The helper's drawing came back broken. Try again."); }
-  }
-  return handDrawn(shapesToStrokes(parsed?.shapes));
+  throw new GameError(502, "The helper's drawing came back broken. Try again.", { detail: String(lastAnswer).slice(0, 300) });
 }
 
 export const routes = {
