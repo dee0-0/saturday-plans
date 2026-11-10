@@ -1394,8 +1394,9 @@ export default {
 };
 
 export class PlanStore {
-  constructor(ctx) {
+  constructor(ctx, env = {}) {
     this.ctx = ctx;
+    this.env = env;
     // Media ids with an upload in progress, so the same file isn't written twice at once.
     this.uploads = new Set();
     // The VAPID keys, once loaded from storage (or made).
@@ -2109,7 +2110,7 @@ export class PlanStore {
 
   // The games (worker/src/games/router.js routes them to their modules).
   async games(request, url, origin) {
-    const { status, body } = await handleGame(this.ctx.storage, request, url);
+    const { status, body } = await handleGame(this.ctx.storage, request, url, this.env);
     return json(body, status, origin);
   }
 }

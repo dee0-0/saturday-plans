@@ -1,0 +1,9 @@
+{
+  "name": "saturday-plans-sync",
+  "private": true,
+  "type": "module",
+  "description": "The Cloudflare Worker behind the date letter.",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.7.0"
+  }
+}

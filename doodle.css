@@ -538,3 +538,80 @@
   .icons-slot.is-new, .icons-sent-item.is-new, .icons-hint { animation: none; }
   .doodle-color, .doodle-day-chevron, .icons-earlier-chevron, .icons-pick { transition: none; }
 }
+
+/* ---------- Daily doodle: the drawing helper (only built on Dee's phone) ---------- */
+.doodle-helper { margin: 12px 0 0; }
+.doodle-helper[hidden] { display: none; }
+.doodle-helper-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px dashed #d9b3c4;
+  border-radius: 14px;
+  background: #fffafc;
+  color: var(--rose-deep);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.doodle-helper-toggle .icon, .doodle-helper-toggle .lucide { width: 17px; height: 17px; }
+.doodle-helper-toggle[aria-expanded="true"] { border-style: solid; background: #fff0f5; }
+.doodle-helper-panel { display: grid; gap: 10px; margin: 10px 0 0; padding: 14px; border: 1px solid #f0dde5; border-radius: 16px; background: #fff; }
+.doodle-helper-panel[hidden] { display: none; }
+.doodle-helper-label { color: var(--ink); font-size: 13px; font-weight: 800; }
+.doodle-helper-text {
+  width: 100%;
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1px solid #ecd3dd;
+  border-radius: 12px;
+  background: #fffafc;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* 16px keeps iPhone Safari from zooming in */
+  resize: vertical;
+}
+.doodle-helper-text:focus { outline: none; border-color: #df6f96; box-shadow: 0 0 0 3px rgba(220,79,131,.15); }
+.doodle-helper-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.doodle-helper-photo {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--rose-border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--rose-deep);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.doodle-helper-photo .icon, .doodle-helper-photo .lucide { width: 16px; height: 16px; }
+.doodle-helper-thumb { position: relative; display: inline-block; width: 48px; height: 48px; }
+.doodle-helper-thumb[hidden] { display: none; }
+.doodle-helper-thumb img { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; box-shadow: 0 0 0 1px #ecd3dd; }
+.doodle-helper-thumb button {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  cursor: pointer;
+}
+.doodle-helper-thumb button .icon, .doodle-helper-thumb button .lucide { width: 13px; height: 13px; }
+.doodle-helper-go { width: 100%; }
+.doodle-helper-go:disabled { cursor: progress; opacity: .75; }
+.doodle-helper-note { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
