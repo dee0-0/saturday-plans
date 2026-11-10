@@ -272,14 +272,15 @@ Example, "a cat": {"shapes":[
 {"kind":"curve","points":[[690,700],[800,640],[820,520],[770,470]],"color":"ink","size":"thick","fill":"none"}]}
 Answer with JSON only, in exactly that format.`;
 
-const num = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback);
+// Numbers from the model, kept in a sane range (a wild value must never blow up the work).
+const num = (value, fallback) => (Number.isFinite(Number(value)) ? Math.max(-3000, Math.min(4000, Number(value))) : fallback);
 const pairs = (list) => (Array.isArray(list) ? list : [])
   .filter((point) => Array.isArray(point) && point.length >= 2 && Number.isFinite(Number(point[0])) && Number.isFinite(Number(point[1])))
-  .map(([x, y]) => [Number(x), Number(y)])
+  .map(([x, y]) => [num(x, 500), num(y, 500)])
   .slice(0, 40);
 
 function ring(cx, cy, rx, ry, from = 0, to = 360) {
-  const span = to - from;
+  const span = Math.max(-360, Math.min(360, to - from));
   const count = Math.max(8, Math.round((48 * Math.abs(span)) / 360));
   return Array.from({ length: count + 1 }, (_, index) => {
     const angle = ((from + (span * index) / count) * Math.PI) / 180;
@@ -433,6 +434,14 @@ export function looseJson(text) {
   return null;
 }
 
+function withTimeout(promise, ms) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("The helper took too long.")), ms); })
+  ]).finally(() => clearTimeout(timer));
+}
+
 async function askCloudflare(ai, image, text) {
   const messages = [{ role: "system", content: CF_SYSTEM }];
   if (image) {
@@ -448,12 +457,12 @@ async function askCloudflare(ai, image, text) {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     let result;
     try {
-      result = await ai.run(image ? CF_MODEL : CF_TEXT_MODEL, {
+      result = await withTimeout(ai.run(image ? CF_MODEL : CF_TEXT_MODEL, {
         messages,
         response_format: { type: "json_schema", json_schema: SHAPES_SCHEMA },
-        max_tokens: 3000,
+        max_tokens: 1600,
         temperature: attempt ? 0.3 : 0.5
-      });
+      }), 45_000);
     } catch (error) {
       const message = String(error?.message || error);
       if (/4006|daily free allocation|neurons/i.test(message)) throw new GameError(429, "Today's free drawings are used up. Try again tomorrow.");
