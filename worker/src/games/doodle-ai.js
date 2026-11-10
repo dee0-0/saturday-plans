@@ -1,13 +1,15 @@
 // The drawing helper for the daily doodle (Dee's phone only): turns a few words or a photo
 // into pen strokes that look like a quick finger drawing. The page draws them onto the pad
-// stroke by stroke; from there it is an ordinary drawing (undo, add lines, send). Uses
-// Claude through the Anthropic SDK, with the Worker secret ANTHROPIC_API_KEY.
+// stroke by stroke; from there it is an ordinary drawing (undo, add lines, send).
+// Two ways to draw: Claude through the Anthropic SDK when the Worker secret ANTHROPIC_API_KEY
+// is set, otherwise Cloudflare's own AI (the free daily allowance of Workers AI, binding AI).
 import Anthropic from "@anthropic-ai/sdk";
 import { GameError, zurichDay } from "./common.js";
 import { PALETTE, MAX_STROKES, MAX_POINTS, CANVAS_SIZE, cleanStrokes } from "./doodle.js";
 
 const KEY = "games:doodle:helper";
 const MODEL = "claude-opus-5-5";
+const CF_MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct"; // reads photos too
 const PER_DAY = 20;
 const MAX_PROMPT = 200;
 const MAX_IMAGE_CHARS = 1_500_000; // base64 of a phone photo scaled down on the page (~1.1 MB)
@@ -149,7 +151,8 @@ async function draw(ctx) {
   if (ctx.method !== "POST") throw new GameError(405, "Method not allowed.");
   const { prompt, image } = parseInput(ctx.body);
   const apiKey = ctx.env?.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new GameError(503, "The drawing helper isn't set up yet.", { setup: true });
+  const ai = ctx.env?.AI;
+  if (!apiKey && !ai) throw new GameError(503, "The drawing helper isn't set up yet.", { setup: true });
 
   // A few drawings a day are plenty (each one costs a little).
   const day = zurichDay();
@@ -161,17 +164,12 @@ async function draw(ctx) {
     return usage.count;
   });
 
-  const content = [];
-  if (image) content.push({ type: "image", source: { type: "base64", media_type: image.mediaType, data: image.data } });
-  content.push({
-    type: "text",
-    text: image
-      ? `Draw a simple doodle of this picture, as a person would draw it from looking at it.${prompt ? ` Notes: ${prompt}` : ""}`
-      : `Draw: ${prompt}`
-  });
+  const text = image
+    ? `Draw a simple doodle of this picture, as a person would draw it from looking at it.${prompt ? ` Notes: ${prompt}` : ""}`
+    : `Draw: ${prompt}`;
 
   try {
-    const strokes = await ask(apiKey, content);
+    const strokes = apiKey ? await ask(apiKey, image, text) : await askCloudflare(ai, image, text);
     return { strokes, left: Math.max(0, PER_DAY - used) };
   } catch (error) {
     // A drawing that failed doesn't count toward today's limit.
@@ -184,7 +182,10 @@ async function draw(ctx) {
   }
 }
 
-async function ask(apiKey, content) {
+async function ask(apiKey, image, text) {
+  const content = [];
+  if (image) content.push({ type: "image", source: { type: "base64", media_type: image.mediaType, data: image.data } });
+  content.push({ type: "text", text });
   const client = new Anthropic({ apiKey, maxRetries: 1, timeout: 150_000 });
   let response;
   try {
@@ -206,9 +207,41 @@ async function ask(apiKey, content) {
   }
   if (response.stop_reason === "refusal") throw new GameError(422, "The helper won't draw that one. Try something else.");
   if (response.stop_reason === "max_tokens") throw new GameError(502, "That got too detailed. Try something simpler.");
-  const text = response.content.filter((block) => block.type === "text").map((block) => block.text).join("");
+  const answer = response.content.filter((block) => block.type === "text").map((block) => block.text).join("");
   let parsed;
-  try { parsed = JSON.parse(text); } catch { throw new GameError(502, "The helper's drawing came back broken. Try again."); }
+  try { parsed = JSON.parse(answer); } catch { throw new GameError(502, "The helper's drawing came back broken. Try again."); }
+  return handDrawn(parsed?.strokes);
+}
+
+// Cloudflare's Workers AI (free up to a daily allowance; past it the call fails until the
+// next day on the free plan). The answer comes back as an object or as JSON text.
+async function askCloudflare(ai, image, text) {
+  const content = [{ type: "text", text }];
+  if (image) content.push({ type: "image_url", image_url: { url: `data:${image.mediaType};base64,${image.data}` } });
+  let result;
+  try {
+    result = await ai.run(CF_MODEL, {
+      messages: [
+        { role: "system", content: `${SYSTEM}\n\nAnswer with JSON only: {"strokes": [{"color": ..., "size": ..., "points": [[x, y], ...]}, ...]}. Colours: ${Object.keys(COLOURS).join(", ")}. Sizes: thin, thick, brush.` },
+        { role: "user", content: image ? content : text }
+      ],
+      response_format: { type: "json_schema", json_schema: SCHEMA },
+      max_tokens: 6000,
+      temperature: 0.4
+    });
+  } catch (error) {
+    const message = String(error?.message || error);
+    if (/4006|daily free allocation|neurons/i.test(message)) throw new GameError(429, "Today's free drawings are used up. Try again tomorrow.");
+    if (/JSON Mode couldn't be met/i.test(message)) throw new GameError(502, "The helper got muddled. Try again.");
+    throw new GameError(502, "The helper couldn't draw right now. Try again.");
+  }
+  let parsed = result?.response;
+  if (typeof parsed === "string") {
+    // Allow a little text or a code fence around the JSON.
+    const start = parsed.indexOf("{");
+    const end = parsed.lastIndexOf("}");
+    try { parsed = JSON.parse(parsed.slice(start, end + 1)); } catch { throw new GameError(502, "The helper's drawing came back broken. Try again."); }
+  }
   return handDrawn(parsed?.strokes);
 }
 
