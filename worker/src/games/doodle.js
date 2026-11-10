@@ -206,27 +206,7 @@ async function doodle(ctx) {
   });
 }
 
-// TEMPORARY (one time): takes back Dee's drawing of 2026-11-10, sent by accident, while she
-// hasn't drawn hers yet. Removed again right after it is used.
-async function takeBack(ctx) {
-  if (ctx.method !== "POST") throw new GameError(405, "Method not allowed.");
-  const day = "2026-11-10";
-  if (ctx.body?.author !== "sender" || ctx.body?.day !== day || ctx.today !== day) throw new GameError(403, "Not available.");
-  return ctx.storage.transaction(async (txn) => {
-    const index = normalizeIndex(await txn.get(INDEX_KEY));
-    const entry = { ...(index.days[day] || {}) };
-    if (!entry.sender) return { removed: false };
-    if (entry.her) throw new GameError(409, "She already drew hers.");
-    delete entry.sender;
-    index.days[day] = entry;
-    index.counts.sender = Math.max(0, index.counts.sender - 1);
-    await txn.delete(strokesKey(day, "sender"));
-    await txn.put(INDEX_KEY, index);
-    return { removed: true };
-  });
-}
-
-export const routes = { "/games/doodle": doodle, "/games/doodle/take-back-once": takeBack };
+export const routes = { "/games/doodle": doodle };
 
 export async function summary(ctx) {
   const author = AUTHORS.includes(ctx.author) ? ctx.author : "her";
