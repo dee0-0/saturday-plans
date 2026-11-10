@@ -2,10 +2,6 @@ name = "saturday-plans-sync"
 main = "src/index.js"
 compatibility_date = "2026-10-10"
 
-# Cloudflare's AI, for the doodle drawing helper (free daily allowance).
-[ai]
-binding = "AI"
-
 [[durable_objects.bindings]]
 name = "PLAN_STORE"
 class_name = "PlanStore"
