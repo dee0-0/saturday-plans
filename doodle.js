@@ -74,6 +74,10 @@
   let current = null;          // the stroke under the finger
   let pointer = null;
   let pen = { color: PALETTE[0].color, width: 0, tool: "pen" }; // tool: "pen" or "fill"
+  let helper = null;           // the drawing helper's elements (Dee's phone only)
+  let helperBusy = false;      // a drawing is on its way or being drawn onto the pad
+  let helperFrame = 0;
+  let helperPhoto = null;      // { media_type, data, url } of the picked photo
   let padBase = null;          // the pad's finished strokes and fills, painted once (fills are slow)
   let padBaked = 0;            // how many of `strokes` are on padBase
   let frame = 0;
@@ -365,7 +369,7 @@
   }
 
   /* ------------------------------- Drawing ------------------------------- */
-  const canDraw = () => Boolean(data && !data.mine && !submitting && !board.hidden);
+  const canDraw = () => Boolean(data && !data.mine && !submitting && !helperBusy && !board.hidden);
 
   function toPoint(event) {
     const rect = canvas.getBoundingClientRect();
@@ -375,7 +379,7 @@
   function updateTools() {
     undoButton.disabled = !actions.length || submitting;
     clearButton.disabled = !strokes.length || submitting;
-    submitButton.disabled = !strokes.length || submitting;
+    submitButton.disabled = !strokes.length || submitting || helperBusy;
     const cleared = !strokes.length && actions.length && typeof actions[actions.length - 1] === "object";
     padHint.textContent = cleared ? "Cleared. Undo brings it back." : "Draw here with your finger";
     padHint.hidden = Boolean(strokes.length || current);
@@ -492,6 +496,240 @@
     canvas.classList.toggle("is-filling", pen.tool === "fill");
   }
 
+
+  /* ------------------------ Drawing helper (Dee only) ------------------------ */
+  // On Dee's phone only (it isn't in the page at all on hers): a few words or a photo go to
+  // the Worker, which asks Claude for a doodle; the strokes then appear on the pad as if
+  // drawn by a finger, and stay an ordinary drawing (undo, add lines, send).
+  const HELPER_MAX_SIDE = 1024;
+
+  function buildHelper() {
+    const wrap = document.createElement("div");
+    wrap.className = "doodle-helper";
+    wrap.innerHTML = `
+      <button class="doodle-helper-toggle" type="button" aria-expanded="false" aria-controls="doodle-helper-panel">
+        <i class="icon" data-lucide="wand-sparkles" aria-hidden="true"></i><span>Draw it for me</span>
+      </button>
+      <div class="doodle-helper-panel" id="doodle-helper-panel" hidden>
+        <label class="doodle-helper-label" for="doodle-helper-text">What should it draw?</label>
+        <textarea class="doodle-helper-text" id="doodle-helper-text" rows="2" maxlength="200"></textarea>
+        <div class="doodle-helper-row">
+          <label class="doodle-helper-photo">
+            <input type="file" accept="image/*" hidden>
+            <i class="icon" data-lucide="image-plus" aria-hidden="true"></i><span>Use a photo</span>
+          </label>
+          <span class="doodle-helper-thumb" hidden>
+            <img alt="The photo to draw">
+            <button type="button" aria-label="Remove the photo"><i class="icon" data-lucide="x" aria-hidden="true"></i></button>
+          </span>
+        </div>
+        <button class="btn btn-primary doodle-helper-go" type="button"><i class="icon" data-lucide="wand-sparkles" aria-hidden="true"></i> <span>Draw it</span></button>
+        <p class="doodle-helper-note">Only on your phone. It draws onto the pad like a finger would; you can still undo or add lines before you send it.</p>
+        <p class="error doodle-helper-error" role="alert" hidden></p>
+      </div>`;
+    const tools = board.querySelector(".doodle-tools");
+    tools.after(wrap);
+    helper = {
+      wrap,
+      toggle: wrap.querySelector(".doodle-helper-toggle"),
+      panel: wrap.querySelector(".doodle-helper-panel"),
+      text: wrap.querySelector(".doodle-helper-text"),
+      file: wrap.querySelector('input[type="file"]'),
+      thumb: wrap.querySelector(".doodle-helper-thumb"),
+      img: wrap.querySelector(".doodle-helper-thumb img"),
+      removePhoto: wrap.querySelector(".doodle-helper-thumb button"),
+      go: wrap.querySelector(".doodle-helper-go"),
+      goLabel: wrap.querySelector(".doodle-helper-go span"),
+      error: wrap.querySelector(".doodle-helper-error"),
+      day: ""
+    };
+    helper.toggle.addEventListener("click", () => {
+      const open = helper.panel.hidden;
+      helper.panel.hidden = !open;
+      helper.toggle.setAttribute("aria-expanded", String(open));
+      if (open) helper.text.focus({ preventScroll: true });
+    });
+    helper.file.addEventListener("change", () => {
+      const file = helper.file.files?.[0];
+      helper.file.value = "";
+      if (file) pickPhoto(file);
+    });
+    helper.removePhoto.addEventListener("click", () => setPhoto(null));
+    helper.go.addEventListener("click", askHelper);
+    icons(wrap);
+  }
+
+  function removeHelper() {
+    stopHelper(true);
+    setPhoto(null);
+    helper?.wrap.remove();
+    helper = null;
+  }
+
+  // Shown only on Dee's phone, while today's doodle can still be drawn.
+  function syncHelper() {
+    const mine = app()?.me?.() === "sender";
+    if (!mine) {
+      if (helper) removeHelper();
+      return;
+    }
+    if (!helper) buildHelper();
+    helper.wrap.hidden = board.hidden;
+    // Start each day with that day's prompt as the suggestion.
+    if (data && helper.day !== data.day) {
+      helper.day = data.day;
+      helper.text.value = capital(data.prompt || "");
+    }
+  }
+
+  function helperError(message) {
+    if (!helper) return;
+    helper.error.textContent = message || "";
+    helper.error.hidden = !message;
+  }
+
+  function setPhoto(photo) {
+    if (helperPhoto?.url) URL.revokeObjectURL(helperPhoto.url);
+    helperPhoto = photo;
+    if (!helper) return;
+    helper.thumb.hidden = !photo;
+    if (photo) helper.img.src = photo.url;
+    else helper.img.removeAttribute("src");
+  }
+
+  // Scales the photo down on the phone (and turns it into a JPEG) before it is sent.
+  async function pickPhoto(file) {
+    helperError("");
+    if (!/^image\//.test(file.type || "image/")) {
+      helperError("That isn't a photo.");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    try {
+      const image = new Image();
+      image.decoding = "async";
+      image.src = url;
+      await image.decode();
+      const scale = Math.min(1, HELPER_MAX_SIDE / Math.max(image.naturalWidth, image.naturalHeight));
+      const shrink = document.createElement("canvas");
+      shrink.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      shrink.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = shrink.getContext("2d");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, shrink.width, shrink.height);
+      context.drawImage(image, 0, 0, shrink.width, shrink.height);
+      const data64 = shrink.toDataURL("image/jpeg", 0.85).split(",")[1] || "";
+      setPhoto({ media_type: "image/jpeg", data: data64, url });
+    } catch {
+      URL.revokeObjectURL(url);
+      helperError("That photo couldn't be opened. Try another one.");
+    }
+  }
+
+  async function askHelper() {
+    if (!helper || helperBusy || !canDraw()) return;
+    const prompt = helper.text.value.replace(/\s+/g, " ").trim();
+    if (!prompt && !helperPhoto) {
+      helperError("Say what to draw, or pick a photo.");
+      return;
+    }
+    if (strokes.length && !window.confirm("Replace what's on the pad with the new drawing? Undo brings it back.")) return;
+    helperError("");
+    showError("");
+    helperBusy = true;
+    helper.go.disabled = true;
+    helper.goLabel.textContent = "Drawing… (about half a minute)";
+    updateTools();
+    const identity = identitySeq;
+    try {
+      const body = { author: me(), prompt };
+      if (helperPhoto) body.image = { media_type: helperPhoto.media_type, data: helperPhoto.data };
+      const result = await app().apiRequest("/games/doodle/ai", "POST", body);
+      if (identity !== identitySeq || !helper) return;
+      if (!Array.isArray(result.strokes) || !result.strokes.length || data?.mine) throw new Error("The helper drew nothing. Try different words.");
+      if (strokes.length) clearPad();
+      helper.panel.hidden = true;
+      helper.toggle.setAttribute("aria-expanded", "false");
+      drawIn(result.strokes);
+    } catch (error) {
+      if (identity !== identitySeq) return;
+      helperBusy = false;
+      helperError(error.status === 404
+        ? "The drawing helper needs the latest server update first."
+        : error.status ? error.message : (error.message || "Check your connection and try again."));
+      updateTools();
+    } finally {
+      if (helper) {
+        helper.go.disabled = false;
+        helper.goLabel.textContent = "Draw it";
+      }
+    }
+  }
+
+  // Puts the strokes on the pad bit by bit, like a finger drawing them (all at once with
+  // reduced motion). Each one becomes a normal stroke: Undo takes them back one by one.
+  function drawIn(list) {
+    stopHelper(false);
+    const queue = list.map((stroke) => ({ ...stroke, p: stroke.p.slice() }));
+    const total = pointsIn(queue);
+    const duration = reduced() ? 0 : Math.min(9000, 2500 + total * 1.2);
+    let index = 0;
+    let at = 0;         // points of queue[index] already on the pad
+    let done = 0;       // points drawn in all
+    const start = performance.now();
+    const step = (now) => {
+      const target = duration ? Math.ceil(total * Math.min(1, (now - start) / duration)) : total;
+      while (done < target && index < queue.length) {
+        const stroke = queue[index];
+        const count = stroke.p.length / 2;
+        if (!current) {
+          current = { w: stroke.w, c: stroke.c, p: stroke.p.slice(0, 2) };
+          at = 1;
+          done += 1;
+        }
+        const take = Math.min(count - at, target - done);
+        if (take > 0) {
+          current.p.push(...stroke.p.slice(at * 2, (at + take) * 2));
+          at += take;
+          done += take;
+        }
+        if (at >= count) {
+          strokes.push(current);
+          actions.push("stroke");
+          current = null;
+          index += 1;
+        }
+      }
+      schedulePad();
+      if (index < queue.length) {
+        helperFrame = window.requestAnimationFrame(step);
+        return;
+      }
+      helperFrame = 0;
+      helperBusy = false;
+      saveDraft();
+      updateTools();
+    };
+    helperBusy = true;
+    helperFrame = window.requestAnimationFrame(step);
+  }
+
+  // Leaving the page (or a new identity) mid-drawing: finish it at once, or drop it.
+  function stopHelper(finish) {
+    if (!helperFrame) return;
+    window.cancelAnimationFrame(helperFrame);
+    helperFrame = 0;
+    if (current && finish) {
+      strokes.push(current);
+      actions.push("stroke");
+    }
+    current = null;
+    helperBusy = false;
+    if (finish) saveDraft();
+    updateTools();
+    schedulePad();
+  }
+
   /* ------------------------------- Render -------------------------------- */
   function cellHtml(entry, who, key, { past }) {
     const mine = who === me();
@@ -563,6 +801,7 @@
     board.hidden = !drawing;
     if (drawing && wasHidden) window.requestAnimationFrame(paintPad);
     updateTools();
+    syncHelper();
   }
 
   function dayItemHtml(item) {
@@ -702,6 +941,7 @@
   }
 
   async function submit() {
+    if (helperBusy) return; // the helper is still drawing
     if (current) finishStroke();
     if (submitting || !data || data.mine || !strokes.length) return;
     const author = me();
@@ -743,6 +983,8 @@
     identitySeq += 1;
     loadSeq += 1;
     stopReplay();
+    if (helper) removeHelper();
+    helperBusy = false;
     data = null;
     strokes = [];
     invalidatePad();
@@ -850,7 +1092,8 @@
     } else {
       stopPolling();
       stopReplay();
-      if (current) finishStroke();
+      // (A drawing the helper is putting on the pad just carries on.)
+      if (current && !helperBusy) finishStroke();
     }
   });
   document.addEventListener("visibilitychange", () => {

@@ -20,8 +20,13 @@ jobs:
       # Optional: a TMDB API read access token (or v3 API key) for movie posters.
       # Empty when the repository secret doesn't exist; the movie page then lets you type titles.
       TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+      # Optional: an Anthropic API key for the doodle drawing helper. Empty when the secret doesn't exist.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v6
+      - name: Install Worker dependencies
+        working-directory: worker
+        run: npm ci
       - name: Deploy Cloudflare Worker
         id: deploy
         uses: cloudflare/wrangler-action@v4
@@ -30,8 +35,11 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: worker
           command: deploy
-          # Uploads TMDB_TOKEN as a Worker secret only when it is set, so the deploy works without it.
-          secrets: ${{ env.TMDB_TOKEN != '' && 'TMDB_TOKEN' || '' }}
+          # Uploads each optional secret only when it is set, so the deploy works without them
+          # (empty lines are skipped).
+          secrets: |
+            ${{ env.TMDB_TOKEN != '' && 'TMDB_TOKEN' || '' }}
+            ${{ env.ANTHROPIC_API_KEY != '' && 'ANTHROPIC_API_KEY' || '' }}
       - name: Show Worker URL
         if: steps.deploy.outputs.deployment-url != ''
         run: 'echo "Shared plan API: ${{ steps.deploy.outputs.deployment-url }}"'

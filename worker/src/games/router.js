@@ -3,6 +3,7 @@
 // A handler returns a plain object (answered as 200 JSON) or throws a GameError.
 import { GameError, ensureMigrated, zurichDay, weekStart } from "./common.js";
 import * as hub from "./hub.js";
+import * as doodleHelper from "./doodle-ai.js";
 import * as match from "./match.js";
 import * as duel from "./duel.js";
 import * as speed from "./speed.js";
@@ -24,13 +25,13 @@ import * as shop from "./shop.js";
 
 // In the order the games hub lists them.
 export const GAME_MODULES = [match, duel, speed, price, odd, connect, sort, first, clock, count, pin, guess, wordle, doodle, icons, challenges, hunt, shop];
-const ALL_MODULES = [hub, ...GAME_MODULES];
+const ALL_MODULES = [hub, ...GAME_MODULES, doodleHelper];
 export const GAME_ROUTES = ALL_MODULES.flatMap((module) => Object.keys(module.routes || {}));
 
 // Stores already checked for the one-time backfill (per Durable Object instance).
 const migrated = new WeakSet();
 
-export async function handleGame(storage, request, url) {
+export async function handleGame(storage, request, url, env = {}) {
   const path = url.pathname.replace(/\/$/, "");
   const module = ALL_MODULES.find((item) => item.routes && Object.hasOwn(item.routes, path));
   if (!module) return { status: 404, body: { error: "Not found." } };
@@ -57,7 +58,9 @@ export async function handleGame(storage, request, url) {
       today,
       week: weekStart(today),
       now: new Date().toISOString(),
-      modules: GAME_MODULES
+      modules: GAME_MODULES,
+      // The Worker's variables and secrets (e.g. ANTHROPIC_API_KEY for the drawing helper).
+      env
     });
     return { status: 200, body: result ?? {} };
   } catch (error) {
