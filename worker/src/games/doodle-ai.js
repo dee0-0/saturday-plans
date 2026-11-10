@@ -220,32 +220,7 @@ async function ask(apiKey, image, text) {
 // Free up to a daily allowance; past it the call fails until the next day (free plan).
 const CF_TEXT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
-const SHAPE_KINDS = ["circle", "ellipse", "arc", "line", "curve", "polygon", "dot"];
 const COLOUR_NAMES = Object.keys(COLOURS);
-const SHAPES_SCHEMA = {
-  type: "object",
-  properties: {
-    shapes: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          kind: { type: "string", enum: SHAPE_KINDS },
-          color: { type: "string", enum: COLOUR_NAMES },
-          fill: { type: "string", enum: ["none", ...COLOUR_NAMES] },
-          size: { type: "string", enum: ["thin", "thick"] },
-          x: { type: "number" }, y: { type: "number" },
-          r: { type: "number" }, rx: { type: "number" }, ry: { type: "number" },
-          from: { type: "number" }, to: { type: "number" },
-          points: { type: "array", items: { type: "array", items: { type: "number" } } }
-        },
-        required: ["kind", "color", "size"]
-      }
-    }
-  },
-  required: ["shapes"]
-};
-
 const CF_SYSTEM = `You draw cute, simple doodles for a phone drawing game, made of basic shapes.
 Canvas 1000 x 1000: x goes right, y goes DOWN, (0,0) is the top-left, the centre is (500,500).
 Shapes ("kind"):
@@ -256,7 +231,7 @@ Shapes ("kind"):
 - curve: points = 3 to 8 [x,y] points the line passes through, smoothly
 - polygon: points = 3 to 10 corners, closed
 - dot: x, y (a small round dot, e.g. an eye)
-Each shape has color (outline), size (thin or thick) and fill (a colour to colour it in, or "none"). Fill works for circle, ellipse and polygon.
+Each shape has color (outline), size (thin or thick) and fill (a colour to colour it in, or "none"). Colours: ${COLOUR_NAMES.join(", ")}. Fill works for circle, ellipse and polygon.
 Rules: build the subject from 6 to 25 shapes. Big shapes first, details (eyes, smiles, patterns) last, placed INSIDE the shape they belong to. Make it big: the subject should span most of the canvas (about 150 to 850). Use ink for most outlines, a few cheerful fills. No text.
 Example, "a cat": {"shapes":[
 {"kind":"ellipse","x":500,"y":650,"rx":200,"ry":170,"color":"ink","size":"thick","fill":"orange"},
@@ -270,7 +245,7 @@ Example, "a cat": {"shapes":[
 {"kind":"line","points":[[420,420],[330,400]],"color":"ink","size":"thin","fill":"none"},
 {"kind":"line","points":[[580,420],[670,400]],"color":"ink","size":"thin","fill":"none"},
 {"kind":"curve","points":[[690,700],[800,640],[820,520],[770,470]],"color":"ink","size":"thick","fill":"none"}]}
-Answer with JSON only, in exactly that format.`;
+Answer with the JSON only, in exactly that format, no other words.`;
 
 // Numbers from the model, kept in a sane range (a wild value must never blow up the work).
 const num = (value, fallback) => (Number.isFinite(Number(value)) ? Math.max(-3000, Math.min(4000, Number(value))) : fallback);
@@ -457,12 +432,12 @@ async function askCloudflare(ai, image, text) {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     let result;
     try {
+      // Plain answers (read by looseJson): the strict JSON mode sometimes got the free models stuck.
       result = await withTimeout(ai.run(image ? CF_MODEL : CF_TEXT_MODEL, {
         messages,
-        response_format: { type: "json_schema", json_schema: SHAPES_SCHEMA },
         max_tokens: 1600,
         temperature: attempt ? 0.3 : 0.5
-      }), 45_000);
+      }), 40_000);
     } catch (error) {
       const message = String(error?.message || error);
       if (/4006|daily free allocation|neurons/i.test(message)) throw new GameError(429, "Today's free drawings are used up. Try again tomorrow.");
