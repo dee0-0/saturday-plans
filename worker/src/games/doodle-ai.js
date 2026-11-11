@@ -1,5 +1,5 @@
 // The drawing helper for the daily doodle (Dee's phone only): turns a few words or a photo
-// into pen strokes that look like a quick finger drawing. The page draws them onto the pad
+// into a cute, clean doodle: pen strokes and paint-bucket fills, like a finger drawing. The page draws them onto the pad
 // stroke by stroke; from there it is an ordinary drawing (undo, add lines, send).
 // Uses Claude (Opus or Sonnet, picked on the page) through the Anthropic SDK, with the Worker
 // secret ANTHROPIC_API_KEY.
@@ -24,6 +24,8 @@ const COLOURS = {
 };
 const SIZES = { thin: 0, thick: 1, brush: 2 };
 
+// Each step is a pen stroke (a colour, a size, the points it passes through) or a tap with the
+// paint bucket (tool "fill", one point inside an outlined area).
 const SCHEMA = {
   type: "object",
   properties: {
@@ -32,11 +34,12 @@ const SCHEMA = {
       items: {
         type: "object",
         properties: {
+          tool: { type: "string", enum: ["pen", "fill"] },
           color: { type: "string", enum: Object.keys(COLOURS) },
           size: { type: "string", enum: Object.keys(SIZES) },
           points: { type: "array", items: { type: "array", items: { type: "integer" } } }
         },
-        required: ["color", "size", "points"],
+        required: ["tool", "color", "size", "points"],
         additionalProperties: false
       }
     }
@@ -45,18 +48,20 @@ const SCHEMA = {
   additionalProperties: false
 };
 
-const SYSTEM = `You draw doodles for a two-player drawing game on a phone. The other player must believe a person drew it with a finger, so it has to look hand-made, not computer-made.
+const SYSTEM = `You are a skilled illustrator drawing a polished, cute, sticker-style doodle with your finger in a phone drawing game. It should look clean and pretty, like good hand-drawn cartoon art: confident smooth lines, appealing shapes and nice flat colours.
 
-Canvas: 1000 x 1000, x to the right, y down, origin top-left. Each stroke is one finger movement: a colour, a size (thin, thick, or brush for colouring in) and a list of [x, y] points that the pen passes through in order.
+The pad: 1000 x 1000, x to the right, y down, origin top-left. Paper is white. Your tools, in the order you use them:
+- pen: a colour, a size (thin = fine line, thick = bold line, brush = very wide soft marker) and the [x, y] points the finger passes through. The app smooths the line through your points, so give points along curves about 20 to 40 units apart (4 to 30 points per stroke) and only a couple on straight parts.
+- fill: the paint bucket. One point, well inside an area. It colours everything connected to that point that has the same colour as the point (like a paint app), stopping at lines of another colour.
 
-Style:
-- Simple, cute and recognisable, like someone drew it in about two minutes. Slightly lopsided shapes, a bit wobbly, never perfectly straight or symmetric, no geometric precision.
-- Outline the main shapes in ink (thin or thick), then add a few details.
-- Colour some areas the way people colour on a phone: scribble back and forth inside the shape with the brush size, staying roughly (not perfectly) inside the outline. Draw those scribbles before the ink outline of that shape, so the outline sits on top.
-- Use only a few colours. White only on top of other colours (for example a highlight).
-- Keep the drawing large and centred, roughly between 80 and 920 on both axes.
-- 15 to 70 strokes; 3 to 40 points per stroke, about 15 to 60 units apart. Close shapes by ending near where they started.
-- No text, letters or numbers unless the subject itself is writing.`;
+How to draw it well:
+1. Plan the composition first: one clear main subject, large and centred (roughly 100 to 900 on both axes), with good proportions. Cute character design: slightly big head, big round eyes.
+2. Draw the outlines in ink. The outer silhouette of each part in thick; inner details in thin. Every area you want to colour must be a CLOSED shape: end the stroke exactly on its starting point, and where shapes touch, make the lines meet or cross with no gaps. A gap lets the colour leak into the background (such fills are removed).
+3. Colour with fill: tap inside each closed area with its colour. Pick a pleasant, harmonious palette (2 to 5 colours besides ink). Leave the background white.
+4. Then the details on top: eyes as small filled ink shapes with a white highlight dot, rosy cheeks (pink or lightpink brush dabs), shading or pattern with thin lines or small brush strokes, a few motion or sparkle lines if they suit.
+5. 25 to 80 steps in all. No text, letters or numbers unless the subject itself is writing.
+
+With a photo: draw its main subject in this cute illustrated style, keeping its pose, key features and colours, simplified. Ignore clutter in the background.`;
 
 function normalizeUsage(value, day) {
   return value?.day === day ? { day, count: Number(value.count) || 0 } : { day, count: 0 };
@@ -92,38 +97,76 @@ function randomFrom(seed) {
 
 const clamp = (value) => Math.max(0, Math.min(CANVAS_SIZE, Math.round(value)));
 
-// Turns the model's strokes into the page's format, then makes them look drawn by hand:
-// extra points along each line (so curves render smooth), a gentle wobble that drifts
-// rather than jitters, and a little overshoot at the ends. Stays within the doodle limits.
+// Rounds the corners of a line (Chaikin), `rounds` times. A closed line stays closed.
+function smoothLine(points, closed, rounds = 2) {
+  let out = points;
+  for (let round = 0; round < rounds && out.length > 2; round += 1) {
+    const ring = closed ? out.slice(0, -1) : out;
+    const next = closed ? [] : [ring[0]];
+    const count = closed ? ring.length : ring.length - 1;
+    for (let index = 0; index < count; index += 1) {
+      const [x0, y0] = ring[index];
+      const [x1, y1] = ring[(index + 1) % ring.length];
+      next.push([0.75 * x0 + 0.25 * x1, 0.75 * y0 + 0.25 * y1], [0.25 * x0 + 0.75 * x1, 0.25 * y0 + 0.75 * y1]);
+    }
+    if (closed) next.push(next[0]);
+    else next.push(ring[ring.length - 1]);
+    out = next;
+  }
+  return out;
+}
+
+// Turns the model's steps into the page's strokes: lines smoothed through the given points,
+// closed shapes closed exactly, a very light wobble (it should still look hand-made), and
+// paint-bucket fills kept only where they stay inside their outline (see fillsThatStayInside).
+// Stays within the doodle limits.
 export function handDrawn(raw, seed = Date.now()) {
   const random = randomFrom(seed);
-  const strokes = [];
+  const steps = [];
   for (const stroke of Array.isArray(raw) ? raw : []) {
     const colour = COLOURS[stroke?.color];
-    const width = SIZES[stroke?.size];
     const points = (Array.isArray(stroke?.points) ? stroke.points : [])
       .filter((point) => Array.isArray(point) && point.length >= 2 && Number.isFinite(point[0]) && Number.isFinite(point[1]))
+      .slice(0, 200)
       .map(([x, y]) => [clamp(x), clamp(y)]);
-    if (!colour || width === undefined || !points.length) continue;
-    strokes.push({ colour, width, points });
-    if (strokes.length >= MAX_STROKES) break;
+    if (!colour || !points.length) continue;
+    if (stroke.tool === "fill") {
+      steps.push({ fill: true, colour, at: points[0] });
+    } else {
+      const width = SIZES[stroke?.size];
+      if (width === undefined) continue;
+      const first = points[0];
+      const last = points[points.length - 1];
+      const closed = points.length >= 3 && Math.hypot(first[0] - last[0], first[1] - last[1]) <= 40;
+      if (closed) points[points.length - 1] = [...first];
+      steps.push({ colour, width, closed, points: points.length > 2 ? smoothLine(points, closed) : points });
+    }
+    if (steps.length >= MAX_STROKES) break;
   }
-  if (!strokes.length) throw new GameError(502, "The helper drew nothing. Try different words.");
-  const raws = strokes.reduce((sum, stroke) => sum + stroke.points.length, 0);
+  if (!steps.some((step) => !step.fill)) throw new GameError(502, "The helper drew nothing. Try different words.");
+  const lines = steps.filter((step) => !step.fill);
+  const raws = lines.reduce((sum, stroke) => sum + stroke.points.length, 0);
   // Point spacing that keeps the whole drawing under the point limit.
-  const length = strokes.reduce((sum, stroke) => sum + stroke.points.reduce((acc, point, index) => (
+  const length = lines.reduce((sum, stroke) => sum + stroke.points.reduce((acc, point, index) => (
     index ? acc + Math.hypot(point[0] - stroke.points[index - 1][0], point[1] - stroke.points[index - 1][1]) : acc
   ), 0), 0);
-  const budget = Math.max(raws, MAX_POINTS - 200);
-  const step = Math.max(10, length / Math.max(1, budget - raws));
+  const budget = Math.max(raws, MAX_POINTS - 300);
+  const step = Math.max(8, length / Math.max(1, budget - raws));
   let total = 0;
   const out = [];
-  for (const { colour, width, points } of strokes) {
-    const amplitude = width === 2 ? 6 : 3.5;
+  for (const item of steps) {
+    if (item.fill) {
+      if (total + 1 > MAX_POINTS) break;
+      total += 1;
+      out.push({ f: 1, c: item.colour, p: item.at });
+      continue;
+    }
+    const { colour, width, points, closed } = item;
+    const amplitude = width === 2 ? 2.5 : 1.2;
     let drift = [0, 0];
     const p = [];
     const push = (x, y) => {
-      drift = [drift[0] * 0.8 + (random() - 0.5) * amplitude, drift[1] * 0.8 + (random() - 0.5) * amplitude];
+      drift = [drift[0] * 0.85 + (random() - 0.5) * amplitude, drift[1] * 0.85 + (random() - 0.5) * amplitude];
       p.push(clamp(x + drift[0]), clamp(y + drift[1]));
     };
     push(points[0][0], points[0][1]);
@@ -133,19 +176,82 @@ export function handDrawn(raw, seed = Date.now()) {
       const pieces = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / step));
       for (let piece = 1; piece <= pieces; piece += 1) push(x0 + ((x1 - x0) * piece) / pieces, y0 + ((y1 - y0) * piece) / pieces);
     }
-    // A short overshoot past the last point, as a finger does when it lifts.
-    if (points.length > 1) {
-      const [xa, ya] = points[points.length - 2];
-      const [xb, yb] = points[points.length - 1];
-      const dist = Math.hypot(xb - xa, yb - ya) || 1;
-      const over = 4 + random() * 8;
-      push(xb + ((xb - xa) / dist) * over, yb + ((yb - ya) / dist) * over);
-    }
+    // A closed shape ends exactly where it started, so no colour leaks out.
+    if (closed && p.length >= 4) { p[p.length - 2] = p[0]; p[p.length - 1] = p[1]; }
     if (total + p.length / 2 > MAX_POINTS) break;
     total += p.length / 2;
     out.push({ w: width, c: colour, p });
   }
-  return cleanStrokes(out);
+  return cleanStrokes(fillsThatStayInside(out));
+}
+
+// The page's paint bucket floods everything of the tapped colour that is connected to the tap.
+// If an outline has a gap, that's the whole background: a ruined drawing. So the drawing is
+// replayed here on a small grid (2 units a cell, pens as round brushes of their real width,
+// the same colour tolerance as the page), and a fill that would reach the edge of the pad or
+// cover more than a third of it is left out.
+const GRID = 500;
+const CELL = CANVAS_SIZE / GRID;
+const PEN_WIDTHS = [9, 24, 60]; // the page's widths, in grid units of the 1000 pad
+const FILL_TOLERANCE = 64;
+
+export function fillsThatStayInside(strokes) {
+  const red = new Uint8Array(GRID * GRID).fill(255);
+  const green = new Uint8Array(GRID * GRID).fill(255);
+  const blue = new Uint8Array(GRID * GRID).fill(255);
+  const rgbOf = (hex) => [1, 3, 5].map((index) => parseInt(hex.slice(index, index + 2), 16));
+  const paint = (cell, [r, g, b]) => { red[cell] = r; green[cell] = g; blue[cell] = b; };
+  const stamp = (cx, cy, radius, colour) => {
+    const r2 = radius * radius;
+    for (let y = Math.max(0, Math.floor(cy - radius)); y <= Math.min(GRID - 1, Math.ceil(cy + radius)); y += 1) {
+      for (let x = Math.max(0, Math.floor(cx - radius)); x <= Math.min(GRID - 1, Math.ceil(cx + radius)); x += 1) {
+        if ((x - cx) ** 2 + (y - cy) ** 2 <= r2) paint(y * GRID + x, colour);
+      }
+    }
+  };
+  const kept = [];
+  for (const stroke of strokes) {
+    const colour = rgbOf(stroke.c);
+    if (stroke.f === 1) {
+      const x0 = Math.min(GRID - 1, Math.floor(stroke.p[0] / CELL));
+      const y0 = Math.min(GRID - 1, Math.floor(stroke.p[1] / CELL));
+      const seed = y0 * GRID + x0;
+      const [sr, sg, sb] = [red[seed], green[seed], blue[seed]];
+      if (Math.max(Math.abs(sr - colour[0]), Math.abs(sg - colour[1]), Math.abs(sb - colour[2])) <= 8) continue;
+      const matches = (cell) => Math.abs(red[cell] - sr) <= FILL_TOLERANCE && Math.abs(green[cell] - sg) <= FILL_TOLERANCE && Math.abs(blue[cell] - sb) <= FILL_TOLERANCE;
+      const region = new Uint8Array(GRID * GRID);
+      const stack = [seed];
+      region[seed] = 1;
+      let size = 0;
+      let leaks = false;
+      while (stack.length) {
+        const cell = stack.pop();
+        size += 1;
+        const x = cell % GRID;
+        const y = (cell - x) / GRID;
+        if (x === 0 || y === 0 || x === GRID - 1 || y === GRID - 1) leaks = true;
+        for (const next of [x > 0 ? cell - 1 : -1, x < GRID - 1 ? cell + 1 : -1, y > 0 ? cell - GRID : -1, y < GRID - 1 ? cell + GRID : -1]) {
+          if (next >= 0 && !region[next] && matches(next)) { region[next] = 1; stack.push(next); }
+        }
+      }
+      if (leaks || size > (GRID * GRID) / 3) continue;
+      for (let cell = 0; cell < region.length; cell += 1) if (region[cell]) paint(cell, colour);
+      kept.push(stroke);
+      continue;
+    }
+    const radius = PEN_WIDTHS[stroke.w] / 2 / CELL;
+    for (let index = 0; index < stroke.p.length; index += 2) {
+      const x = stroke.p[index] / CELL;
+      const y = stroke.p[index + 1] / CELL;
+      if (index === 0) { stamp(x, y, radius, colour); continue; }
+      const px = stroke.p[index - 2] / CELL;
+      const py = stroke.p[index - 1] / CELL;
+      const pieces = Math.max(1, Math.ceil(Math.hypot(x - px, y - py)));
+      for (let piece = 1; piece <= pieces; piece += 1) stamp(px + ((x - px) * piece) / pieces, py + ((y - py) * piece) / pieces, radius, colour);
+    }
+    kept.push(stroke);
+  }
+  return kept;
 }
 
 async function draw(ctx) {
@@ -165,7 +271,7 @@ async function draw(ctx) {
   });
 
   const text = image
-    ? `Draw a simple doodle of this picture, as a person would draw it from looking at it.${prompt ? ` Notes: ${prompt}` : ""}`
+    ? `Draw the main subject of this photo as a cute illustrated doodle.${prompt ? ` Notes: ${prompt}` : ""}`
     : `Draw: ${prompt}`;
 
   try {
@@ -186,15 +292,16 @@ async function ask(apiKey, model, image, text) {
   const content = [];
   if (image) content.push({ type: "image", source: { type: "base64", media_type: image.mediaType, data: image.data } });
   content.push({ type: "text", text });
-  const client = new Anthropic({ apiKey, maxRetries: 1, timeout: 150_000 });
+  const client = new Anthropic({ apiKey, maxRetries: 1, timeout: 240_000 });
   let response;
   try {
     response = await client.beta.messages.create({
       model,
-      max_tokens: 16000,
+      max_tokens: 20000, // under the SDK's limit for a request without streaming
       // Opus: a declined drawing is retried on another model by the API itself.
       ...(model === MODELS.opus ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" } : {}),
-      output_config: { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
+      // High effort: it plans the drawing before it draws (prettier, takes a little longer).
+      output_config: { effort: "high", format: { type: "json_schema", schema: SCHEMA } },
       system: SYSTEM,
       messages: [{ role: "user", content }]
     });
