@@ -655,7 +655,7 @@
     showError("");
     helperBusy = true;
     helper.go.disabled = true;
-    helper.goLabel.textContent = "Drawing… (about a minute)";
+    helper.goLabel.textContent = "Drawing… (about two minutes)";
     updateTools();
     const identity = identitySeq;
     try {
