@@ -169,6 +169,8 @@ function normalizeUsage(value, day) {
 
 function parseInput(body) {
   if (body.author !== OWNER) throw new GameError(403, "Not available.");
+  // Pages from before the paint-bucket drawings (no version) can't put them on the pad.
+  if (!(Number(body.version) >= 2)) throw new GameError(409, "The app is out of date. Close it completely and open it again, then try once more.");
   const prompt = typeof body.prompt === "string" ? body.prompt.replace(/\s+/g, " ").trim() : "";
   if (prompt.length > MAX_PROMPT) throw new GameError(400, `Keep it under ${MAX_PROMPT} characters.`);
   let image = null;
