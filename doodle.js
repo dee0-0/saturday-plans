@@ -655,7 +655,7 @@
     showError("");
     helperBusy = true;
     helper.go.disabled = true;
-    helper.goLabel.textContent = "Drawing… (about half a minute)";
+    helper.goLabel.textContent = "Drawing… (about a minute)";
     updateTools();
     const identity = identitySeq;
     try {
@@ -698,6 +698,14 @@
       const target = duration ? Math.ceil(total * Math.min(1, (now - start) / duration)) : total;
       while (done < target && index < queue.length) {
         const stroke = queue[index];
+        // A paint-bucket tap goes on in one go.
+        if (isFill(stroke)) {
+          strokes.push({ f: 1, c: stroke.c, p: stroke.p.slice(0, 2) });
+          actions.push("stroke");
+          done += 1;
+          index += 1;
+          continue;
+        }
         const count = stroke.p.length / 2;
         if (!current) {
           current = { w: stroke.w, c: stroke.c, p: stroke.p.slice(0, 2) };
