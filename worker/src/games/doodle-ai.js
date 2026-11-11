@@ -39,13 +39,14 @@ Reply with one SVG and nothing else: <svg viewBox="0 0 1000 1000" xmlns="http://
 
 How the drawing is made on the pad, which matters for fills: every shape's outline is drawn as a pen line, and its fill is then poured in with a paint bucket, which colours the area enclosed by lines (like colouring in a colouring book). So:
 - A filled shape must be closed. Areas are separated by lines, not by painting over: do not rely on a later shape hiding an earlier one. Draw only what is visible (for a character sitting in a cup, draw the cup in front and only the visible part of the body above and around it).
-- Keep it mostly line art on white, with a few soft fills for charm (pink cheeks, a coloured heart, dark pupils with white highlight circles on top) — unless the request asks for a fully coloured picture.
+- Keep it mostly line art on white, with a few soft fills for charm (pink cheeks, a coloured heart, dark pupils) — unless the request asks for a fully coloured picture.
+- Glossy eyes: draw each pupil (filled ink), then AFTER it its white highlight circles (fill white, stroke none, radius 10 to 18, one bigger and one smaller), so they sit on top.
 
 Quality bar: it should look like a polished illustration a person would be proud to post. Plan the composition first. One clear main subject, large and centred (about 80 to 920 on both axes), good proportions (big head, large glossy eyes with highlights, small nose and mouth), a clean silhouette, and a few details that suit the theme (little hearts, sparkles, steam curls, spots, a texture line). Typically 40 to 150 shapes.
 
 With a photo: draw its main subject in this style, keeping the pose, the key features and the feel, simplified; leave out the background clutter.`;
 
-const REVIEW = `Here is your drawing as it came out on the drawing pad: your SVG drawn with the pad's pens, and the fills poured in with the paint bucket (a fill that would have leaked out through a gap was left out). Look at it critically, like an art director: fix anything that looks wrong, messy or off: gaps in outlines, missing or leaked fills, lines crossing through faces, parts in the wrong place or size, weak proportions, clutter, anything that doesn't read clearly. Keep what already works. Reply with the complete improved SVG only.`;
+const REVIEW = `Here is your drawing as it came out on the drawing pad: your SVG drawn with the pad's pens, and the fills poured in with the paint bucket (a fill that would have leaked out through a gap was left out). Look at it critically, like an art director: fix anything that looks wrong, messy or off: gaps in outlines, missing or leaked fills, lines crossing through faces, parts in the wrong place or size, weak proportions, clutter, anything that doesn't read clearly. Check that the eyes have their white highlights. Keep what already works. Reply with the complete improved SVG only.`;
 
 const widthFor = (strokeWidth) => (strokeWidth >= 40 ? 2 : strokeWidth >= 15 ? 1 : 0);
 
@@ -103,11 +104,32 @@ export function finishDrawing(steps, seed = Date.now()) {
       // first spot whose paint stays inside the shape.
       const inside = (point) => insideAny(point, step.rings);
       let tries = 0;
+      let filled = false;
       for (const spot of tapSpots(step.rings)) {
         if (spot.clearance < 6 || raster.onLine(spot.point[0], spot.point[1])) continue;
         const stroke = { f: 1, c: step.colour, p: [clamp(spot.point[0]), clamp(spot.point[1])] };
-        if (raster.fill(stroke, { inside })) { out.push(stroke); total += 1; break; }
+        if (raster.fill(stroke, { inside })) { out.push(stroke); total += 1; filled = true; break; }
         if (++tries >= 4) break;
+      }
+      // Too small for the bucket (an eye highlight, a dot): a solid dab of the bold pen,
+      // around the shape's middle, in its colour.
+      const all = step.rings.flat();
+      const xs = all.map((point) => point[0]);
+      const ys = all.map((point) => point[1]);
+      const w = Math.max(...xs) - Math.min(...xs);
+      const h = Math.max(...ys) - Math.min(...ys);
+      if (!filled && Math.max(w, h) <= 70 && total + 8 <= MAX_POINTS) {
+        const cx = (Math.max(...xs) + Math.min(...xs)) / 2;
+        const cy = (Math.max(...ys) + Math.min(...ys)) / 2;
+        const rx = Math.max(0, w / 2 - 12);
+        const ry = Math.max(0, h / 2 - 12);
+        const p = [];
+        for (let k = 0; k <= 6; k += 1) p.push(clamp(cx + rx * Math.cos((k / 6) * 2 * Math.PI)), clamp(cy + ry * Math.sin((k / 6) * 2 * Math.PI)));
+        p.push(clamp(cx), clamp(cy));
+        const dab = { w: 1, c: step.colour, p };
+        raster.line(dab);
+        out.push(dab);
+        total += p.length / 2;
       }
       continue;
     }
