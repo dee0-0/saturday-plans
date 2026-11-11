@@ -502,6 +502,7 @@
   // the Worker, which asks Claude for a doodle; the strokes then appear on the pad as if
   // drawn by a finger, and stay an ordinary drawing (undo, add lines, send).
   const HELPER_MAX_SIDE = 1024;
+  const HELPER_VERSION = 2;
   const MODEL_KEY = "date-letter-doodle-helper-model";
   function savedModel() {
     try { return localStorage.getItem(MODEL_KEY) === "sonnet" ? "sonnet" : "opus"; } catch { return "opus"; }
@@ -659,7 +660,8 @@
     updateTools();
     const identity = identitySeq;
     try {
-      const body = { author: me(), prompt, model: helper.model };
+      // `version`: the Worker refuses pages too old to read its drawings (fills, since v2).
+      const body = { author: me(), prompt, model: helper.model, version: HELPER_VERSION };
       if (helperPhoto) body.image = { media_type: helperPhoto.media_type, data: helperPhoto.data };
       const result = await app().apiRequest("/games/doodle/ai", "POST", body);
       if (identity !== identitySeq || !helper) return;
@@ -978,7 +980,10 @@
     setSubmitLabel();
     updateTools();
     try {
-      const next = await app().apiRequest("/games/doodle", "POST", { author, day: data.day, strokes });
+      // Only strokes the Worker accepts (a broken one must never block sending the drawing).
+      const valid = strokes.filter((stroke) => stroke && Array.isArray(stroke.p) && PALETTE.some((item) => item.color === stroke.c)
+        && (isFill(stroke) ? stroke.p.length === 2 : stroke.p.length >= 2 && stroke.p.length % 2 === 0 && [0, 1, 2].includes(stroke.w)));
+      const next = await app().apiRequest("/games/doodle", "POST", { author, day: data.day, strokes: valid });
       if (identity !== identitySeq) return;
       dropDraft();
       submitting = false;
